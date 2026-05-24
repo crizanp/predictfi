@@ -214,6 +214,36 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       setBusyAction(`claim-${marketId}`)
 
       try {
+        // Re-fetch on-chain state before submitting to avoid stale-data reverts
+        const readContract = getReadContract()
+        const [freshMarket, freshPrediction] = await Promise.all([
+          readContract.getMarket(marketId),
+          account ? readContract.getUserPrediction(marketId, account) : null,
+        ])
+
+        const resolved = Boolean(freshMarket.resolved)
+        const result = Number(freshMarket.result)
+        const choice = freshPrediction ? Number(freshPrediction.choice) : 0
+        const claimed = freshPrediction ? Boolean(freshPrediction.claimed) : true
+        const amount = freshPrediction ? Number(freshPrediction.amount) : 0
+
+        if (!resolved || result === 0) {
+          setStatusMessage('error', 'Market is not yet resolved. Cannot claim.')
+          return
+        }
+        if (amount === 0) {
+          setStatusMessage('error', 'No prediction found for this market.')
+          return
+        }
+        if (choice !== result) {
+          setStatusMessage('error', 'Your prediction did not match the winning outcome.')
+          return
+        }
+        if (claimed) {
+          setStatusMessage('error', 'Winnings already claimed.')
+          return
+        }
+
         const contract = await getPreparedWriteContract()
         const tx = await contract.claimWinnings(marketId)
         await tx.wait()
@@ -227,7 +257,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         setBusyAction(null)
       }
     },
-    [account, getPreparedWriteContract, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
+    [account, getReadContract, getPreparedWriteContract, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
   )
 
   const createMarket = useCallback(

@@ -72,6 +72,7 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
 
   const canClaimWinnings =
     market.resolved &&
+    market.result !== 0 &&
     userPrediction &&
     userPrediction.choice === market.result &&
     !userPrediction.claimed
