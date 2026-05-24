@@ -1,0 +1,552 @@
+.page {
+  --bg-1: #0a0921;
+  --bg-2: #161033;
+  --card: rgba(17, 18, 45, 0.78);
+  --card-border: rgba(167, 139, 250, 0.24);
+  --text: #ecebff;
+  --muted: #b9b5d7;
+  --primary: #8b5cf6;
+  --primary-strong: #7c3aed;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  min-height: 100vh;
+  padding: 28px 16px 56px;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(139, 92, 246, 0.22), transparent 34%),
+    radial-gradient(circle at 84% 16%, rgba(79, 70, 229, 0.2), transparent 32%),
+    linear-gradient(160deg, var(--bg-1) 0%, #0b0f2a 50%, var(--bg-2) 100%);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.topGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+}
+
+.heroCard,
+.walletCard,
+.adminCard,
+.marketCard,
+.statCard,
+.configWarning,
+.emptyState {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.heroCard {
+  padding: 24px;
+}
+
+.overline {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #c4b7ff;
+}
+
+.title {
+  margin: 8px 0 10px;
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 64ch;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.heroMetaGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metaChip {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(22, 24, 54, 0.68);
+}
+
+.metaChip span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.metaChip strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.inlineLink {
+  display: inline-block;
+  margin-top: 14px;
+  color: #d4c5ff;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
+.walletCard {
+  padding: 18px;
+}
+
+.cardHeading {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.walletRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.walletLabel {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.badgeConnected,
+.badgeDisconnected,
+.badgeWarning,
+.badgeNeutral {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badgeConnected {
+  color: #d1fadf;
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.badgeDisconnected {
+  color: #ffd0d0;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.badgeWarning {
+  color: #ffecc7;
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.badgeNeutral {
+  color: #e4dcff;
+  background: rgba(124, 58, 237, 0.28);
+}
+
+.accountBox {
+  margin: 12px 0 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  background: rgba(10, 12, 36, 0.55);
+}
+
+.accountPrimary {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.accountSecondary {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.ownerTag {
+  margin-top: 7px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #efe2ff;
+  background: rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  padding: 4px 8px;
+}
+
+.walletHint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffdedf;
+}
+
+.walletActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform 120ms ease, filter 120ms ease, border-color 120ms ease;
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.buttonPrimary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+}
+
+.buttonSecondary {
+  color: #ddd6fe;
+  background: rgba(76, 29, 149, 0.45);
+  border-color: rgba(167, 139, 250, 0.4);
+}
+
+.buttonGhost {
+  color: #f3f4f6;
+  background: rgba(31, 41, 55, 0.76);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.buttonWarning {
+  color: #fff6e4;
+  background: rgba(245, 158, 11, 0.8);
+}
+
+.buttonSuccess {
+  color: #edfff5;
+  background: rgba(34, 197, 94, 0.78);
+}
+
+.buttonDanger {
+  color: #ffebee;
+  background: rgba(239, 68, 68, 0.78);
+}
+
+.statusBanner {
+  margin-top: 14px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.statusInfo {
+  color: #e0d4ff;
+  background: rgba(76, 29, 149, 0.45);
+  border-color: rgba(167, 139, 250, 0.32);
+}
+
+.statusSuccess {
+  color: #defce7;
+  background: rgba(22, 163, 74, 0.35);
+  border-color: rgba(34, 197, 94, 0.38);
+}
+
+.statusError {
+  color: #ffe2e4;
+  background: rgba(185, 28, 28, 0.35);
+  border-color: rgba(239, 68, 68, 0.42);
+}
+
+.configWarning {
+  margin-top: 14px;
+  padding: 16px;
+}
+
+.configWarning h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.configWarning p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.statsGrid {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statCard {
+  padding: 14px;
+}
+
+.statCard span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.statCard strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 24px;
+}
+
+.adminCard {
+  margin-top: 16px;
+  padding: 18px;
+}
+
+.adminGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1.8fr 1fr auto;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(167, 139, 250, 0.32);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(9, 9, 26, 0.72);
+  color: #fff;
+  font-size: 14px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(196, 181, 253, 0.7);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.18);
+}
+
+.marketsSection {
+  margin-top: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 22px;
+}
+
+.emptyState {
+  margin-top: 12px;
+  padding: 28px;
+  text-align: center;
+}
+
+.emptyState h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.emptyState p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.marketGrid {
+  margin-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.marketCard {
+  padding: 16px;
+}
+
+.marketHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.marketId {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.marketQuestion {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.marketState {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.marketLive {
+  color: #d8cffc;
+  background: rgba(124, 58, 237, 0.38);
+}
+
+.marketEnded {
+  color: #ffe7c1;
+  background: rgba(245, 158, 11, 0.34);
+}
+
+.marketResolved {
+  color: #dcfce7;
+  background: rgba(22, 163, 74, 0.36);
+}
+
+.marketMeta {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.poolBlock {
+  margin-top: 12px;
+}
+
+.poolLabels,
+.poolValues {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.poolLabels {
+  font-size: 12px;
+}
+
+.poolValues {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.poolTrack {
+  margin-top: 6px;
+  background: rgba(239, 68, 68, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 10px;
+}
+
+.poolYes {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #86efac);
+}
+
+.userPrediction {
+  margin-top: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  background: rgba(21, 18, 49, 0.72);
+  font-size: 13px;
+  padding: 10px;
+}
+
+.claimedTag {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #d9f99d;
+}
+
+.actionsRow,
+.resolveRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.actionsRow .input {
+  flex: 1;
+}
+
+.lossNote {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #d6d3d1;
+}
+
+@media (max-width: 980px) {
+  .topGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .adminGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .marketHeader {
+    flex-direction: column;
+  }
+
+  .actionsRow,
+  .resolveRow,
+  .walletActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

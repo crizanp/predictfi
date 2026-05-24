@@ -17,6 +17,7 @@ export default function RootLayout({
         background: '#020817',
         color: '#e2e8f0',
         minHeight: '100vh',
+        fontFamily: 'Arial, Helvetica, sans-serif',
       }}>
         {children}
       </body>
