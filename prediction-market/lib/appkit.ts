@@ -25,7 +25,7 @@ export const appKit = createAppKit({
   metadata: {
     name: 'PredictFi',
     description: 'Decentralized Prediction Market on BSC',
-    url: 'https://predictfi.app',
+    url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://predictfi.app',
     icons: [],
   },
   features: {

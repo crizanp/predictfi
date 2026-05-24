@@ -66,6 +66,7 @@ export interface WalletContextValue {
   connectWalletConnect: () => void
   setExternalProvider: (provider: Eip1193Provider | null, type: ConnectionType) => Promise<void>
   disconnectWallet: () => Promise<void>
+  switchAccount: () => Promise<void>
   switchActiveNetwork: () => Promise<void>
   refreshWalletState: (options?: {
     requestAccounts?: boolean
@@ -307,6 +308,26 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     [clearWalletSession, refreshWalletState]
   )
 
+  const switchAccount = useCallback(async () => {
+    if (connectionType !== 'injected') return
+    setBusyAction('switch-account')
+    try {
+      const provider = requireProvider()
+      await provider.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }],
+      })
+      await refreshWalletState({ providerOverride: provider, silent: true })
+    } catch (error) {
+      // code 4001 = user rejected — not an error to surface
+      if ((error as { code?: number })?.code !== 4001) {
+        setStatusMessage('error', `Could not switch account. ${toErrorMessage(error)}`)
+      }
+    } finally {
+      setBusyAction(null)
+    }
+  }, [connectionType, refreshWalletState, requireProvider, setStatusMessage])
+
   const disconnectWallet = useCallback(async () => {
     if (connectionType === 'walletconnect' && walletProvider) {
       const runtimeProvider = walletProvider as { disconnect?: () => Promise<void> }
@@ -402,6 +423,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         connectWalletConnect,
         setExternalProvider,
         disconnectWallet,
+        switchAccount,
         switchActiveNetwork,
         refreshWalletState,
         getEffectiveProvider,

@@ -397,3 +397,52 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Portfolio row (total invested across all markets) */
+.portfolioRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.portfolioLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.portfolioValue {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--accent-light);
+}
+
+/* Staked amount in position card */
+.positionAmount {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+/* Note when adding to existing position */
+.addNote {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  background: rgba(139, 92, 246, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin: 0;
+}
+
+/* Disabled outcome button */
+.outcomeBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

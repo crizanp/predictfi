@@ -1,17 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { getOddsHistory, recordOddsSnapshot, type OddsSnapshot } from '../lib/supabase'
+import { getOddsHistory, recordOddsSnapshot } from '../lib/supabase'
 import styles from './OddsChart.module.css'
 
 interface Props {
@@ -28,17 +21,25 @@ interface ChartPoint {
   no: number
 }
 
-function toChartPoint(snap: OddsSnapshot): ChartPoint {
-  const total = parseFloat(snap.total_pool)
-  const yes = parseFloat(snap.yes_pool)
-  const yesPct = total > 0 ? Math.round((yes / total) * 100) : 50
-  return {
-    time: new Date(snap.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    yes: yesPct,
-    no: 100 - yesPct,
-  }
+// â”€â”€ localStorage helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const LS_KEY = (id: number) => `pf_odds_${id}`
+const MAX_PTS = 120
+
+function loadLocal(id: number): ChartPoint[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem(LS_KEY(id)) ?? '[]') } catch { return [] }
 }
 
+function saveLocal(id: number, pts: ChartPoint[]) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(LS_KEY(id), JSON.stringify(pts.slice(-MAX_PTS))) } catch {}
+}
+
+function nowLabel() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+// â”€â”€ Tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
@@ -51,48 +52,76 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   )
 }
 
+// â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolved }: Props) {
-  const [history, setHistory] = useState<ChartPoint[]>([])
-  const [loading, setLoading] = useState(true)
-  const snapshotRecorded = useRef(false)
+  const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal(marketId))
+  const supabaseSynced = useRef(false)
+  const snapshotSent = useRef(false)
 
+  // Merge Supabase history once on mount
   useEffect(() => {
-    let cancelled = false
+    if (supabaseSynced.current) return
+    supabaseSynced.current = true
+    void getOddsHistory(marketId).then((snaps) => {
+      if (!snaps.length) return
+      const pts: ChartPoint[] = snaps.map((s) => {
+        const total = parseFloat(s.total_pool)
+        const yesPct = total > 0 ? Math.round((parseFloat(s.yes_pool) / total) * 100) : 50
+        return {
+          time: new Date(s.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          yes: yesPct,
+          no: 100 - yesPct,
+        }
+      })
+      setHistory((prev) => {
+        const seen = new Set<string>()
+        const merged = [...pts, ...prev].filter((p) => {
+          if (seen.has(p.time)) return false
+          seen.add(p.time)
+          return true
+        })
+        saveLocal(marketId, merged)
+        return merged
+      })
+    })
+  }, [marketId])
 
-    async function init() {
-      setLoading(true)
+  // Record a snapshot whenever pool values change
+  useEffect(() => {
+    const total = parseFloat(totalPool)
+    if (total <= 0) return
+    const yesPct = Math.round((parseFloat(yesPool) / total) * 100)
+    const now = nowLabel()
+    const pt: ChartPoint = { time: now, yes: yesPct, no: 100 - yesPct }
 
-      // Record current snapshot once (skip if resolved — no new activity expected)
-      if (!snapshotRecorded.current && !resolved && parseFloat(totalPool) > 0) {
-        snapshotRecorded.current = true
-        void recordOddsSnapshot({ market_id: marketId, yes_pool: yesPool, no_pool: noPool, total_pool: totalPool })
-      }
+    setHistory((prev) => {
+      const last = prev[prev.length - 1]
+      if (last && last.time === now && last.yes === yesPct) return prev
+      const updated = [...prev, pt].slice(-MAX_PTS)
+      saveLocal(marketId, updated)
+      return updated
+    })
 
-      const snaps = await getOddsHistory(marketId)
-      if (!cancelled) {
-        setHistory(snaps.map(toChartPoint))
-        setLoading(false)
-      }
+    if (!snapshotSent.current && !resolved) {
+      snapshotSent.current = true
+      void recordOddsSnapshot({ market_id: marketId, yes_pool: yesPool, no_pool: noPool, total_pool: totalPool })
     }
-
-    void init()
-    return () => { cancelled = true }
   }, [marketId, yesPool, noPool, totalPool, resolved])
 
-  // Also add a synthetic "now" point from live props so chart always shows current state
+  // Build chart data â€” always at least 2 points so chart renders
   const chartData = useMemo(() => {
     const total = parseFloat(totalPool)
-    const yes = parseFloat(yesPool)
-    const yesPct = total > 0 ? Math.round((yes / total) * 100) : 50
-    const now: ChartPoint = {
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      yes: yesPct,
-      no: 100 - yesPct,
+    const yesPct = total > 0 ? Math.round((parseFloat(yesPool) / total) * 100) : 50
+    const now = nowLabel()
+    const nowPt: ChartPoint = { time: now, yes: yesPct, no: 100 - yesPct }
+
+    if (history.length === 0) {
+      // No history yet â€” show opening 50/50 and current state
+      return [{ time: 'Open', yes: 50, no: 50 }, nowPt]
     }
 
-    // Deduplicate last point if same time as now
-    const base = history.filter((p) => p.time !== now.time)
-    return [...base, now]
+    const base = history.filter((p) => p.time !== now)
+    return [...base, nowPt]
   }, [history, yesPool, totalPool])
 
   return (
@@ -105,33 +134,28 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
         </div>
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>Loading chart...</div>
-      ) : chartData.length < 2 ? (
-        <div className={styles.empty}>Not enough data yet — chart fills as predictions are placed.</div>
-      ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="gradYes" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradNo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="time" tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ display: 'none' }} />
-            <Area type="monotone" dataKey="yes" stroke="#22c55e" strokeWidth={2} fill="url(#gradYes)" dot={false} activeDot={{ r: 4, fill: '#22c55e' }} />
-            <Area type="monotone" dataKey="no" stroke="#ef4444" strokeWidth={2} fill="url(#gradNo)" dot={false} activeDot={{ r: 4, fill: '#ef4444' }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
+      <ResponsiveContainer width="100%" height={220}>
+        <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="gradYes" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="gradNo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+          <XAxis dataKey="time" tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend wrapperStyle={{ display: 'none' }} />
+          <Area type="monotone" dataKey="yes" stroke="#22c55e" strokeWidth={2} fill="url(#gradYes)" dot={false} activeDot={{ r: 4, fill: '#22c55e' }} />
+          <Area type="monotone" dataKey="no" stroke="#ef4444" strokeWidth={2} fill="url(#gradNo)" dot={false} activeDot={{ r: 4, fill: '#ef4444' }} />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   )
 }
+

@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_PROJECT = 'nmaqfkqoeqkblcgqhffw'
-const S3_ENDPOINT = `https://${SUPABASE_PROJECT}.supabase.co/storage/v1/s3`
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+// Prefer service-role key for server-side uploads; fall back to anon key
+const SUPABASE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 const BUCKET = 'market-images'
 
-const s3 = new S3Client({
-  region: 'ap-southeast-1',
-  endpoint: S3_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID ?? '230d631a93fb5fe53bc9536d8d6dd808',
-    secretAccessKey: process.env.SUPABASE_S3_SECRET_KEY ?? 'dd8caea8ed1d35e6c5caa082cf438ecc37245a2e2777a7a442d09b5c57954e9b',
-  },
-  forcePathStyle: true,
-})
-
 export async function POST(req: NextRequest) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+  }
+
   try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+    const { error: bucketErr } = await supabase.storage.createBucket(BUCKET, { public: true })
+    if (bucketErr && !bucketErr.message.toLowerCase().includes('already exists')) {
+      console.warn('Bucket create attempt:', bucketErr.message)
+    }
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const marketId = formData.get('marketId') as string | null
@@ -25,20 +28,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing file or marketId' }, { status: 400 })
     }
 
-    const ext = file.name.split('.').pop() ?? 'jpg'
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
     const key = `market-${marketId}.${ext}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
-    await s3.send(new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type || 'image/jpeg',
-      ACL: 'public-read',
-    }))
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(key, buffer, {
+        contentType: file.type || 'image/jpeg',
+        upsert: true,
+      })
 
-    const publicUrl = `https://${SUPABASE_PROJECT}.supabase.co/storage/v1/object/public/${BUCKET}/${key}`
-    return NextResponse.json({ url: publicUrl })
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(key)
+    return NextResponse.json({ url: data.publicUrl })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })

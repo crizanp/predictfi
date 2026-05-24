@@ -151,7 +151,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 7px 14px;
+  padding: 7px 12px;
   background: rgba(139, 92, 246, 0.12);
   border: 1px solid rgba(139, 92, 246, 0.35);
   border-radius: 999px;
@@ -171,8 +171,14 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent-light);
-  box-shadow: 0 0 6px var(--accent);
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.accountChevron {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-left: 2px;
 }
 
 .disconnectBtn {

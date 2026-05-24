@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { ethers } from 'ethers'
 import { useWallet } from './WalletContext'
 import { toErrorMessage } from '../lib/utils'
@@ -25,6 +25,7 @@ export interface UserPrediction {
 export interface MarketsContextValue {
   markets: Market[]
   userPredictions: Record<number, UserPrediction>
+  totalInvested: string
   isLoadingMarkets: boolean
   loadMarkets: () => Promise<Market[]>
   loadUserPredictions: (account: string, mList: Market[]) => Promise<void>
@@ -52,6 +53,15 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   const [markets, setMarkets] = useState<Market[]>([])
   const [userPredictions, setUserPredictions] = useState<Record<number, UserPrediction>>({})
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
+
+  const totalInvested = useMemo(() =>
+    Object.values(userPredictions)
+      .reduce((sum, p) => sum + Number(p.amount), 0)
+      .toFixed(4)
+  , [userPredictions])
+
+  // Ref to always hold latest silent-refresh logic without recreating intervals
+  const silentRefreshRef = useRef<() => Promise<void>>(async () => {})
 
   const loadMarkets = useCallback(async (): Promise<Market[]> => {
     if (!isContractConfigured) {
@@ -308,6 +318,69 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     [account, getPreparedWriteContract, isContractConfigured, isOwner, isWrongNetwork, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
   )
 
+  // Keep silentRefreshRef pointing to the latest fetch logic
+  useEffect(() => {
+    silentRefreshRef.current = async () => {
+      if (!isContractConfigured) return
+      try {
+        const contract = getReadContract()
+        const count = Number(await contract.marketCount())
+        const list: Market[] = []
+        for (let i = 1; i <= count; i++) {
+          const m = await contract.getMarket(i)
+          list.push({
+            id: Number(m.id),
+            question: m.question,
+            endTime: Number(m.endTime),
+            resolved: m.resolved,
+            result: Number(m.result),
+            yesPool: ethers.formatEther(m.yesPool),
+            noPool: ethers.formatEther(m.noPool),
+            totalPool: ethers.formatEther(m.totalPool),
+          })
+        }
+        const sorted = [...list].reverse()
+        setMarkets(sorted)
+        if (account) await loadUserPredictions(account, sorted)
+      } catch { /* silent — don't surface polling errors */ }
+    }
+  }, [isContractConfigured, getReadContract, account, loadUserPredictions])
+
+  // Polling: refresh every 20 s without a loading spinner
+  useEffect(() => {
+    if (!isContractConfigured) return
+    const id = setInterval(() => { void silentRefreshRef.current() }, 20_000)
+    return () => clearInterval(id)
+  }, [isContractConfigured])
+
+  // WebSocket: push updates on contract events
+  useEffect(() => {
+    if (!isContractConfigured) return
+    let destroyed = false
+    let wsProvider: ethers.WebSocketProvider | null = null
+
+    const setup = async () => {
+      try {
+        wsProvider = new ethers.WebSocketProvider('wss://bsc-testnet-rpc.publicnode.com')
+        const { CONTRACT_ABI: ABI, CONTRACT_ADDRESS: ADDR } = await import('../lib/contract')
+        const wsContract = new ethers.Contract(ADDR, ABI, wsProvider)
+        const refresh = () => { if (!destroyed) void silentRefreshRef.current() }
+        wsContract.on('PredictionPlaced', refresh)
+        wsContract.on('MarketResolved', refresh)
+        wsContract.on('WinningsClaimed', refresh)
+        wsContract.on('MarketCreated', refresh)
+      } catch {
+        // WSS endpoint unavailable — polling is the fallback
+      }
+    }
+
+    void setup()
+    return () => {
+      destroyed = true
+      wsProvider?.destroy().catch(() => {})
+    }
+  }, [isContractConfigured])
+
   // Load markets on mount and when contract becomes available
   useEffect(() => {
     void loadMarkets()
@@ -327,6 +400,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       value={{
         markets,
         userPredictions,
+        totalInvested,
         isLoadingMarkets,
         loadMarkets,
         loadUserPredictions,

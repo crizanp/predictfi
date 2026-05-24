@@ -14,10 +14,8 @@ export default function Navbar() {
     isWrongNetwork,
     isBusy,
     busyAction,
-    connectionType,
     setShowWalletModal,
     setShowAdminPortal,
-    disconnectWallet,
     switchActiveNetwork,
   } = useWallet()
 
@@ -26,7 +24,7 @@ export default function Navbar() {
       ? 'Unknown'
       : activeChainId === CHAIN_ID
         ? 'BSC Testnet'
-        : `Wrong Network`
+        : 'Wrong Network'
 
   return (
     <nav className={styles.navbar}>
@@ -45,7 +43,7 @@ export default function Navbar() {
               onClick={() => setShowAdminPortal(true)}
             >
               <span className={styles.adminIcon}>⚙</span>
-              Admin Portal
+              Admin
             </button>
           )}
 
@@ -65,7 +63,7 @@ export default function Navbar() {
                   onClick={() => { void switchActiveNetwork() }}
                   disabled={isBusy}
                 >
-                  {busyAction === 'switch-network' ? 'Switching...' : '⚠ Switch to BSC Testnet'}
+                  {busyAction === 'switch-network' ? 'Switching...' : '⚠ Wrong Network'}
                 </button>
               ) : (
                 <div className={styles.networkPill}>
@@ -76,18 +74,11 @@ export default function Navbar() {
               <button
                 className={styles.accountPill}
                 onClick={() => setShowWalletModal(true)}
-                title={`Connected via ${connectionType === 'walletconnect' ? 'WalletConnect' : 'Browser Wallet'}`}
+                title="Manage wallet"
               >
                 <span className={styles.accountDot} />
                 {shortenAddress(account)}
-              </button>
-              <button
-                className={styles.disconnectBtn}
-                onClick={() => { void disconnectWallet() }}
-                disabled={isBusy}
-                title="Disconnect wallet"
-              >
-                ✕
+                <span className={styles.accountChevron}>▾</span>
               </button>
             </div>
           )}

@@ -19,6 +19,7 @@ export default function WalletModal() {
     connectInjectedWallet,
     connectWalletConnect,
     disconnectWallet,
+    switchAccount,
     switchActiveNetwork,
     isWrongNetwork,
   } = useWallet()
@@ -32,6 +33,11 @@ export default function WalletModal() {
     setTimeout(() => setCopied(false), 2000)
   }, [account])
 
+  const handleDisconnect = useCallback(async () => {
+    await disconnectWallet()
+    setShowWalletModal(false)
+  }, [disconnectWallet, setShowWalletModal])
+
   if (!showWalletModal) return null
 
   const isConnected = Boolean(account)
@@ -42,68 +48,94 @@ export default function WalletModal() {
         ? `Chain ${activeChainId}`
         : 'Unknown'
 
+  const initials = account ? account.slice(2, 4).toUpperCase() : '??'
+  const canSwitchAccount = connectionType === 'injected'
+
   return (
     <div className={styles.backdrop} onClick={() => setShowWalletModal(false)}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className={styles.header}>
-          <h2 className={styles.title}>{isConnected ? 'Wallet' : 'Connect Wallet'}</h2>
-          <button className={styles.closeBtn} onClick={() => setShowWalletModal(false)}>✕</button>
+          <h2 className={styles.title}>{isConnected ? 'My Wallet' : 'Connect Wallet'}</h2>
+          <button className={styles.closeBtn} onClick={() => setShowWalletModal(false)} aria-label="Close">✕</button>
         </div>
 
         {isConnected ? (
           <div className={styles.connectedView}>
+            {/* Avatar */}
             <div className={styles.avatarWrap}>
-              <div className={styles.avatar}>
-                {account.slice(2, 4).toUpperCase()}
+              <div className={styles.avatar}>{initials}</div>
+              <div className={styles.avatarBadge}>
+                <span className={styles.avatarBadgeDot} />
               </div>
             </div>
 
-            <div className={styles.addressRow}>
+            {/* Address */}
+            <div className={styles.addressBlock}>
               <span className={styles.address}>{shortenAddress(account)}</span>
-              <button className={styles.copyBtn} onClick={() => { void handleCopy() }}>
-                {copied ? '✓' : '⧉'}
+              <button
+                className={`${styles.copyBtn} ${copied ? styles.copyBtnSuccess : ''}`}
+                onClick={() => { void handleCopy() }}
+                title="Copy full address"
+              >
+                {copied ? '✓ Copied' : '⧉ Copy'}
               </button>
             </div>
+            <span className={styles.fullAddress}>{account}</span>
 
+            {/* Info grid */}
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>Network</span>
                 <span className={isWrongNetwork ? styles.infoValueWarn : styles.infoValue}>
-                  {isWrongNetwork ? '⚠ ' : ''}{networkName}
+                  {isWrongNetwork ? '⚠ Wrong' : `● ${networkName}`}
                 </span>
               </div>
               <div className={styles.infoItem}>
-                <span className={styles.infoLabel}>Connection</span>
+                <span className={styles.infoLabel}>Via</span>
                 <span className={styles.infoValue}>
-                  {connectionType === 'walletconnect' ? 'WalletConnect' : 'Browser Wallet'}
+                  {connectionType === 'walletconnect' ? '🔗 WalletConnect' : '🦊 Browser'}
                 </span>
               </div>
             </div>
 
-            {isWrongNetwork && (
+            {/* Action buttons */}
+            <div className={styles.actions}>
+              {isWrongNetwork && (
+                <button
+                  className={styles.switchNetBtn}
+                  onClick={() => { void switchActiveNetwork() }}
+                  disabled={isBusy}
+                >
+                  {busyAction === 'switch-network' ? 'Switching...' : '⚡ Switch to BSC Testnet'}
+                </button>
+              )}
+
+              {canSwitchAccount && (
+                <button
+                  className={styles.switchAccBtn}
+                  onClick={() => { void switchAccount() }}
+                  disabled={isBusy}
+                  title="Open wallet account picker"
+                >
+                  {busyAction === 'switch-account' ? 'Opening picker...' : '⇄ Switch Address'}
+                </button>
+              )}
+
               <button
-                className={styles.switchBtn}
-                onClick={() => { void switchActiveNetwork() }}
+                className={styles.disconnectBtn}
+                onClick={() => { void handleDisconnect() }}
                 disabled={isBusy}
               >
-                {busyAction === 'switch-network' ? 'Switching...' : 'Switch to BSC Testnet'}
+                ⏏ Disconnect &amp; Log Out
               </button>
-            )}
-
-            <button
-              className={styles.disconnectBtn}
-              onClick={() => {
-                void disconnectWallet()
-                setShowWalletModal(false)
-              }}
-              disabled={isBusy}
-            >
-              Disconnect
-            </button>
+            </div>
           </div>
         ) : (
           <div className={styles.connectView}>
-            <p className={styles.subtitle}>Choose how to connect your wallet</p>
+            <p className={styles.subtitle}>
+              Connect your wallet to trade on prediction markets
+            </p>
 
             <div className={styles.options}>
               <button
@@ -117,9 +149,11 @@ export default function WalletModal() {
                 <div className={styles.optionIcon}>🦊</div>
                 <div className={styles.optionInfo}>
                   <strong>Browser Wallet</strong>
-                  <span>MetaMask, Rabby &amp; injected wallets</span>
+                  <span>MetaMask, Rabby &amp; other injected wallets</span>
                 </div>
-                {!injectedAvailable && <span className={styles.optionBadge}>Not detected</span>}
+                {injectedAvailable
+                  ? <span className={styles.optionChevron}>›</span>
+                  : <span className={styles.optionBadge}>Not installed</span>}
               </button>
 
               <button
@@ -128,18 +162,19 @@ export default function WalletModal() {
                   setShowWalletModal(false)
                   void connectWalletConnect()
                 }}
-                disabled={isBusy || !process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID}
+                disabled={isBusy}
               >
                 <div className={styles.optionIcon}>🔗</div>
                 <div className={styles.optionInfo}>
                   <strong>WalletConnect</strong>
-                  <span>Connect via QR code with 600+ wallets</span>
+                  <span>Scan QR with any mobile wallet</span>
                 </div>
+                <span className={styles.optionChevron}>›</span>
               </button>
             </div>
 
             <p className={styles.footer}>
-              By connecting you agree to our Terms &amp; Privacy Policy
+              By connecting you agree to our Terms of Service
             </p>
           </div>
         )}

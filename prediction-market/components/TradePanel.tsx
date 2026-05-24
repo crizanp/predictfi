@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo, useCallback } from 'react'
 import { useWallet } from '../context/WalletContext'
@@ -14,26 +14,40 @@ interface Props {
 
 export default function TradePanel({ market, nowInSeconds }: Props) {
   const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured } = useWallet()
-  const { userPredictions, placePrediction, resolveMarket, claimWinnings } = useMarkets()
-
-  const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
-  const [amount, setAmount] = useState('0.01')
+  const { userPredictions, totalInvested, placePrediction, resolveMarket, claimWinnings } = useMarkets()
 
   const userPrediction: UserPrediction | undefined = account ? userPredictions[market.id] : undefined
+
+  // If user already has a position, lock the selector to their choice
+  const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
+  const lockedOutcome = userPrediction ? (userPrediction.choice as 1 | 2) : null
+  const activeOutcome = lockedOutcome ?? selectedOutcome
+
+  const [amount, setAmount] = useState('0.01')
+
   const metrics = useMemo(() => computePoolMetrics(market.yesPool, market.noPool, market.totalPool), [market])
   const isEnded = nowInSeconds > 0 && market.endTime <= nowInSeconds
   const isMarketClosed = market.resolved || isEnded
-  const isBuyingThis = busyAction === `predict-${market.id}-${selectedOutcome}`
+  const isBuyingThis = busyAction === `predict-${market.id}-${activeOutcome}`
   const isResolving = busyAction?.startsWith(`resolve-${market.id}`)
   const isClaiming = busyAction === `claim-${market.id}`
+
+  // Adding to an existing position is allowed (contract will validate same choice)
+  const canBuy =
+    isContractConfigured &&
+    account &&
+    !isMarketClosed &&
+    !isBusy
+
+  const isAdding = Boolean(userPrediction) && canBuy
 
   const estimatedReturn = useMemo(() => {
     const amt = Number.parseFloat(amount || '0')
     if (!Number.isFinite(amt) || amt <= 0) return 0
-    const sharePrice = selectedOutcome === 1 ? metrics.yesPrice / 100 : metrics.noPrice / 100
+    const sharePrice = activeOutcome === 1 ? metrics.yesPrice / 100 : metrics.noPrice / 100
     if (sharePrice <= 0) return 0
     return amt / sharePrice
-  }, [amount, metrics.noPrice, metrics.yesPrice, selectedOutcome])
+  }, [amount, metrics.noPrice, metrics.yesPrice, activeOutcome])
 
   const potentialReward = useMemo(() => {
     if (!userPrediction) return 0
@@ -51,23 +65,16 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
       setShowWalletModal(true)
       return
     }
-    await placePrediction(market.id, selectedOutcome, amount)
-  }, [account, amount, market.id, placePrediction, selectedOutcome, setShowWalletModal])
-
-  const canBuy =
-    isContractConfigured &&
-    account &&
-    !isMarketClosed &&
-    !userPrediction &&
-    !isBusy
+    await placePrediction(market.id, activeOutcome, amount)
+  }, [account, amount, market.id, placePrediction, activeOutcome, setShowWalletModal])
 
   const tradeButtonLabel = () => {
     if (!account) return 'Connect Wallet to Trade'
     if (!isContractConfigured) return 'Contract Not Configured'
     if (isBuyingThis) return 'Placing...'
     if (isMarketClosed) return market.resolved ? 'Market Resolved' : 'Market Ended'
-    if (userPrediction) return 'Position Already Placed'
-    return selectedOutcome === 1 ? 'Buy YES' : 'Buy NO'
+    if (isAdding) return activeOutcome === 1 ? '+ Add to YES' : '+ Add to NO'
+    return activeOutcome === 1 ? 'Buy YES' : 'Buy NO'
   }
 
   const canClaimWinnings =
@@ -104,6 +111,14 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
         Total Pool: <strong>{formatToken(market.totalPool)} tBNB</strong>
       </div>
 
+      {/* Your Overall Investment (across all markets) */}
+      {account && Number(totalInvested) > 0 && (
+        <div className={styles.portfolioRow}>
+          <span className={styles.portfolioLabel}>Your total invested</span>
+          <span className={styles.portfolioValue}>{totalInvested} tBNB</span>
+        </div>
+      )}
+
       {/* Resolved Result */}
       {market.resolved && (
         <div className={`${styles.resolvedBanner} ${market.result === 1 ? styles.resolvedYes : styles.resolvedNo}`}>
@@ -111,7 +126,7 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
         </div>
       )}
 
-      {/* Your Position (if exists) */}
+      {/* Your Position */}
       {userPrediction && (
         <div className={`${styles.positionCard} ${userPrediction.choice === 1 ? styles.positionYes : styles.positionNo}`}>
           <div className={styles.positionRow}>
@@ -122,12 +137,12 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
           </div>
           <div className={styles.positionRow}>
             <span className={styles.positionLabel}>Staked</span>
-            <span>{formatToken(userPrediction.amount)} tBNB</span>
+            <span className={styles.positionAmount}>{formatToken(userPrediction.amount)} tBNB</span>
           </div>
           {market.resolved && (
             <div className={styles.positionRow}>
               <span className={styles.positionLabel}>
-                {userPrediction.choice === market.result ? 'Reward Est.' : 'Result'}
+                {userPrediction.choice === market.result ? 'Estimated Reward' : 'Result'}
               </span>
               <span className={userPrediction.choice === market.result ? styles.win : styles.lose}>
                 {userPrediction.choice === market.result
@@ -137,28 +152,38 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
             </div>
           )}
           {userPrediction.claimed && (
-            <div className={styles.claimedBadge}>Winnings Claimed ✓</div>
+            <div className={styles.claimedBadge}>Winnings Claimed âœ“</div>
           )}
         </div>
       )}
 
-      {/* Trade Form */}
-      {!isMarketClosed && !userPrediction && (
+      {/* Trade Form â€” shown when market is open (including when user already has a position) */}
+      {!isMarketClosed && (
         <>
           <div className={styles.outcomeSelect}>
             <button
-              className={selectedOutcome === 1 ? styles.outcomeYesActive : styles.outcomeBtn}
-              onClick={() => setSelectedOutcome(1)}
+              className={activeOutcome === 1 ? styles.outcomeYesActive : styles.outcomeBtn}
+              onClick={() => { if (!lockedOutcome) setSelectedOutcome(1) }}
+              disabled={Boolean(lockedOutcome && lockedOutcome !== 1)}
+              title={lockedOutcome === 2 ? 'You bet NO â€” cannot change direction' : undefined}
             >
-              YES {metrics.yesPrice}¢
+              YES {metrics.yesPrice}Â¢
             </button>
             <button
-              className={selectedOutcome === 2 ? styles.outcomeNoActive : styles.outcomeBtn}
-              onClick={() => setSelectedOutcome(2)}
+              className={activeOutcome === 2 ? styles.outcomeNoActive : styles.outcomeBtn}
+              onClick={() => { if (!lockedOutcome) setSelectedOutcome(2) }}
+              disabled={Boolean(lockedOutcome && lockedOutcome !== 2)}
+              title={lockedOutcome === 1 ? 'You bet YES â€” cannot change direction' : undefined}
             >
-              NO {metrics.noPrice}¢
+              NO {metrics.noPrice}Â¢
             </button>
           </div>
+
+          {lockedOutcome && (
+            <p className={styles.addNote}>
+              Adding to your existing <strong>{lockedOutcome === 1 ? 'YES' : 'NO'}</strong> position
+            </p>
+          )}
 
           <div className={styles.amountSection}>
             <label className={styles.amountLabel} htmlFor="trade-amount">
@@ -190,8 +215,8 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
             </div>
             <div className={styles.summaryRow}>
               <span>Outcome</span>
-              <strong className={selectedOutcome === 1 ? styles.textYes : styles.textNo}>
-                {selectedOutcome === 1 ? 'YES' : 'NO'}
+              <strong className={activeOutcome === 1 ? styles.textYes : styles.textNo}>
+                {activeOutcome === 1 ? 'YES' : 'NO'}
               </strong>
             </div>
           </div>
@@ -199,9 +224,9 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
       )}
 
       {/* Primary Action */}
-      {!isMarketClosed || !market.resolved ? (
+      {(!isMarketClosed || !market.resolved) ? (
         <button
-          className={`${styles.tradeBtn} ${selectedOutcome === 1 ? styles.tradeBtnYes : styles.tradeBtnNo} ${!canBuy ? styles.tradeBtnDisabled : ''}`}
+          className={`${styles.tradeBtn} ${activeOutcome === 1 ? styles.tradeBtnYes : styles.tradeBtnNo} ${!canBuy ? styles.tradeBtnDisabled : ''}`}
           onClick={() => { void handleBuy() }}
           disabled={!canBuy || isBuyingThis}
         >
@@ -245,3 +270,10 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
     </div>
   )
 }
+
+
+interface Props {
+  market: Market
+  nowInSeconds: number
+}
+
