@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import {
@@ -11,6 +11,7 @@ import {
   getStoredCategories,
   setStoredCategory,
 } from '../lib/utils'
+import { getMarketMeta, upsertMarketMeta, type MarketMeta } from '../lib/supabase'
 import styles from './AdminPortal.module.css'
 
 export default function AdminPortal() {
@@ -22,6 +23,12 @@ export default function AdminPortal() {
   const [duration, setDuration] = useState('')
   const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'markets'>('overview')
   const [storedCategories, setStoredCategoriesState] = useState<Record<string, string>>({})
+
+  // Per-market metadata editing state
+  const [metaEditing, setMetaEditing] = useState<Record<number, Partial<MarketMeta>>>({})
+  const [metaLoading, setMetaLoading] = useState<Record<number, boolean>>({})
+  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>({})
+  const fileInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   useEffect(() => {
     const interval = setInterval(() => setNowInSeconds(Math.floor(Date.now() / 1000)), 1000)
@@ -45,6 +52,43 @@ export default function AdminPortal() {
     setQuestion('')
     setDuration('')
   }, [createMarket, duration, question])
+
+  const loadMeta = useCallback(async (marketId: number) => {
+    setMetaLoading((prev) => ({ ...prev, [marketId]: true }))
+    const meta = await getMarketMeta(marketId)
+    setMetaEditing((prev) => ({
+      ...prev,
+      [marketId]: {
+        image_url: meta?.image_url ?? '',
+        description: meta?.description ?? '',
+        rules: meta?.rules ?? '',
+      },
+    }))
+    setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
+  }, [])
+
+  const saveMeta = useCallback(async (marketId: number) => {
+    const current = metaEditing[marketId] ?? {}
+    setMetaLoading((prev) => ({ ...prev, [marketId]: true }))
+    await upsertMarketMeta({ market_id: marketId, image_url: current.image_url ?? null, description: current.description ?? null, rules: current.rules ?? null })
+    setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
+  }, [metaEditing])
+
+  const handleImageUpload = useCallback(async (marketId: number, file: File) => {
+    setUploadingImage((prev) => ({ ...prev, [marketId]: true }))
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('marketId', String(marketId))
+      const res = await fetch('/api/upload-market-image', { method: 'POST', body: form })
+      const data = await res.json() as { url?: string; error?: string }
+      if (data.url) {
+        setMetaEditing((prev) => ({ ...prev, [marketId]: { ...prev[marketId], image_url: data.url } }))
+      }
+    } finally {
+      setUploadingImage((prev) => ({ ...prev, [marketId]: false }))
+    }
+  }, [])
 
   const stats = useMemo(() => {
     const total = markets.length
@@ -191,6 +235,10 @@ export default function AdminPortal() {
                     const canResolve = !market.resolved && isEnded
                     const currentCat = storedCategories[String(market.id)] || getMarketCategory(market.id, market.question)
 
+                    const editing = metaEditing[market.id]
+                    const isMetaLoading = metaLoading[market.id]
+                    const isUploading = uploadingImage[market.id]
+
                     return (
                       <div key={market.id} className={styles.marketRow}>
                         <div className={styles.marketRowHeader}>
@@ -242,6 +290,86 @@ export default function AdminPortal() {
                             </div>
                           )}
                         </div>
+
+                        {/* Metadata panel */}
+                        {!editing ? (
+                          <button className={styles.metaToggle} onClick={() => { void loadMeta(market.id) }}>
+                            {isMetaLoading ? 'Loading...' : '✏ Edit Details (image / description / rules)'}
+                          </button>
+                        ) : (
+                          <div className={styles.metaPanel}>
+                            <div className={styles.metaImageRow}>
+                              {editing.image_url && (
+                                <img src={editing.image_url} alt="market" className={styles.metaPreview} />
+                              )}
+                              <div className={styles.metaImageBtns}>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  style={{ display: 'none' }}
+                                  ref={(el) => { fileInputRefs.current[market.id] = el }}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) void handleImageUpload(market.id, file)
+                                  }}
+                                />
+                                <button
+                                  className={styles.uploadBtn}
+                                  onClick={() => fileInputRefs.current[market.id]?.click()}
+                                  disabled={isUploading}
+                                >
+                                  {isUploading ? 'Uploading...' : '📷 Upload Image'}
+                                </button>
+                                {editing.image_url && (
+                                  <button
+                                    className={styles.clearBtn}
+                                    onClick={() => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], image_url: '' } }))}
+                                  >
+                                    ✕ Clear
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>Description</label>
+                              <textarea
+                                className={styles.metaTextarea}
+                                rows={3}
+                                value={editing.description ?? ''}
+                                onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], description: e.target.value } }))}
+                                placeholder="Describe what this market is about..."
+                              />
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>Rules</label>
+                              <textarea
+                                className={styles.metaTextarea}
+                                rows={3}
+                                value={editing.rules ?? ''}
+                                onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], rules: e.target.value } }))}
+                                placeholder="How will this market be resolved? Source of truth?"
+                              />
+                            </div>
+
+                            <div className={styles.metaSaveBtns}>
+                              <button
+                                className={styles.saveBtn}
+                                onClick={() => { void saveMeta(market.id) }}
+                                disabled={isMetaLoading}
+                              >
+                                {isMetaLoading ? 'Saving...' : '✓ Save Details'}
+                              </button>
+                              <button
+                                className={styles.cancelBtn}
+                                onClick={() => setMetaEditing((prev) => { const n = { ...prev }; delete n[market.id]; return n })}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

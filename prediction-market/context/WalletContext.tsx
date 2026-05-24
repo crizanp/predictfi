@@ -1,7 +1,6 @@
 'use client'
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import WalletConnectEthereumProvider from '@walletconnect/ethereum-provider'
 import { ethers } from 'ethers'
 import { CONTRACT_ABI, CONTRACT_ADDRESS, CONTRACT_OWNER, CHAIN_ID } from '../lib/contract'
 import { toErrorMessage } from '../lib/utils'
@@ -24,14 +23,10 @@ export interface Eip1193Provider {
   removeListener?: (event: ProviderEvent, handler: (...args: unknown[]) => void) => void
 }
 
-interface WalletConnectRuntimeProvider extends Eip1193Provider {
-  enable?: () => Promise<unknown>
-  disconnect?: () => Promise<void>
-}
-
 declare global {
   interface Window {
-    ethereum?: Eip1193Provider
+    // Reown/appkit also declares ethereum as Record<string, unknown>; match it here
+    ethereum?: Record<string, unknown>
   }
 }
 
@@ -68,7 +63,8 @@ export interface WalletContextValue {
   setStatusMessage: (tone: StatusTone, text: string) => void
   setBusyAction: (action: string | null) => void
   connectInjectedWallet: () => Promise<void>
-  connectWalletConnect: () => Promise<void>
+  connectWalletConnect: () => void
+  setExternalProvider: (provider: Eip1193Provider | null, type: ConnectionType) => Promise<void>
   disconnectWallet: () => Promise<void>
   switchActiveNetwork: () => Promise<void>
   refreshWalletState: (options?: {
@@ -125,7 +121,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     (providerOverride?: Eip1193Provider | null): Eip1193Provider | null => {
       if (providerOverride !== undefined) return providerOverride
       if (walletProvider) return walletProvider
-      if (typeof window !== 'undefined' && window.ethereum) return window.ethereum
+      if (typeof window !== 'undefined' && window.ethereum) return window.ethereum as unknown as Eip1193Provider
       return null
     },
     [walletProvider]
@@ -252,7 +248,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const connectInjectedWallet = useCallback(async () => {
     setBusyAction('connect-injected')
-    const injectedProvider = typeof window !== 'undefined' ? window.ethereum ?? null : null
+    const injectedProvider = typeof window !== 'undefined' ? window.ethereum as unknown as Eip1193Provider ?? null : null
 
     if (!injectedProvider) {
       setInjectedAvailable(false)
@@ -287,59 +283,33 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [clearWalletSession, refreshWalletState, setStatusMessage, switchToRequiredNetwork])
 
-  const connectWalletConnect = useCallback(async () => {
-    setBusyAction('connect-walletconnect')
+  const connectWalletConnect = useCallback(() => {
+    // Opens the Reown AppKit modal; actual connection is handled by ReownSync in Providers
+    import('../lib/appkit').then(({ appKit }) => appKit.open()).catch(() => {
+      setStatusMessage('error', 'Could not open wallet modal. Check your project ID in .env.local.')
+    })
+  }, [setStatusMessage])
 
-    if (!WALLETCONNECT_PROJECT_ID) {
-      setStatusMessage('error', 'WalletConnect not configured. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local.')
-      setBusyAction(null)
-      return
-    }
-
-    let createdProvider: WalletConnectRuntimeProvider | null = null
-
-    try {
-      createdProvider = (await WalletConnectEthereumProvider.init({
-        projectId: WALLETCONNECT_PROJECT_ID,
-        chains: [CHAIN_ID],
-        optionalChains: [CHAIN_ID],
-        rpcMap: { [CHAIN_ID]: READ_ONLY_RPC },
-        showQrModal: true,
-        metadata: {
-          name: 'PredictFi',
-          description: 'Decentralized prediction market on BSC',
-          url: 'https://predictfi.app',
-          icons: ['https://walletconnect.com/walletconnect-logo.png'],
-        },
-      })) as unknown as WalletConnectRuntimeProvider
-
-      if (createdProvider.enable) await createdProvider.enable()
-
-      setWalletProvider(createdProvider)
-      setConnectionType('walletconnect')
-
-      const selectedAccount =
-        (await refreshWalletState({ providerOverride: createdProvider, silent: true })) ||
-        (await refreshWalletState({ providerOverride: createdProvider, requestAccounts: true }))
-
-      if (!selectedAccount) throw new Error('WalletConnect did not provide an account.')
-
-      await switchToRequiredNetwork(createdProvider)
-      setStatusMessage('success', 'WalletConnect session connected.')
-    } catch (error) {
-      if (createdProvider?.disconnect) {
-        try { await createdProvider.disconnect() } catch { /* ignore */ }
+  const setExternalProvider = useCallback(
+    async (provider: Eip1193Provider | null, type: ConnectionType) => {
+      if (!provider || !type) {
+        clearWalletSession()
+        return
       }
-      clearWalletSession()
-      setStatusMessage('error', `WalletConnect failed. ${toErrorMessage(error)}`)
-    } finally {
-      setBusyAction(null)
-    }
-  }, [clearWalletSession, refreshWalletState, setStatusMessage, switchToRequiredNetwork])
+      setWalletProvider(provider)
+      setConnectionType(type)
+      try {
+        await refreshWalletState({ providerOverride: provider, silent: true })
+      } catch {
+        // silent
+      }
+    },
+    [clearWalletSession, refreshWalletState]
+  )
 
   const disconnectWallet = useCallback(async () => {
     if (connectionType === 'walletconnect' && walletProvider) {
-      const runtimeProvider = walletProvider as WalletConnectRuntimeProvider
+      const runtimeProvider = walletProvider as { disconnect?: () => Promise<void> }
       if (runtimeProvider.disconnect) {
         try { await runtimeProvider.disconnect() } catch { /* ignore */ }
       }
@@ -373,7 +343,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   // Auto-connect on mount
   useEffect(() => {
     void (async () => {
-      const injectedProvider = typeof window !== 'undefined' ? window.ethereum ?? null : null
+      const injectedProvider = typeof window !== 'undefined' ? window.ethereum as unknown as Eip1193Provider ?? null : null
       if (!injectedProvider) return
       const selectedAccount = await refreshWalletState({
         providerOverride: injectedProvider,
@@ -430,6 +400,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setBusyAction,
         connectInjectedWallet,
         connectWalletConnect,
+        setExternalProvider,
         disconnectWallet,
         switchActiveNetwork,
         refreshWalletState,

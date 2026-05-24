@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMarkets } from '../../../context/MarketsContext'
 import { getMarketCategory, formatTimeLeft, resultLabel } from '../../../lib/utils'
+import { getMarketMeta, type MarketMeta } from '../../../lib/supabase'
 import TradePanel from '../../../components/TradePanel'
+import OddsChart from '../../../components/OddsChart'
 import styles from './page.module.css'
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -28,6 +30,7 @@ export default function MarketDetailPage() {
   const [market, setMarket] = useState<Awaited<ReturnType<typeof fetchMarket>>>(null)
   const [loading, setLoading] = useState(true)
   const [nowInSeconds, setNowInSeconds] = useState(Math.floor(Date.now() / 1000))
+  const [meta, setMeta] = useState<MarketMeta | null>(null)
 
   const marketId = Number(params?.id)
 
@@ -41,6 +44,7 @@ export default function MarketDetailPage() {
       setMarket(m)
       setLoading(false)
     })
+    getMarketMeta(marketId).then(setMeta)
   }, [fetchMarket, marketId, router])
 
   useEffect(() => {
@@ -78,6 +82,13 @@ export default function MarketDetailPage() {
       <div className={styles.container}>
         <Link href="/" className={styles.back}>← All Markets</Link>
 
+        {/* Hero image */}
+        {meta?.image_url && (
+          <div className={styles.heroImage}>
+            <img src={meta.image_url} alt={market.question} />
+          </div>
+        )}
+
         <div className={styles.header}>
           <div className={styles.badges}>
             <span className={styles.catBadge} style={{ color: catColor, borderColor: `${catColor}44`, background: `${catColor}18` }}>
@@ -113,6 +124,30 @@ export default function MarketDetailPage() {
 
         <div className={styles.body}>
           <TradePanel market={market} nowInSeconds={nowInSeconds} />
+
+          <OddsChart
+            marketId={market.id}
+            yesPool={market.yesPool}
+            noPool={market.noPool}
+            totalPool={market.totalPool}
+            resolved={market.resolved}
+          />
+
+          {/* Description */}
+          {meta?.description && (
+            <div className={styles.infoSection}>
+              <h3 className={styles.infoTitle}>About this Market</h3>
+              <p className={styles.infoText}>{meta.description}</p>
+            </div>
+          )}
+
+          {/* Rules */}
+          {meta?.rules && (
+            <div className={styles.infoSection}>
+              <h3 className={styles.infoTitle}>Resolution Rules</h3>
+              <p className={styles.infoText}>{meta.rules}</p>
+            </div>
+          )}
         </div>
       </div>
     </main>
