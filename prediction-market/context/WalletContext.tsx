@@ -1,0 +1,452 @@
+'use client'
+
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import WalletConnectEthereumProvider from '@walletconnect/ethereum-provider'
+import { ethers } from 'ethers'
+import { CONTRACT_ABI, CONTRACT_ADDRESS, CONTRACT_OWNER, CHAIN_ID } from '../lib/contract'
+import { toErrorMessage } from '../lib/utils'
+
+export type ConnectionType = 'injected' | 'walletconnect' | null
+export type StatusTone = 'info' | 'success' | 'error'
+
+export interface StatusMessage {
+  tone: StatusTone
+  text: string
+}
+
+type ProviderRequestParams = unknown[] | Record<string, unknown>
+type ProviderEvent = 'accountsChanged' | 'chainChanged' | 'disconnect'
+
+export interface Eip1193Provider {
+  isMetaMask?: boolean
+  request: (args: { method: string; params?: ProviderRequestParams }) => Promise<unknown>
+  on?: (event: ProviderEvent, handler: (...args: unknown[]) => void) => void
+  removeListener?: (event: ProviderEvent, handler: (...args: unknown[]) => void) => void
+}
+
+interface WalletConnectRuntimeProvider extends Eip1193Provider {
+  enable?: () => Promise<unknown>
+  disconnect?: () => Promise<void>
+}
+
+declare global {
+  interface Window {
+    ethereum?: Eip1193Provider
+  }
+}
+
+const CHAIN_HEX = `0x${CHAIN_ID.toString(16)}`
+
+export const BSC_TESTNET_PARAMS = {
+  chainId: CHAIN_HEX,
+  chainName: 'BSC Testnet',
+  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+  nativeCurrency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
+  blockExplorerUrls: ['https://testnet.bscscan.com'],
+}
+
+export const READ_ONLY_RPC = BSC_TESTNET_PARAMS.rpcUrls[0]
+const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
+
+export interface WalletContextValue {
+  account: string
+  isOwner: boolean
+  activeChainId: number | null
+  connectionType: ConnectionType
+  walletProvider: Eip1193Provider | null
+  injectedAvailable: boolean
+  isBusy: boolean
+  busyAction: string | null
+  isWrongNetwork: boolean
+  isContractConfigured: boolean
+  status: StatusMessage | null
+  showWalletModal: boolean
+  showAdminPortal: boolean
+  setShowWalletModal: (show: boolean) => void
+  setShowAdminPortal: (show: boolean) => void
+  setStatus: (status: StatusMessage | null) => void
+  setStatusMessage: (tone: StatusTone, text: string) => void
+  setBusyAction: (action: string | null) => void
+  connectInjectedWallet: () => Promise<void>
+  connectWalletConnect: () => Promise<void>
+  disconnectWallet: () => Promise<void>
+  switchActiveNetwork: () => Promise<void>
+  refreshWalletState: (options?: {
+    requestAccounts?: boolean
+    silent?: boolean
+    providerOverride?: Eip1193Provider | null
+  }) => Promise<string>
+  getEffectiveProvider: (providerOverride?: Eip1193Provider | null) => Eip1193Provider | null
+  requireProvider: (providerOverride?: Eip1193Provider | null) => Eip1193Provider
+  getReadContract: () => ethers.Contract
+  getWriteContract: (providerOverride?: Eip1193Provider | null) => Promise<ethers.Contract>
+  getPreparedWriteContract: () => Promise<ethers.Contract>
+}
+
+const WalletContext = createContext<WalletContextValue | null>(null)
+
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+  const isContractConfigured = ethers.isAddress(CONTRACT_ADDRESS)
+
+  const [account, setAccount] = useState('')
+  const [isOwner, setIsOwner] = useState(false)
+  const [walletProvider, setWalletProvider] = useState<Eip1193Provider | null>(null)
+  const [connectionType, setConnectionType] = useState<ConnectionType>(null)
+  const [injectedAvailable, setInjectedAvailable] = useState(false)
+  const [activeChainId, setActiveChainId] = useState<number | null>(null)
+  const [busyAction, setBusyAction] = useState<string | null>(null)
+  const [status, setStatus] = useState<StatusMessage | null>(
+    isContractConfigured
+      ? null
+      : {
+          tone: 'error',
+          text: 'Contract address is missing. Add NEXT_PUBLIC_CONTRACT_ADDRESS to .env.local, then restart.',
+        }
+  )
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const [showAdminPortal, setShowAdminPortal] = useState(false)
+
+  const isBusy = busyAction !== null
+  const isWrongNetwork = account !== '' && activeChainId !== null && activeChainId !== CHAIN_ID
+
+  const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
+    setStatus({ tone, text })
+  }, [])
+
+  const clearWalletSession = useCallback(() => {
+    setAccount('')
+    setIsOwner(false)
+    setActiveChainId(null)
+    setWalletProvider(null)
+    setConnectionType(null)
+  }, [])
+
+  const getEffectiveProvider = useCallback(
+    (providerOverride?: Eip1193Provider | null): Eip1193Provider | null => {
+      if (providerOverride !== undefined) return providerOverride
+      if (walletProvider) return walletProvider
+      if (typeof window !== 'undefined' && window.ethereum) return window.ethereum
+      return null
+    },
+    [walletProvider]
+  )
+
+  const requireProvider = useCallback(
+    (providerOverride?: Eip1193Provider | null): Eip1193Provider => {
+      const provider = getEffectiveProvider(providerOverride)
+      if (!provider) throw new Error('No wallet provider available. Connect wallet first.')
+      return provider
+    },
+    [getEffectiveProvider]
+  )
+
+  const getReadContract = useCallback((): ethers.Contract => {
+    if (!isContractConfigured) throw new Error('Contract address not configured.')
+    const providerSource = getEffectiveProvider()
+    const provider = providerSource
+      ? new ethers.BrowserProvider(providerSource)
+      : new ethers.JsonRpcProvider(READ_ONLY_RPC)
+    return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
+  }, [getEffectiveProvider, isContractConfigured])
+
+  const getWriteContract = useCallback(
+    async (providerOverride?: Eip1193Provider | null): Promise<ethers.Contract> => {
+      if (!isContractConfigured) throw new Error('Contract address not configured.')
+      const providerSource = requireProvider(providerOverride)
+      const provider = new ethers.BrowserProvider(providerSource)
+      const signer = await provider.getSigner()
+      return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer)
+    },
+    [isContractConfigured, requireProvider]
+  )
+
+  const checkOwner = useCallback(
+    async (userAccount: string) => {
+      const normalizedUser = userAccount.toLowerCase()
+      let resolvedOwner = CONTRACT_OWNER
+
+      if (isContractConfigured) {
+        try {
+          const contract = getReadContract()
+          const ownerAddress = await contract.owner()
+          if (typeof ownerAddress === 'string' && ethers.isAddress(ownerAddress)) {
+            resolvedOwner = ownerAddress.toLowerCase()
+          }
+        } catch {
+          // Keep fallback owner when on-chain lookup fails.
+        }
+      }
+
+      setIsOwner(resolvedOwner === normalizedUser)
+    },
+    [getReadContract, isContractConfigured]
+  )
+
+  const switchToRequiredNetwork = useCallback(
+    async (providerOverride?: Eip1193Provider | null) => {
+      const provider = requireProvider(providerOverride)
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: CHAIN_HEX }],
+        })
+      } catch (error) {
+        const code = (error as { code?: number })?.code
+        if (code === 4902) {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [BSC_TESTNET_PARAMS],
+          })
+          return
+        }
+        throw error
+      }
+    },
+    [requireProvider]
+  )
+
+  const refreshWalletState = useCallback(
+    async (options?: {
+      requestAccounts?: boolean
+      silent?: boolean
+      providerOverride?: Eip1193Provider | null
+    }): Promise<string> => {
+      const requestAccounts = options?.requestAccounts ?? false
+      const silent = options?.silent ?? false
+      const providerSource = getEffectiveProvider(options?.providerOverride)
+
+      setInjectedAvailable(typeof window !== 'undefined' && Boolean(window.ethereum))
+
+      if (!providerSource) {
+        clearWalletSession()
+        return ''
+      }
+
+      try {
+        const provider = new ethers.BrowserProvider(providerSource)
+        const network = await provider.getNetwork()
+        setActiveChainId(Number(network.chainId))
+
+        const method = requestAccounts ? 'eth_requestAccounts' : 'eth_accounts'
+        const accounts = (await providerSource.request({ method })) as string[]
+        const selectedAccount = accounts[0] ?? ''
+
+        if (!selectedAccount) {
+          setAccount('')
+          setIsOwner(false)
+          return ''
+        }
+
+        setAccount(selectedAccount)
+        await checkOwner(selectedAccount)
+        return selectedAccount
+      } catch (error) {
+        if (!silent) {
+          setStatusMessage('error', `Wallet sync failed. ${toErrorMessage(error)}`)
+        }
+        return ''
+      }
+    },
+    [checkOwner, clearWalletSession, getEffectiveProvider, setStatusMessage]
+  )
+
+  const connectInjectedWallet = useCallback(async () => {
+    setBusyAction('connect-injected')
+    const injectedProvider = typeof window !== 'undefined' ? window.ethereum ?? null : null
+
+    if (!injectedProvider) {
+      setInjectedAvailable(false)
+      setStatusMessage('error', 'No browser wallet detected. Install MetaMask or use WalletConnect.')
+      setBusyAction(null)
+      return
+    }
+
+    setInjectedAvailable(true)
+
+    try {
+      setWalletProvider(injectedProvider)
+      setConnectionType('injected')
+
+      await switchToRequiredNetwork(injectedProvider)
+      const selectedAccount = await refreshWalletState({
+        requestAccounts: true,
+        providerOverride: injectedProvider,
+      })
+
+      if (!selectedAccount) {
+        setStatusMessage('info', 'Connection cancelled.')
+        return
+      }
+
+      setStatusMessage('success', 'Wallet connected successfully.')
+    } catch (error) {
+      clearWalletSession()
+      setStatusMessage('error', `Could not connect browser wallet. ${toErrorMessage(error)}`)
+    } finally {
+      setBusyAction(null)
+    }
+  }, [clearWalletSession, refreshWalletState, setStatusMessage, switchToRequiredNetwork])
+
+  const connectWalletConnect = useCallback(async () => {
+    setBusyAction('connect-walletconnect')
+
+    if (!WALLETCONNECT_PROJECT_ID) {
+      setStatusMessage('error', 'WalletConnect not configured. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local.')
+      setBusyAction(null)
+      return
+    }
+
+    let createdProvider: WalletConnectRuntimeProvider | null = null
+
+    try {
+      createdProvider = (await WalletConnectEthereumProvider.init({
+        projectId: WALLETCONNECT_PROJECT_ID,
+        chains: [CHAIN_ID],
+        optionalChains: [CHAIN_ID],
+        rpcMap: { [CHAIN_ID]: READ_ONLY_RPC },
+        showQrModal: true,
+        metadata: {
+          name: 'PredictFi',
+          description: 'Decentralized prediction market on BSC',
+          url: 'https://predictfi.app',
+          icons: ['https://walletconnect.com/walletconnect-logo.png'],
+        },
+      })) as unknown as WalletConnectRuntimeProvider
+
+      if (createdProvider.enable) await createdProvider.enable()
+
+      setWalletProvider(createdProvider)
+      setConnectionType('walletconnect')
+
+      const selectedAccount =
+        (await refreshWalletState({ providerOverride: createdProvider, silent: true })) ||
+        (await refreshWalletState({ providerOverride: createdProvider, requestAccounts: true }))
+
+      if (!selectedAccount) throw new Error('WalletConnect did not provide an account.')
+
+      await switchToRequiredNetwork(createdProvider)
+      setStatusMessage('success', 'WalletConnect session connected.')
+    } catch (error) {
+      if (createdProvider?.disconnect) {
+        try { await createdProvider.disconnect() } catch { /* ignore */ }
+      }
+      clearWalletSession()
+      setStatusMessage('error', `WalletConnect failed. ${toErrorMessage(error)}`)
+    } finally {
+      setBusyAction(null)
+    }
+  }, [clearWalletSession, refreshWalletState, setStatusMessage, switchToRequiredNetwork])
+
+  const disconnectWallet = useCallback(async () => {
+    if (connectionType === 'walletconnect' && walletProvider) {
+      const runtimeProvider = walletProvider as WalletConnectRuntimeProvider
+      if (runtimeProvider.disconnect) {
+        try { await runtimeProvider.disconnect() } catch { /* ignore */ }
+      }
+    }
+    clearWalletSession()
+    setStatusMessage('info', 'Wallet disconnected.')
+  }, [clearWalletSession, connectionType, setStatusMessage, walletProvider])
+
+  const switchActiveNetwork = useCallback(async () => {
+    setBusyAction('switch-network')
+    try {
+      const provider = requireProvider()
+      await switchToRequiredNetwork(provider)
+      await refreshWalletState({ providerOverride: provider, silent: true })
+      setStatusMessage('success', 'Switched to BSC Testnet.')
+    } catch (error) {
+      setStatusMessage('error', `Network switch failed. ${toErrorMessage(error)}`)
+    } finally {
+      setBusyAction(null)
+    }
+  }, [refreshWalletState, requireProvider, setStatusMessage, switchToRequiredNetwork])
+
+  const getPreparedWriteContract = useCallback(async (): Promise<ethers.Contract> => {
+    if (!account) throw new Error('Connect wallet before sending a transaction.')
+    const provider = requireProvider()
+    await switchToRequiredNetwork(provider)
+    await refreshWalletState({ providerOverride: provider, silent: true })
+    return getWriteContract(provider)
+  }, [account, getWriteContract, refreshWalletState, requireProvider, switchToRequiredNetwork])
+
+  // Auto-connect on mount
+  useEffect(() => {
+    void (async () => {
+      const injectedProvider = typeof window !== 'undefined' ? window.ethereum ?? null : null
+      if (!injectedProvider) return
+      const selectedAccount = await refreshWalletState({
+        providerOverride: injectedProvider,
+        silent: true,
+      })
+      if (selectedAccount) {
+        setWalletProvider(injectedProvider)
+        setConnectionType('injected')
+      }
+    })()
+  }, [refreshWalletState])
+
+  // Provider event listeners
+  useEffect(() => {
+    const provider = getEffectiveProvider()
+    if (!provider?.on || !provider.removeListener) return
+
+    const syncFromProvider = () => {
+      void refreshWalletState({ providerOverride: provider, silent: true })
+    }
+    const handleDisconnect = () => { void disconnectWallet() }
+
+    provider.on('accountsChanged', syncFromProvider)
+    provider.on('chainChanged', syncFromProvider)
+    provider.on('disconnect', handleDisconnect)
+
+    return () => {
+      provider.removeListener?.('accountsChanged', syncFromProvider)
+      provider.removeListener?.('chainChanged', syncFromProvider)
+      provider.removeListener?.('disconnect', handleDisconnect)
+    }
+  }, [disconnectWallet, getEffectiveProvider, refreshWalletState])
+
+  return (
+    <WalletContext.Provider
+      value={{
+        account,
+        isOwner,
+        activeChainId,
+        connectionType,
+        walletProvider,
+        injectedAvailable,
+        isBusy,
+        busyAction,
+        isWrongNetwork,
+        isContractConfigured,
+        status,
+        showWalletModal,
+        showAdminPortal,
+        setShowWalletModal,
+        setShowAdminPortal,
+        setStatus,
+        setStatusMessage,
+        setBusyAction,
+        connectInjectedWallet,
+        connectWalletConnect,
+        disconnectWallet,
+        switchActiveNetwork,
+        refreshWalletState,
+        getEffectiveProvider,
+        requireProvider,
+        getReadContract,
+        getWriteContract,
+        getPreparedWriteContract,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  )
+}
+
+export function useWallet(): WalletContextValue {
+  const context = useContext(WalletContext)
+  if (!context) throw new Error('useWallet must be used within WalletProvider')
+  return context
+}

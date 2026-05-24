@@ -1,0 +1,399 @@
+.panel {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Pool Stats */
+.poolStats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.poolStat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poolLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 70px;
+}
+
+.poolValueYes {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yes);
+  flex: 1;
+}
+
+.poolValueNo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--no);
+  flex: 1;
+}
+
+.poolPct {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-muted);
+  width: 36px;
+  text-align: right;
+}
+
+.poolBar {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.barYes {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  transition: width 0.4s ease;
+}
+
+.barNo {
+  height: 100%;
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  transition: width 0.4s ease;
+}
+
+.totalPool {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+}
+
+.totalPool strong {
+  color: var(--text-main);
+}
+
+/* Resolved */
+.resolvedBanner {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  text-align: center;
+}
+
+.resolvedYes {
+  background: var(--yes-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--yes);
+}
+
+.resolvedNo {
+  background: var(--no-dim);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--no);
+}
+
+/* Position Card */
+.positionCard {
+  border-radius: var(--radius-md);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.positionYes {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.positionNo {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.positionRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.positionLabel {
+  color: var(--text-muted);
+}
+
+.positionOutcome {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.outcomeYes { color: var(--yes); }
+.outcomeNo { color: var(--no); }
+.textYes { color: var(--yes); }
+.textNo { color: var(--no); }
+
+.win {
+  font-weight: 700;
+  color: var(--yes);
+}
+
+.lose {
+  font-weight: 700;
+  color: var(--no);
+}
+
+.claimedBadge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--yes);
+  text-align: center;
+  padding: 4px;
+}
+
+/* Outcome Select */
+.outcomeSelect {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.outcomeBtn,
+.outcomeYesActive,
+.outcomeNoActive {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 2px solid transparent;
+}
+
+.outcomeBtn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.outcomeBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.outcomeYesActive {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--yes);
+  color: var(--yes);
+}
+
+.outcomeNoActive {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--no);
+  color: var(--no);
+}
+
+/* Amount */
+.amountSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.amountLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.amountInput {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 700;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.amountInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.preset {
+  padding: 6px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--accent-light);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset:hover {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: var(--accent);
+}
+
+/* Summary */
+.summary {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.summaryRow strong {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+/* Trade Button */
+.tradeBtn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tradeBtnYes {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: #fff;
+}
+
+.tradeBtnYes:not(.tradeBtnDisabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+
+.tradeBtnNo {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: #fff;
+}
+
+.tradeBtnNo:not(.tradeBtnDisabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+.tradeBtnDisabled,
+.tradeBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Claim */
+.claimBtn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(124, 58, 237, 0.4));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  color: var(--accent-light);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.claimBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(124, 58, 237, 0.55));
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+}
+
+.claimBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Resolve */
+.resolveSection {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 16px;
+}
+
+.resolveLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.resolveBtns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.resolveYesBtn,
+.resolveNoBtn {
+  padding: 11px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.resolveYesBtn {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: var(--yes);
+}
+
+.resolveYesBtn:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.resolveNoBtn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--no);
+}
+
+.resolveNoBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.resolveYesBtn:disabled,
+.resolveNoBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
