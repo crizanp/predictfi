@@ -36,21 +36,21 @@
 .header { display: flex; flex-direction: column; gap: 14px; animation: fade-in 0.3s ease; }
 .badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .catBadge { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; border: 1px solid; letter-spacing: 0.1em; text-transform: uppercase; }
-.badgeLive { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--yes); text-transform: uppercase; letter-spacing: 0.08em; }
+.badgeLive { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; background: rgba(192,132,252,0.1); border: 1px solid rgba(192,132,252,0.3); color: var(--yes); text-transform: uppercase; letter-spacing: 0.08em; }
 .liveDot { width: 6px; height: 6px; border-radius: 50%; background: var(--yes); box-shadow: 0 0 6px var(--yes); animation: pulse-dot 1.5s ease-in-out infinite; }
 .badgeEnded { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.3); color: var(--warning); text-transform: uppercase; letter-spacing: 0.08em; }
-.badgeResolved { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2); color: var(--yes); text-transform: uppercase; letter-spacing: 0.08em; }
+.badgeResolved { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 999px; background: rgba(192,132,252,0.08); border: 1px solid rgba(192,132,252,0.2); color: var(--yes); text-transform: uppercase; letter-spacing: 0.08em; }
 .question { font-size: 24px; font-weight: 900; line-height: 1.25; color: var(--text-main); letter-spacing: -0.01em; }
 .meta { display: flex; gap: 20px; flex-wrap: wrap; }
 .metaItem { display: flex; flex-direction: column; gap: 2px; }
 .metaLabel { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
 .metaValue { font-size: 14px; font-weight: 800; color: var(--text-muted); }
 .body { display: flex; flex-direction: column; gap: 18px; }
-.infoSection { background: var(--card); border: 1px solid rgba(0,255,136,0.08); border-radius: var(--radius-md); padding: 18px 22px; }
+.infoSection { background: var(--card); border: 1px solid rgba(192,132,252,0.08); border-radius: var(--radius-md); padding: 18px 22px; }
 .infoTitle { font-size: 11px; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 10px; }
 .infoText { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin: 0; white-space: pre-wrap; }
 .loadingPage { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 20px; color: var(--text-muted); font-size: 15px; font-weight: 700; }
-.spinner { width: 44px; height: 44px; border: 3px solid rgba(0,255,136,0.12); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; box-shadow: 0 0 20px rgba(0,255,136,0.2); }
+.spinner { width: 44px; height: 44px; border: 3px solid rgba(192,132,252,0.12); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; box-shadow: 0 0 20px rgba(192,132,252,0.2); }
 .notFound { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 12px; text-align: center; padding: 20px; }
 .notFoundIcon { font-size: 56px; }
 .notFound h1 { font-size: 26px; font-weight: 900; color: var(--text-main); }

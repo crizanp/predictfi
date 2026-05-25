@@ -163,8 +163,8 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #00ff88;
-  box-shadow: 0 0 6px #00ff88;
+  background: #c084fc;
+  box-shadow: 0 0 6px #c084fc;
   animation: pulse-dot 1.5s ease-in-out infinite;
 }
 
@@ -344,7 +344,7 @@
   width: 32px;
   height: 32px;
   border: 2px solid rgba(255,255,255,0.06);
-  border-top-color: #00ff88;
+  border-top-color: #c084fc;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -379,3 +379,4 @@
   font-size: 13px;
   color: #374151;
 }
+

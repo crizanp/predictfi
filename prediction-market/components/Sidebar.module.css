@@ -30,7 +30,7 @@
   line-height: 1;
 }
 
-.logoGreen { color: #00ff88; }
+.logoGreen { color: #c084fc; }
 .logoDot   { color: #ffffff; margin: 0 1px; }
 .logoFi    { color: #ffffff; }
 
@@ -70,17 +70,17 @@
 }
 
 .navItem:hover {
-  background: rgba(255,255,255,0.04);
-  color: #b0b8c8;
+  background: rgba(192,132,252,0.07);
+  color: #d8b4fe;
 }
 
 .navItem.active {
-  background: rgba(0,255,136,0.07);
+  background: rgba(192,132,252,0.1);
   color: #e8eaf0;
 }
 
 .navItem.active .icon {
-  stroke: #00ff88;
+  stroke: #c084fc;
   opacity: 1;
 }
 

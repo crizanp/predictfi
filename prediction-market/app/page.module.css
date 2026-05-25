@@ -80,7 +80,7 @@
   line-height: 1.1;
 }
 
-.heroAccent { color: #00ff88; }
+.heroAccent { color: #c084fc; }
 
 .heroSub {
   margin-top: 8px;
@@ -118,9 +118,9 @@
 .viewAllBtn {
   font-size: 12px;
   font-weight: 700;
-  color: #00ff88;
+  color: #c084fc;
   text-decoration: none;
-  border: 1px solid rgba(0,255,136,0.2);
+  border: 1px solid rgba(192,132,252,0.2);
   border-radius: 8px;
   padding: 7px 14px;
   transition: background 0.15s;
@@ -128,7 +128,7 @@
 }
 
 .viewAllBtn:hover {
-  background: rgba(0,255,136,0.08);
+  background: rgba(192,132,252,0.08);
 }
 
 /* ── Grid ─────────────────────────────────────────────────── */
@@ -176,7 +176,7 @@
   width: 32px;
   height: 32px;
   border: 2px solid rgba(255,255,255,0.06);
-  border-top-color: #00ff88;
+  border-top-color: #c084fc;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
@@ -228,9 +228,9 @@
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.14em;
-  color: #00ff88;
-  background: rgba(0,255,136,0.08);
-  border: 1px solid rgba(0,255,136,0.2);
+  color: #c084fc;
+  background: rgba(192,132,252,0.08);
+  border: 1px solid rgba(192,132,252,0.2);
   border-radius: 999px;
   padding: 4px 12px;
   margin-bottom: 14px;
@@ -245,7 +245,7 @@
   margin-bottom: 10px;
 }
 
-.prfiGreen { color: #00ff88; }
+.prfiGreen { color: #c084fc; }
 
 .prfiTagline {
   font-size: 14px;
@@ -331,6 +331,17 @@
   color: #6b7280;
 }
 
+.donutWrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 20px;
+}
+.donut {
+  width: 180px;
+  height: 180px;
+  filter: drop-shadow(0 0 18px rgba(192,132,252,0.18));
+}
+
 .allocationList {
   display: flex;
   flex-direction: column;
@@ -405,9 +416,12 @@
 .presalePlatformBig {
   font-size: 26px;
   font-weight: 900;
-  color: #e8eaf0;
+  color: #c084fc;
   letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: opacity 0.15s;
 }
+.presalePlatformBig:hover { opacity: 0.8; text-decoration: underline; }
 
 .presaleDivider {
   height: 1px;
@@ -439,14 +453,15 @@
 .detailValue {
   font-size: 15px;
   font-weight: 800;
-  color: #9ca3af;
+  color: #c084fc;
 }
 
 .waitlistBtn {
+  display: block;
   width: 100%;
   padding: 13px 0;
-  background: #00ff88;
-  color: #07060e;
+  background: linear-gradient(135deg, #a855f7, #c084fc);
+  color: #fff;
   font-size: 14px;
   font-weight: 800;
   border: none;
@@ -454,6 +469,8 @@
   cursor: pointer;
   transition: opacity 0.15s;
   letter-spacing: 0.02em;
+  text-align: center;
+  text-decoration: none;
 }
 
 .waitlistBtn:hover { opacity: 0.88; }

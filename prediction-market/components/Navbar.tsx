@@ -40,6 +40,13 @@ const HOME_NAV = [
   { label: 'Social', href: '#social' },
 ]
 
+const INNER_NAV = [
+  { label: 'Markets', href: '/markets' },
+  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Activity', href: '/activity' },
+  { label: 'Leaderboard', href: '/leaderboard' },
+]
+
 export default function Navbar() {
   const pathname = usePathname()
   const isHome = pathname === '/'
@@ -101,6 +108,17 @@ export default function Navbar() {
         ) : (
           <div className={styles.pageNavLeft}>
             <Link href="/" className={styles.backToHome}>← PredictFi</Link>
+            <nav className={styles.innerNav}>
+              {INNER_NAV.map(item => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`${styles.innerNavLink} ${pathname === item.href ? styles.activeLink : ''}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         )}
         <div className={styles.right}>

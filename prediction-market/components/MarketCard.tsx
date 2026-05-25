@@ -19,9 +19,9 @@ const CATEGORY_EMOJI: Record<string, string> = {
 }
 
 const categoryColors: Record<string, string> = {
-  Sports: '#3b82f6', Politics: '#a855f7', Crypto: '#00ff88',
-  Science: '#06b6d4', Entertainment: '#f59e0b', Finance: '#00ff88',
-  Tech: '#8b5cf6', Other: '#6b7280', Trending: '#00ff88', New: '#00ff88',
+  Sports: '#3b82f6', Politics: '#a855f7', Crypto: '#c084fc',
+  Science: '#06b6d4', Entertainment: '#f59e0b', Finance: '#c084fc',
+  Tech: '#8b5cf6', Other: '#6b7280', Trending: '#c084fc', New: '#c084fc',
 }
 
 function formatTimeLeft(endTime: number, nowInSeconds: number): string {
@@ -35,10 +35,14 @@ function formatTimeLeft(endTime: number, nowInSeconds: number): string {
 
 export default function MarketCard({ market, nowInSeconds }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [cardBg, setCardBg] = useState<string | null>(null)
+  const [cardText, setCardText] = useState<string | null>(null)
 
   useEffect(() => {
     getMarketMeta(market.id).then((meta) => {
       if (meta?.image_url) setImageUrl(meta.image_url)
+      if (meta?.card_bg) setCardBg(meta.card_bg)
+      if (meta?.card_text) setCardText(meta.card_text)
     })
   }, [market.id])
 
@@ -57,8 +61,15 @@ export default function MarketCard({ market, nowInSeconds }: Props) {
   const catColor  = categoryColors[category] ?? '#6b7280'
 
   return (
-    <Link href={`/market/${market.id}`} className={styles.card}>
-
+    <Link
+      href={`/market/${market.id}`}
+      className={styles.card}
+      style={{
+        ...(cardBg ? { background: cardBg } : {}),
+        ...(cardText ? { color: cardText } : {}),
+      }}
+    >      {/* ── Resolved overlay ──────────────────────────── */}
+      {market.resolved && <div className={styles.resolvedOverlay} aria-hidden />}
       {/* ── Content (left) ──────────────────────── */}
       <div className={styles.content}>
 

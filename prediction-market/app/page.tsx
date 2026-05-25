@@ -31,16 +31,6 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [])
 
-  const liveCount = useMemo(() =>
-    markets.filter((m) => !m.resolved && (nowInSeconds <= 0 || m.endTime > nowInSeconds)).length,
-    [markets, nowInSeconds]
-  )
-
-  const totalPoolTBNB = useMemo(() =>
-    markets.reduce((sum, m) => sum + (parseFloat(m.totalPool) || 0), 0).toFixed(2),
-    [markets]
-  )
-
   // Top 6 by volume for homepage
   const top6 = useMemo(() =>
     [...markets].sort((a, b) => (parseFloat(b.totalPool) || 0) - (parseFloat(a.totalPool) || 0)).slice(0, 6),
@@ -49,38 +39,6 @@ export default function HomePage() {
 
   return (
     <main className={styles.main}>
-
-      {/* ── Stats bar ───────────────────────────────────── */}
-      <div className={styles.statsBar}>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>MARKETS</span>
-          <span className={styles.statBig}>{markets.length}</span>
-          <span className={styles.statSub}>Active markets</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>LIVE NOW</span>
-          <span className={styles.statBig}>{liveCount}</span>
-          <span className={styles.statSub}>Happening now</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>TOTAL VOLUME</span>
-          <span className={styles.statBig}>{totalPoolTBNB} <span className={styles.statUnit}>tBNB</span></span>
-          <span className={styles.statSub}>All-time volume</span>
-        </div>
-        <div className={styles.statDivider} />
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>NETWORK</span>
-          <span className={styles.statBig}>BSC Testnet</span>
-          <span className={styles.statSub}>Testnet environment</span>
-        </div>
-        <div className={styles.sparklineWrap} aria-hidden>
-          <svg viewBox="0 0 200 60" className={styles.sparkline} preserveAspectRatio="none">
-            <polyline points="0,50 20,42 40,46 60,28 80,34 100,20 120,26 140,14 160,18 180,10 200,14" fill="none" stroke="#00ff88" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-          </svg>
-        </div>
-      </div>
 
       {/* ── Hero ────────────────────────────────────────── */}
       <div className={styles.hero}>
@@ -150,12 +108,12 @@ export default function HomePage() {
         {/* Use Cases Grid */}
         <div className={styles.useCasesGrid}>
           {[
-            { Icon: RiPercentLine,   color: '#00ff88', title: 'Fee Discounts',    desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
+            { Icon: RiPercentLine,   color: '#c084fc', title: 'Fee Discounts',    desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
             { Icon: RiStackLine,     color: '#a855f7', title: 'Staking Rewards',  desc: 'Stake PRFI to earn a share of platform revenue and yield' },
             { Icon: RiGovernmentLine,color: '#3b82f6', title: 'Governance',       desc: 'Vote on new market proposals, fee structures, and protocol upgrades' },
             { Icon: RiVipCrownLine,  color: '#f59e0b', title: 'Priority Access',  desc: 'PRFI holders get early access to high-volume markets and new features' },
             { Icon: RiGiftLine,      color: '#06b6d4', title: 'Airdrop Rewards',  desc: 'Active predictors earn PRFI airdrops based on accuracy and volume' },
-            { Icon: RiDiamondLine,      color: '#ff3366', title: 'Premium Markets',  desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
+            { Icon: RiDiamondLine,   color: '#ff3366', title: 'Premium Markets',  desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
           ].map((item) => (
             <div key={item.title} className={styles.useCase}>
               <item.Icon className={styles.useCaseIcon} style={{ color: item.color }} />
@@ -172,9 +130,45 @@ export default function HomePage() {
           <div className={styles.tokenomicsCard}>
             <div className={styles.cardLabel}>TOKENOMICS</div>
             <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
+
+            {/* SVG Donut chart */}
+            <div className={styles.donutWrap}>
+              <svg viewBox="0 0 160 160" className={styles.donut}>
+                {(() => {
+                  const slices = [
+                    { label: 'Public Sale', pct: 40, color: '#c084fc' },
+                    { label: 'Ecosystem', pct: 20, color: '#3b82f6' },
+                    { label: 'Team', pct: 15, color: '#a855f7' },
+                    { label: 'Reserve', pct: 10, color: '#f59e0b' },
+                    { label: 'Advisors', pct: 10, color: '#06b6d4' },
+                    { label: 'Airdrop', pct: 5, color: '#ff3366' },
+                  ]
+                  const cx = 80, cy = 80, r = 62, inner = 40
+                  let cumAngle = -Math.PI / 2
+                  return slices.map((s) => {
+                    const angle = (s.pct / 100) * 2 * Math.PI
+                    const x1 = cx + r * Math.cos(cumAngle)
+                    const y1 = cy + r * Math.sin(cumAngle)
+                    const ix1 = cx + inner * Math.cos(cumAngle)
+                    const iy1 = cy + inner * Math.sin(cumAngle)
+                    cumAngle += angle
+                    const x2 = cx + r * Math.cos(cumAngle)
+                    const y2 = cy + r * Math.sin(cumAngle)
+                    const ix2 = cx + inner * Math.cos(cumAngle)
+                    const iy2 = cy + inner * Math.sin(cumAngle)
+                    const large = angle > Math.PI ? 1 : 0
+                    const d = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${inner} ${inner} 0 ${large} 0 ${ix1} ${iy1} Z`
+                    return <path key={s.label} d={d} fill={s.color} opacity="0.85" stroke="#0a0d14" strokeWidth="1.5" />
+                  })
+                })()}
+                <text x="80" y="76" textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="700">TOTAL</text>
+                <text x="80" y="90" textAnchor="middle" fontSize="8" fill="#9ca3af" fontWeight="600">1B PRFI</text>
+              </svg>
+            </div>
+
             <div className={styles.allocationList}>
               {[
-                { label: 'Public Sale', pct: 40, color: '#00ff88' },
+                { label: 'Public Sale', pct: 40, color: '#c084fc' },
                 { label: 'Ecosystem & Rewards', pct: 20, color: '#3b82f6' },
                 { label: 'Team (3yr vesting)', pct: 15, color: '#a855f7' },
                 { label: 'Reserve', pct: 10, color: '#f59e0b' },
@@ -200,31 +194,31 @@ export default function HomePage() {
               <div className={styles.moonIcon}>🌙</div>
               <div>
                 <div className={styles.presalePlatformName}>Launching on</div>
-                <div className={styles.presalePlatformBig}>Moonsale</div>
+                <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.presalePlatformBig}>moonsale.app</a>
               </div>
             </div>
             <div className={styles.presaleDivider} />
             <div className={styles.presaleDetails}>
               <div className={styles.presaleDetail}>
                 <span className={styles.detailLabel}>SALE DATE</span>
-                <span className={styles.detailValue}>TBA</span>
+                <span className={styles.detailValue}>Jun 1 – Jun 7</span>
               </div>
               <div className={styles.presaleDetail}>
                 <span className={styles.detailLabel}>TOTAL RAISE</span>
-                <span className={styles.detailValue}>TBA</span>
+                <span className={styles.detailValue}>150 BNB</span>
               </div>
               <div className={styles.presaleDetail}>
                 <span className={styles.detailLabel}>INITIAL PRICE</span>
-                <span className={styles.detailValue}>TBA</span>
+                <span className={styles.detailValue}>0.00015 BNB</span>
               </div>
               <div className={styles.presaleDetail}>
                 <span className={styles.detailLabel}>VESTING</span>
-                <span className={styles.detailValue}>TBA</span>
+                <span className={styles.detailValue}>25% TGE · 3mo linear</span>
               </div>
             </div>
-            <button className={styles.waitlistBtn}>
+            <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.waitlistBtn}>
               <RiMailLine style={{verticalAlign:'middle',marginRight:6}} />Join the Waitlist
-            </button>
+            </a>
             <p className={styles.waitlistSub}>Get notified when the sale goes live</p>
           </div>
 
@@ -272,11 +266,11 @@ export default function HomePage() {
         </div>
         <div className={styles.socialGrid}>
           {[
-            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',    color: '#e8eaf0', bg: '#111111' },
-            { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictfi',color: '#229ED9', bg: '#0a1828' },
-            { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/...',color: '#5865F2', bg: '#0a0c1e' },
+            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',     color: '#e8eaf0', bg: '#111111', href: 'https://x.com/PredictFi' },
+            { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictfi', color: '#229ED9', bg: '#0a1828', href: 'https://t.me/predictfi' },
+            { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/predictfi', color: '#5865F2', bg: '#0a0c1e', href: 'https://discord.gg/predictfi' },
           ].map((s) => (
-            <a key={s.label} href="#social" className={styles.socialCard} style={{ borderColor: `${s.color}18` }}>
+            <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className={styles.socialCard} style={{ borderColor: `${s.color}18` }}>
               <s.Icon className={styles.socialIcon} style={{ color: s.color }} />
               <div className={styles.socialLabel}>{s.label}</div>
               <div className={styles.socialHandle} style={{ color: s.color }}>{s.handle}</div>
@@ -285,42 +279,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── Features bar ────────────────────────────────── */}
-      <div className={styles.features}>
-        <div className={styles.feature}>
-          <div className={styles.featureIcon}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-          </div>
-          <div>
-            <div className={styles.featureTitle}>Fair &amp; Transparent</div>
-            <div className={styles.featureSub}>Outcomes verified on-chain<br/>No central authority</div>
-          </div>
-        </div>
-        <div className={styles.feature}>
-          <div className={styles.featureIcon}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 15c-2.21 0-4-1.79-4-4V5h8v6c0 2.21-1.79 4-4 4z"/><path d="M8.5 21h7M12 15v6M7 5H5v2M17 5h2v2"/>
-            </svg>
-          </div>
-          <div>
-            <div className={styles.featureTitle}>Win Rewards</div>
-            <div className={styles.featureSub}>Correct predictions earn<br/>tBNB rewards</div>
-          </div>
-        </div>
-        <div className={styles.feature}>
-          <div className={styles.featureIcon}>
-            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-          </div>
-          <div>
-            <div className={styles.featureTitle}>Instant Settlement</div>
-            <div className={styles.featureSub}>Fast payouts after<br/>market resolution</div>
-          </div>
-        </div>
-      </div>
     </main>
   )
 }

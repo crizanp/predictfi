@@ -12,6 +12,8 @@ export interface MarketMeta {
   image_url: string | null
   description: string | null
   rules: string | null
+  card_bg: string | null
+  card_text: string | null
   updated_at?: string
 }
 

@@ -1,8 +1,8 @@
-﻿/* ── Panel ─────────────────────────────────────────────── */
+﻿/* -- Panel ----------------------------------------------- */
 .panel {
   position: relative;
   background: var(--card);
-  border: 1px solid rgba(0,255,136,0.1);
+  border: 1px solid rgba(192,132,252,0.1);
   border-radius: var(--radius-lg);
   padding: 20px;
   display: flex;
@@ -11,7 +11,7 @@
   overflow: visible;
 }
 
-/* ── Float labels ──────────────────────────────────────── */
+/* -- Float labels ---------------------------------------- */
 .floatContainer {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -37,10 +37,10 @@
 }
 
 .floatYes {
-  background: rgba(0,255,136,0.15);
-  border: 1px solid rgba(0,255,136,0.45);
+  background: rgba(192,132,252,0.15);
+  border: 1px solid rgba(192,132,252,0.45);
   color: var(--yes);
-  box-shadow: 0 0 16px rgba(0,255,136,0.25);
+  box-shadow: 0 0 16px rgba(192,132,252,0.25);
 }
 
 .floatNo {
@@ -50,7 +50,7 @@
   box-shadow: 0 0 16px rgba(255,51,102,0.25);
 }
 
-/* ── Pool Stats ────────────────────────────────────────── */
+/* -- Pool Stats ------------------------------------------ */
 .poolStats {
   display: flex;
   flex-direction: column;
@@ -104,8 +104,8 @@
 
 .barYes {
   height: 100%;
-  background: linear-gradient(90deg, #00cc6a, #00ff88);
-  box-shadow: 0 0 8px rgba(0,255,136,0.5);
+  background: linear-gradient(90deg, #00cc6a, #c084fc);
+  box-shadow: 0 0 8px rgba(192,132,252,0.5);
   border-radius: 999px 0 0 999px;
   transition: width 0.6s ease;
 }
@@ -118,7 +118,7 @@
   transition: width 0.6s ease;
 }
 
-/* ── Total pool ────────────────────────────────────────── */
+/* -- Total pool ------------------------------------------ */
 .totalPool {
   text-align: center;
   font-size: 13px;
@@ -128,7 +128,7 @@
 
 .totalPool strong { color: var(--text-main); font-weight: 900; }
 
-/* ── Resolved banner ───────────────────────────────────── */
+/* -- Resolved banner ------------------------------------- */
 .resolvedBanner {
   text-align: center;
   padding: 10px 16px;
@@ -139,8 +139,8 @@
 }
 
 .resolvedYes {
-  background: rgba(0,255,136,0.1);
-  border: 1px solid rgba(0,255,136,0.3);
+  background: rgba(192,132,252,0.1);
+  border: 1px solid rgba(192,132,252,0.3);
   color: var(--yes);
 }
 
@@ -150,7 +150,7 @@
   color: var(--no);
 }
 
-/* ── Position card ─────────────────────────────────────── */
+/* -- Position card --------------------------------------- */
 .positionCard {
   border-radius: var(--radius-md);
   padding: 12px 14px;
@@ -161,8 +161,8 @@
 }
 
 .positionYes {
-  background: rgba(0,255,136,0.06);
-  border: 1px solid rgba(0,255,136,0.2);
+  background: rgba(192,132,252,0.06);
+  border: 1px solid rgba(192,132,252,0.2);
 }
 
 .positionNo {
@@ -202,7 +202,7 @@
   letter-spacing: 0.03em;
 }
 
-/* ── Outcome selector ──────────────────────────────────── */
+/* -- Outcome selector ------------------------------------ */
 .outcomeSelect {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -236,13 +236,13 @@
 
 .outcomeYesActive {
   padding: 12px;
-  background: rgba(0,255,136,0.12);
-  border: 2px solid rgba(0,255,136,0.55);
+  background: rgba(192,132,252,0.12);
+  border: 2px solid rgba(192,132,252,0.55);
   border-radius: var(--radius-md);
   color: var(--yes);
   font-size: 14px;
   font-weight: 900;
-  box-shadow: 0 0 18px rgba(0,255,136,0.18), inset 0 0 16px rgba(0,255,136,0.06);
+  box-shadow: 0 0 18px rgba(192,132,252,0.18), inset 0 0 16px rgba(192,132,252,0.06);
   animation: glow-border 3s ease-in-out infinite;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -285,7 +285,7 @@
 
 .addNote strong { color: var(--accent); }
 
-/* ── Amount section ────────────────────────────────────── */
+/* -- Amount section -------------------------------------- */
 .amountSection {
   display: flex;
   flex-direction: column;
@@ -302,7 +302,7 @@
 
 .amountInput {
   background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(0,255,136,0.18);
+  border: 1px solid rgba(192,132,252,0.18);
   border-radius: var(--radius-md);
   color: var(--text-main);
   font-size: 20px;
@@ -316,7 +316,7 @@
 .amountInput:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 16px rgba(0,255,136,0.15);
+  box-shadow: 0 0 16px rgba(192,132,252,0.15);
 }
 
 .presets {
@@ -337,13 +337,13 @@
   letter-spacing: 0.02em;
 }
 
-.preset:hover { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.25); color: var(--accent); }
+.preset:hover { background: rgba(192,132,252,0.08); border-color: rgba(192,132,252,0.25); color: var(--accent); }
 
 .presetActive {
   flex: 1;
   padding: 7px 0;
-  background: rgba(0,255,136,0.12);
-  border: 1px solid rgba(0,255,136,0.45);
+  background: rgba(192,132,252,0.12);
+  border: 1px solid rgba(192,132,252,0.45);
   border-radius: var(--radius-sm);
   color: var(--yes);
   font-size: 12px;
@@ -351,7 +351,7 @@
   letter-spacing: 0.02em;
 }
 
-/* ── Summary ───────────────────────────────────────────── */
+/* -- Summary --------------------------------------------- */
 .summary {
   background: rgba(0,0,0,0.22);
   border: 1px solid rgba(255,255,255,0.04);
@@ -371,10 +371,10 @@
 
 .summaryRow span { color: var(--text-muted); font-weight: 600; }
 .summaryRow strong { color: var(--text-main); font-weight: 900; }
-.textYes { color: var(--yes) !important; text-shadow: 0 0 8px rgba(0,255,136,0.5); }
+.textYes { color: var(--yes) !important; text-shadow: 0 0 8px rgba(192,132,252,0.5); }
 .textNo  { color: var(--no)  !important; text-shadow: 0 0 8px rgba(255,51,102,0.5); }
 
-/* ── Trade button ──────────────────────────────────────── */
+/* -- Trade button ---------------------------------------- */
 .tradeBtn {
   width: 100%;
   padding: 16px;
@@ -393,14 +393,14 @@
 }
 
 .tradeBtnYes {
-  background: linear-gradient(135deg, #00cc6a, #00ff88, #17fc93);
+  background: linear-gradient(135deg, #00cc6a, #c084fc, #17fc93);
   color: #030305;
-  box-shadow: 0 4px 24px rgba(0,255,136,0.35);
+  box-shadow: 0 4px 24px rgba(192,132,252,0.35);
 }
 
 .tradeBtnYes:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 36px rgba(0,255,136,0.55);
+  box-shadow: 0 8px 36px rgba(192,132,252,0.55);
   filter: brightness(1.1);
 }
 
@@ -438,7 +438,7 @@
   animation: spin 0.65s linear infinite;
 }
 
-/* ── Claim button ──────────────────────────────────────── */
+/* -- Claim button ---------------------------------------- */
 .claimBtn {
   width: 100%;
   padding: 14px;
@@ -462,7 +462,7 @@
 
 .claimBtn:disabled { opacity: 0.45; cursor: not-allowed; animation: none; }
 
-/* ── Admin resolve ──────────────────────────────────────── */
+/* -- Admin resolve ---------------------------------------- */
 .resolveSection {
   display: flex;
   flex-direction: column;
@@ -488,8 +488,8 @@
 
 .resolveYesBtn {
   padding: 11px;
-  background: rgba(0,255,136,0.08);
-  border: 1px solid rgba(0,255,136,0.3);
+  background: rgba(192,132,252,0.08);
+  border: 1px solid rgba(192,132,252,0.3);
   border-radius: var(--radius-md);
   color: var(--yes);
   font-size: 13px;
@@ -499,7 +499,7 @@
   letter-spacing: 0.04em;
 }
 
-.resolveYesBtn:hover:not(:disabled) { background: rgba(0,255,136,0.18); box-shadow: 0 0 16px rgba(0,255,136,0.2); }
+.resolveYesBtn:hover:not(:disabled) { background: rgba(192,132,252,0.18); box-shadow: 0 0 16px rgba(192,132,252,0.2); }
 .resolveYesBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .resolveNoBtn {

@@ -62,6 +62,8 @@ export default function AdminPortal() {
         image_url: meta?.image_url ?? '',
         description: meta?.description ?? '',
         rules: meta?.rules ?? '',
+        card_bg: meta?.card_bg ?? '',
+        card_text: meta?.card_text ?? '',
       },
     }))
     setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
@@ -70,7 +72,14 @@ export default function AdminPortal() {
   const saveMeta = useCallback(async (marketId: number) => {
     const current = metaEditing[marketId] ?? {}
     setMetaLoading((prev) => ({ ...prev, [marketId]: true }))
-    await upsertMarketMeta({ market_id: marketId, image_url: current.image_url ?? null, description: current.description ?? null, rules: current.rules ?? null })
+    await upsertMarketMeta({
+      market_id: marketId,
+      image_url: current.image_url ?? null,
+      description: current.description ?? null,
+      rules: current.rules ?? null,
+      card_bg: (current.card_bg as string | undefined) || null,
+      card_text: (current.card_text as string | undefined) || null,
+    })
     setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
   }, [metaEditing])
 
@@ -351,6 +360,44 @@ export default function AdminPortal() {
                                 onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], rules: e.target.value } }))}
                                 placeholder="How will this market be resolved? Source of truth?"
                               />
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>Card Background Color (optional)</label>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input
+                                  type="color"
+                                  value={(editing as Record<string, unknown>).card_bg as string || '#0d1014'}
+                                  onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], card_bg: e.target.value } }))}
+                                  style={{ width: 36, height: 36, border: 'none', cursor: 'pointer', borderRadius: 6, background: 'none' }}
+                                />
+                                <input
+                                  className={styles.metaInput}
+                                  type="text"
+                                  value={(editing as Record<string, unknown>).card_bg as string || ''}
+                                  onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], card_bg: e.target.value } }))}
+                                  placeholder="e.g. #1a0a2e or rgba(26,10,46,0.95)"
+                                />
+                              </div>
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>Card Text Color (optional)</label>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <input
+                                  type="color"
+                                  value={(editing as Record<string, unknown>).card_text as string || '#f0f0f5'}
+                                  onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], card_text: e.target.value } }))}
+                                  style={{ width: 36, height: 36, border: 'none', cursor: 'pointer', borderRadius: 6, background: 'none' }}
+                                />
+                                <input
+                                  className={styles.metaInput}
+                                  type="text"
+                                  value={(editing as Record<string, unknown>).card_text as string || ''}
+                                  onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], card_text: e.target.value } }))}
+                                  placeholder="e.g. #ffffff or #f0f0f5"
+                                />
+                              </div>
                             </div>
 
                             <div className={styles.metaSaveBtns}>

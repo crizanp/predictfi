@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { ethers } from 'ethers'
 import { useWallet } from '../context/WalletContext'
 import { shortenAddress } from '../lib/utils'
 import styles from './Sidebar.module.css'
@@ -45,7 +47,25 @@ const NAV = [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { account } = useWallet()
+  const { account, getEffectiveProvider } = useWallet()
+  const [balance, setBalance] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!account) { setBalance(null); return }
+    let cancelled = false
+    const fetchBal = async () => {
+      try {
+        const provider = getEffectiveProvider()
+        if (!provider) return
+        const ethProvider = new ethers.BrowserProvider(provider)
+        const bal = await ethProvider.getBalance(account)
+        if (!cancelled) setBalance(parseFloat(ethers.formatEther(bal)).toFixed(4))
+      } catch { /* silent */ }
+    }
+    void fetchBal()
+    const id = setInterval(fetchBal, 15000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [account, getEffectiveProvider])
 
   return (
     <aside className={styles.sidebar}>
@@ -83,8 +103,8 @@ export default function Sidebar() {
           <div className={styles.balanceCard}>
             <span className={styles.balLabel}>tBNB Balance</span>
             <div className={styles.balRow}>
-              <span className={styles.balDrop}>💧</span>
-              <span className={styles.balValue}>0.000</span>
+              <span className={styles.balDrop}>�</span>
+              <span className={styles.balValue}>{balance ?? '...'}</span>
             </div>
           </div>
         )}

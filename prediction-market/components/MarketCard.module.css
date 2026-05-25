@@ -1,4 +1,4 @@
-﻿/* ── Card (horizontal layout) ─────────────────────────────── */
+﻿/* -- Card (horizontal layout) ------------------------------- */
 .card {
   display: flex;
   flex-direction: row;
@@ -43,9 +43,49 @@
 }
 
 .card:hover {
-  border-color: rgba(139,92,246,0.25);
+  border-color: rgba(192,132,252,0.3);
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(139,92,246,0.06);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(192,132,252,0.08);
+}
+
+/* -- Resolved card overlay ------------------------------------ */
+.resolvedOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.resolvedOverlay::before {
+  content: 'RESOLVED';
+  font-size: 52px;
+  font-weight: 900;
+  color: rgba(192,132,252,0.09);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-22deg) translateX(-10%);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: resolved-slash 0.6s ease both;
+  transform-origin: center;
+}
+
+.resolvedOverlay::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 4%;
+  right: 4%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(192,132,252,0.25) 25%, rgba(192,132,252,0.35) 50%, rgba(192,132,252,0.25) 75%, transparent 100%);
+  transform: translateY(-50%) rotate(-1deg);
+  border-radius: 1px;
+  animation: resolved-slash 0.8s 0.1s ease both;
 }
 
 @keyframes cardPurpleRotate {
@@ -53,7 +93,7 @@
   100% { transform: rotate(360deg); }
 }
 
-/* ── Content (left column) ────────────────────────────────── */
+/* -- Content (left column) ---------------------------------- */
 .content {
   flex: 1;
   min-width: 0;
@@ -65,7 +105,7 @@
   z-index: 1;
 }
 
-/* ── Status badges ────────────────────────────────────────── */
+/* -- Status badges ------------------------------------------ */
 .badgeRow {
   display: flex;
   gap: 6px;
@@ -79,9 +119,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #00ff88;
-  background: rgba(0,255,136,0.05);
-  border: 1px solid rgba(0,255,136,0.18);
+  color: #c084fc;
+  background: rgba(192,132,252,0.05);
+  border: 1px solid rgba(192,132,252,0.18);
   border-radius: 4px;
   padding: 2px 7px;
 }
@@ -94,9 +134,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #00ff88;
-  background: rgba(0,255,136,0.05);
-  border: 1px solid rgba(0,255,136,0.18);
+  color: #c084fc;
+  background: rgba(192,132,252,0.05);
+  border: 1px solid rgba(192,132,252,0.18);
   border-radius: 4px;
   padding: 2px 7px;
 }
@@ -105,7 +145,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #00ff88;
+  background: #c084fc;
   animation: pulse-dot 1.2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -123,7 +163,7 @@
   padding: 2px 7px;
 }
 
-/* ── Category badge ───────────────────────────────────────── */
+/* -- Category badge ----------------------------------------- */
 .catBadge {
   display: flex;
   align-items: center;
@@ -134,7 +174,7 @@
   opacity: 0.75;
 }
 
-/* ── Question ─────────────────────────────────────────────── */
+/* -- Question ----------------------------------------------- */
 .question {
   font-size: 15px;
   font-weight: 700;
@@ -147,7 +187,7 @@
   -webkit-box-orient: vertical;
 }
 
-/* ── Odds row ─────────────────────────────────────────────── */
+/* -- Odds row ----------------------------------------------- */
 .oddsRow {
   display: flex;
   align-items: baseline;
@@ -168,8 +208,8 @@
 }
 
 .oddsYes .oddsNum {
-  color: #00ff88;
-  text-shadow: 0 0 10px rgba(0,255,136,0.25);
+  color: #c084fc;
+  text-shadow: 0 0 10px rgba(192,132,252,0.25);
 }
 
 .oddsNo .oddsNum {
@@ -198,7 +238,7 @@
   margin: 0 2px;
 }
 
-/* ── Progress bar ─────────────────────────────────────────── */
+/* -- Progress bar ------------------------------------------- */
 .barTrack {
   display: flex;
   height: 3px;
@@ -210,7 +250,7 @@
 
 .barYes {
   height: 100%;
-  background: #00ff88;
+  background: #c084fc;
   transition: width 0.5s ease;
 }
 
@@ -220,7 +260,7 @@
   transition: width 0.5s ease;
 }
 
-/* ── Footer ───────────────────────────────────────────────── */
+/* -- Footer ------------------------------------------------- */
 .footer {
   display: flex;
   justify-content: space-between;
@@ -235,7 +275,7 @@
   font-weight: 500;
 }
 
-/* ── Thumbnail (right column) ─────────────────────────────── */
+/* -- Thumbnail (right column) ------------------------------- */
 .thumb {
   width: 175px;
   flex-shrink: 0;
@@ -260,3 +300,4 @@
   font-size: 52px;
   filter: drop-shadow(0 0 20px rgba(255,255,255,0.08));
 }
+
