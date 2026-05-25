@@ -90,6 +90,30 @@
   gap: 8px;
 }
 
+/* Social icon links */
+.socialLinks {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-right: 6px;
+}
+.socialIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 15px;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.socialIcon:hover {
+  color: #c084fc;
+  background: rgba(192,132,252,0.08);
+}
+
 /* Admin */
 .adminBtn {
   display: flex;
@@ -246,11 +270,11 @@
   align-items: center;
   font-size: 11px;
   font-weight: 500;
-  color: #4b5563;
+  color: #8b9ab0;
   padding: 0 20px;
   border-right: 1px solid rgba(255,255,255,0.04);
   height: 34px;
 }
-.tickerItem.buy    { color: #7c4dbe; }
-.tickerItem.sell   { color: #7a3d4a; }
-.tickerItem.neutral { color: #3a3f52; }
+.tickerItem.buy    { color: #c084fc; }
+.tickerItem.sell   { color: #fb7185; }
+.tickerItem.neutral { color: #60a5fa; }

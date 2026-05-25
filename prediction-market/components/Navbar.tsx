@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { RiSettings3Line } from 'react-icons/ri'
+import { RiSettings3Line, RiTwitterXLine, RiTelegramLine, RiDiscordLine } from 'react-icons/ri'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import { shortenAddress } from '../lib/utils'
@@ -31,6 +31,12 @@ function buildTickerItems(markets: { question: string; resolved: boolean }[]): T
     return { label: `${addr} bought ${side} on "${q}" +${amt} tBNB`, type }
   })
 }
+
+const SOCIAL_LINKS = [
+  { Icon: RiTwitterXLine,  href: 'https://x.com/predictfi',       label: 'Twitter / X' },
+  { Icon: RiTelegramLine,  href: 'https://t.me/predictfi',         label: 'Telegram' },
+  { Icon: RiDiscordLine,   href: 'https://discord.gg/predictfi',   label: 'Discord' },
+]
 
 const HOME_NAV = [
   { label: 'PRFI Token', href: '#prfi' },
@@ -123,6 +129,14 @@ export default function Navbar() {
           </div>
         )}
         <div className={styles.right}>
+          <div className={styles.socialLinks}>
+            {SOCIAL_LINKS.map(({ Icon, href, label }) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                 className={styles.socialIcon} aria-label={label}>
+                <Icon />
+              </a>
+            ))}
+          </div>
           {isOwner && (
             <button className={styles.adminBtn} onClick={() => setShowAdminPortal(true)}>
               <RiSettings3Line className={styles.adminIcon} /> ADMIN
@@ -161,18 +175,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className={styles.tickerRow}>
-        <span className={styles.liveLabel}>LIVE</span>
-        <div className={styles.tickerMask}>
-          <div className={styles.tickerTrack}>
-            {tickerAll.map((item, i) => (
-              <span key={i} className={`${styles.tickerItem} ${item.type === 'buy' ? styles.buy : item.type === 'sell' ? styles.sell : styles.neutral}`}>
-                {item.type === 'buy' ? '▲' : item.type === 'sell' ? '▼' : '●'} {item.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+     
     </header>
   )
 }

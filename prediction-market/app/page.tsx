@@ -41,52 +41,20 @@ export default function HomePage() {
     <main className={styles.main}>
 
       {/* ── Hero ────────────────────────────────────────── */}
-      <div className={styles.hero}>
-        <h1 className={styles.heroTitle}>
-          Predict.{' '}
-          <span className={styles.heroAccent}>Win Big.</span>
-        </h1>
-        <p className={styles.heroSub}>
-          Decentralized prediction markets on BSC · Bet on outcomes, earn on the truth
-        </p>
-      </div>
+     
 
       {/* ── Homepage Banner (1680 × 238) ────────────────── */}
       <div className={styles.heroBannerWrap}>
         <div className={styles.heroBanner}>
-          <div className={styles.heroBannerInner}>
-            <div className={styles.heroBannerLeft}>
-              <div className={styles.heroBannerTag}>🚀 PRESALE NOW OPEN</div>
-              <div className={styles.heroBannerHeadline}>
-                PredictFi <span>PRFI</span> Token
-              </div>
-              <div className={styles.heroBannerSub}>
-                Jun 1 – 7 · 150 BNB raise · 0.00015 BNB per PRFI · 25% TGE vesting
-              </div>
-              <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.heroBannerBtn}>
-                Buy on moonsale.app →
-              </a>
-            </div>
-            <div className={styles.heroBannerRight}>
-              <div className={styles.heroBannerOrb} />
-              <div className={styles.heroBannerStats}>
-                <div className={styles.heroBannerStat}>
-                  <span className={styles.heroBannerStatVal}>150</span>
-                  <span className={styles.heroBannerStatLabel}>BNB Raise</span>
-                </div>
-                <div className={styles.heroBannerDivider} />
-                <div className={styles.heroBannerStat}>
-                  <span className={styles.heroBannerStatVal}>1B</span>
-                  <span className={styles.heroBannerStatLabel}>Total Supply</span>
-                </div>
-                <div className={styles.heroBannerDivider} />
-                <div className={styles.heroBannerStat}>
-                  <span className={styles.heroBannerStatVal}>7</span>
-                  <span className={styles.heroBannerStatLabel}>Days Only</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Drop your 1680×238 image into /public/banner.png to replace this placeholder */}
+          <img
+            src="/banner-placeholder.png"
+            alt="PredictFi Banner"
+            className={styles.heroBannerImg}
+            onError={(e) => {
+              ;(e.currentTarget as HTMLImageElement).src = '/banner-placeholder.svg'
+            }}
+          />
         </div>
       </div>
 
@@ -169,6 +137,7 @@ export default function HomePage() {
           <div className={styles.tokenomicsCard}>
             <div className={styles.cardLabel}>TOKENOMICS</div>
             <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
+            <div className={styles.supplySubtitle}>Fixed supply · No inflation · Deflationary buybacks</div>
 
             {/* SVG Donut chart */}
             <div className={styles.donutWrap}>
@@ -255,6 +224,22 @@ export default function HomePage() {
                 <span className={styles.detailValue}>25% TGE · 3mo linear</span>
               </div>
             </div>
+
+            {/* Fundraising progress */}
+            <div className={styles.presaleProgressWrap}>
+              <div className={styles.presaleProgressLabel}>
+                <span>0 BNB raised</span>
+                <span>Goal: 150 BNB</span>
+              </div>
+              <div className={styles.presaleProgressBar}>
+                <div className={styles.presaleProgressFill} style={{ width: '2%' }} />
+              </div>
+              <div className={styles.presaleProgressSub}>
+                <span>Opens Jun 1</span>
+                <span>0% filled</span>
+              </div>
+            </div>
+
             <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.waitlistBtn}>
               <RiMailLine style={{verticalAlign:'middle',marginRight:6}} />Join the Waitlist
             </a>
