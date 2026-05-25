@@ -1,208 +1,188 @@
-.navbar {
+﻿/* ── Header ────────────────────────────────────────────────── */
+.header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(7, 5, 15, 0.85);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(110, 70, 210, 0.2);
+  background: rgba(7,6,14,0.96);
+  backdrop-filter: blur(24px) saturate(160%);
+  border-bottom: 1px solid rgba(255,255,255,0.055);
 }
 
-.navInner {
-  max-width: 1400px;
-  margin: 0 auto;
+/* ── Controls row ──────────────────────────────────────────── */
+.controlsRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  height: 60px;
-  gap: 16px;
-}
-
-.left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.brand {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--text-main);
-  text-decoration: none;
-}
-
-.brandPurple {
-  color: var(--accent-light);
-}
-
-.beta {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  border-radius: 999px;
-  padding: 2px 7px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  justify-content: flex-end;
+  padding: 0 24px;
+  height: 48px;
+  gap: 8px;
 }
 
 .right {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.adminBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.3));
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  border-radius: var(--radius-md);
-  color: var(--accent-light);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.adminBtn:hover {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(124, 58, 237, 0.45));
-  border-color: var(--accent);
-}
-
-.adminIcon {
-  font-size: 14px;
-}
-
-.connectBtn {
-  padding: 9px 20px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  border: none;
-  border-radius: var(--radius-md);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.connectBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
-}
-
-.connectBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.accountGroup {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
+/* Admin */
+.adminBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: all 0.15s;
+}
+.adminBtn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #e8eaf0;
+}
+.adminIcon { font-size: 12px; }
+
+/* Connect */
+.connectBtn {
+  padding: 7px 20px;
+  background: #00ff88;
+  border: none;
+  border-radius: 8px;
+  color: #07060e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+}
+.connectBtn:hover:not(:disabled) {
+  background: #33ffaa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,255,136,0.35);
+}
+.connectBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Network pill */
 .networkPill {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 5px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--success);
+  color: #d1d5db;
+  letter-spacing: 0.02em;
 }
-
 .networkDot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
+  background: #00ff88;
+  box-shadow: 0 0 5px #00ff88;
+  animation: pulse-dot 2s ease-in-out infinite;
 }
 
+/* Wrong network */
 .switchNetBtn {
-  padding: 6px 12px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  border-radius: 999px;
-  color: var(--warning);
-  font-size: 12px;
+  padding: 6px 14px;
+  background: rgba(255,51,102,0.08);
+  border: 1px solid rgba(255,51,102,0.3);
+  border-radius: 8px;
+  color: #ff3366;
+  font-size: 11px;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
 }
+.switchNetBtn:hover { background: rgba(255,51,102,0.16); }
 
-.switchNetBtn:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.2);
-}
-
-.switchNetBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
+/* Account */
+.accountGroup { display: flex; align-items: center; gap: 8px; }
 .accountPill {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  background: rgba(139, 92, 246, 0.12);
-  border: 1px solid rgba(139, 92, 246, 0.35);
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 999px;
-  color: var(--accent-light);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  color: #e8eaf0;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
 }
+.accountPill:hover { background: rgba(255,255,255,0.08); }
+.chevron { font-size: 9px; color: #6b7280; }
 
-.accountPill:hover {
-  background: rgba(139, 92, 246, 0.22);
-  border-color: var(--accent);
-}
-
-.accountDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
-}
-
-.accountChevron {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-left: 2px;
-}
-
-.disconnectBtn {
-  width: 30px;
-  height: 30px;
+/* ── Ticker row ─────────────────────────────────────────────── */
+.tickerRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  height: 34px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+
+.liveLabel {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #00ff88;
+  background: rgba(0,255,136,0.07);
+  height: 100%;
+  border-right: 1px solid rgba(0,255,136,0.12);
+}
+.liveLabel::before {
+  content: '';
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  color: var(--danger);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  background: #00ff88;
+  animation: pulse-dot 1.2s ease-in-out infinite;
 }
 
-.disconnectBtn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: var(--danger);
+.tickerMask {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.tickerMask::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 60px;
+  background: linear-gradient(to right, transparent, rgba(7,6,14,0.96));
+  pointer-events: none;
+  z-index: 1;
 }
 
-.disconnectBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.tickerTrack {
+  display: flex;
+  gap: 0;
+  white-space: nowrap;
+  animation: ticker-scroll 32s linear infinite;
 }
+
+.tickerItem {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4b5563;
+  padding: 0 20px;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  height: 34px;
+}
+.tickerItem.buy    { color: #3d7a5a; }
+.tickerItem.sell   { color: #7a3d4a; }
+.tickerItem.neutral { color: #3a3f52; }

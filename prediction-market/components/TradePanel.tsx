@@ -1,11 +1,14 @@
 ﻿'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import { Market, UserPrediction } from '../context/MarketsContext'
 import { formatToken, computePoolMetrics, resultLabel } from '../lib/utils'
+import { useToast } from '../context/ToastContext'
 import styles from './TradePanel.module.css'
+
+interface FloatLabel { id: number; text: string; isYes: boolean }
 
 interface Props {
   market: Market
@@ -15,27 +18,29 @@ interface Props {
 export default function TradePanel({ market, nowInSeconds }: Props) {
   const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured } = useWallet()
   const { userPredictions, totalInvested, placePrediction, resolveMarket, claimWinnings } = useMarkets()
+  const { addToast } = useToast()
 
   const userPrediction: UserPrediction | undefined = account ? userPredictions[market.id] : undefined
 
-  // If user already has a position, lock the selector to their choice
   const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
   const lockedOutcome = userPrediction ? (userPrediction.choice as 1 | 2) : null
   const activeOutcome = lockedOutcome ?? selectedOutcome
 
   const [amount, setAmount] = useState('0.01')
+  const [flashBtn, setFlashBtn] = useState<'yes' | 'no' | null>(null)
+  const [floats, setFloats] = useState<FloatLabel[]>([])
+  const floatIdRef = useRef(0)
 
   const metrics = useMemo(() => computePoolMetrics(market.yesPool, market.noPool, market.totalPool), [market])
   const isEnded = nowInSeconds > 0 && market.endTime <= nowInSeconds
   const isMarketClosed = market.resolved || isEnded
-  const isBuyingThis = busyAction === `predict-${market.id}-${activeOutcome}`
-  const isResolving = busyAction?.startsWith(`resolve-${market.id}`)
+  const isBuyingThis = busyAction === `predict-${market.id}`
+  const isResolving = busyAction?.startsWith(`resolve-`)
   const isClaiming = busyAction === `claim-${market.id}`
 
-  // Adding to an existing position is allowed (contract will validate same choice)
   const canBuy =
     isContractConfigured &&
-    account &&
+    account !== null &&
     !isMarketClosed &&
     !isBusy
 
@@ -61,17 +66,28 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
   }, [market, userPrediction])
 
   const handleBuy = useCallback(async () => {
-    if (!account) {
-      setShowWalletModal(true)
-      return
+    if (!account) { setShowWalletModal(true); return }
+    const isYes = activeOutcome === 1
+    const id = ++floatIdRef.current
+    setFloats((prev) => [...prev, { id, text: `+${amount} tBNB`, isYes }])
+    setTimeout(() => setFloats((prev) => prev.filter((f) => f.id !== id)), 1500)
+    try {
+      await placePrediction(market.id, activeOutcome, amount)
+      setFlashBtn(isYes ? 'yes' : 'no')
+      setTimeout(() => setFlashBtn(null), 700)
+      addToast(
+        `Bought ${isYes ? 'YES' : 'NO'} · +${amount} tBNB on market #${market.id}`,
+        isYes ? 'buy-yes' : 'buy-no'
+      )
+    } catch {
+      addToast('Trade failed. Check your wallet and try again.', 'error')
     }
-    await placePrediction(market.id, activeOutcome, amount)
-  }, [account, amount, market.id, placePrediction, activeOutcome, setShowWalletModal])
+  }, [account, amount, market.id, placePrediction, activeOutcome, setShowWalletModal, addToast])
 
   const tradeButtonLabel = () => {
     if (!account) return 'Connect Wallet to Trade'
     if (!isContractConfigured) return 'Contract Not Configured'
-    if (isBuyingThis) return 'Placing...'
+    if (isBuyingThis) return 'Placing Trade...'
     if (isMarketClosed) return market.resolved ? 'Market Resolved' : 'Market Ended'
     if (isAdding) return activeOutcome === 1 ? '+ Add to YES' : '+ Add to NO'
     return activeOutcome === 1 ? 'Buy YES' : 'Buy NO'
@@ -88,50 +104,51 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
 
   return (
     <div className={styles.panel}>
-      {/* Pool Stats */}
+
+      {/* Float-up animations */}
+      <div className={styles.floatContainer} aria-hidden>
+        {floats.map((f) => (
+          <span key={f.id} className={`${styles.floatLabel} ${f.isYes ? styles.floatYes : styles.floatNo}`}>
+            {f.text}
+          </span>
+        ))}
+      </div>
+
+      {/* ── Pool Stats ─────────────────────────────── */}
       <div className={styles.poolStats}>
-        <div className={styles.poolStat}>
+        <div className={styles.poolSide}>
           <span className={styles.poolLabel}>YES Pool</span>
-          <span className={styles.poolValueYes}>{formatToken(market.yesPool)} tBNB</span>
-          <span className={styles.poolPct}>{metrics.yesPct}%</span>
+          <span className={styles.poolValueYes}>{formatToken(market.yesPool)}</span>
+          <span className={styles.poolPctYes}>{metrics.yesPct}%</span>
         </div>
         <div className={styles.poolBar}>
           <div className={styles.barYes} style={{ width: `${metrics.yesPct}%` }} />
-          <div className={styles.barNo} style={{ width: `${metrics.noPct}%` }} />
+          <div className={styles.barNo}  style={{ width: `${metrics.noPct}%` }} />
         </div>
-        <div className={styles.poolStat}>
+        <div className={styles.poolSide}>
           <span className={styles.poolLabel}>NO Pool</span>
-          <span className={styles.poolValueNo}>{formatToken(market.noPool)} tBNB</span>
-          <span className={styles.poolPct}>{metrics.noPct}%</span>
+          <span className={styles.poolValueNo}>{formatToken(market.noPool)}</span>
+          <span className={styles.poolPctNo}>{metrics.noPct}%</span>
         </div>
       </div>
 
-      {/* Total Pool */}
       <div className={styles.totalPool}>
-        Total Pool: <strong>{formatToken(market.totalPool)} tBNB</strong>
+        Total: <strong>{formatToken(market.totalPool)} tBNB</strong>
       </div>
 
-      {/* Your Overall Investment (across all markets) */}
-      {account && Number(totalInvested) > 0 && (
-        <div className={styles.portfolioRow}>
-          <span className={styles.portfolioLabel}>Your total invested</span>
-          <span className={styles.portfolioValue}>{totalInvested} tBNB</span>
-        </div>
-      )}
-
-      {/* Resolved Result */}
+      {/* ── Resolved Banner ────────────────────────── */}
       {market.resolved && (
-        <div className={`${styles.resolvedBanner} ${market.result === 1 ? styles.resolvedYes : styles.resolvedNo}`}>
-          Market resolved: <strong>{resultLabel(market.result)}</strong>
+        <div className={`${styles.resolvedBanner}`}>
+          🏁 Resolved: <strong>{resultLabel(market.result)}</strong>
         </div>
       )}
 
-      {/* Your Position */}
+      {/* ── Your Position ──────────────────────────── */}
       {userPrediction && (
-        <div className={`${styles.positionCard} ${userPrediction.choice === 1 ? styles.positionYes : styles.positionNo}`}>
+        <div className={`${styles.positionCard}`}>
           <div className={styles.positionRow}>
             <span className={styles.positionLabel}>Your Position</span>
-            <span className={`${styles.positionOutcome} ${userPrediction.choice === 1 ? styles.outcomeYes : styles.outcomeNo}`}>
+            <span className={`${userPrediction.choice === 1 ? styles.positionChoiceYes : styles.positionChoiceNo}`}>
               {userPrediction.choice === 1 ? 'YES' : 'NO'}
             </span>
           </div>
@@ -142,53 +159,49 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
           {market.resolved && (
             <div className={styles.positionRow}>
               <span className={styles.positionLabel}>
-                {userPrediction.choice === market.result ? 'Estimated Reward' : 'Result'}
+                {userPrediction.choice === market.result ? 'Est. Reward' : 'Result'}
               </span>
               <span className={userPrediction.choice === market.result ? styles.win : styles.lose}>
                 {userPrediction.choice === market.result
-                  ? `${formatToken(String(potentialReward))} tBNB`
-                  : 'Lost'}
+                  ? `${potentialReward.toFixed(4)} tBNB`
+                  : 'LOST'}
               </span>
             </div>
           )}
-          {userPrediction.claimed && (
-            <div className={styles.claimedBadge}>Winnings Claimed âœ“</div>
-          )}
+          {userPrediction.claimed && <div className={styles.claimedBadge}>✓ Winnings Claimed</div>}
         </div>
       )}
 
-      {/* Trade Form â€” shown when market is open (including when user already has a position) */}
+      {/* ── Trade Form ────────────────────────────── */}
       {!isMarketClosed && (
         <>
+          {/* Outcome selector */}
           <div className={styles.outcomeSelect}>
             <button
               className={activeOutcome === 1 ? styles.outcomeYesActive : styles.outcomeBtn}
               onClick={() => { if (!lockedOutcome) setSelectedOutcome(1) }}
               disabled={Boolean(lockedOutcome && lockedOutcome !== 1)}
-              title={lockedOutcome === 2 ? 'You bet NO â€” cannot change direction' : undefined}
             >
-              YES {metrics.yesPrice}Â¢
+              YES <span className={styles.outcomePct}>{metrics.yesPrice}¢</span>
             </button>
             <button
               className={activeOutcome === 2 ? styles.outcomeNoActive : styles.outcomeBtn}
               onClick={() => { if (!lockedOutcome) setSelectedOutcome(2) }}
               disabled={Boolean(lockedOutcome && lockedOutcome !== 2)}
-              title={lockedOutcome === 1 ? 'You bet YES â€” cannot change direction' : undefined}
             >
-              NO {metrics.noPrice}Â¢
+              NO <span className={styles.outcomePct}>{metrics.noPrice}¢</span>
             </button>
           </div>
 
           {lockedOutcome && (
             <p className={styles.addNote}>
-              Adding to your existing <strong>{lockedOutcome === 1 ? 'YES' : 'NO'}</strong> position
+              ↳ Adding to your existing <strong>{lockedOutcome === 1 ? 'YES' : 'NO'}</strong> position
             </p>
           )}
 
+          {/* Amount input */}
           <div className={styles.amountSection}>
-            <label className={styles.amountLabel} htmlFor="trade-amount">
-              Amount (tBNB)
-            </label>
+            <label className={styles.amountLabel} htmlFor="trade-amount">Amount (tBNB)</label>
             <input
               id="trade-amount"
               className={styles.amountInput}
@@ -201,20 +214,21 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
             />
             <div className={styles.presets}>
               {['0.01', '0.05', '0.1', '0.5'].map((v) => (
-                <button key={v} className={styles.preset} onClick={() => setAmount(v)}>
+                <button key={v} className={`${styles.preset} ${amount === v ? styles.presetActive : ''}`} onClick={() => setAmount(v)}>
                   {v}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Summary */}
           <div className={styles.summary}>
             <div className={styles.summaryRow}>
               <span>Est. Return</span>
-              <strong>{estimatedReturn > 0 ? `${estimatedReturn.toFixed(4)} tBNB` : '-'}</strong>
+              <strong>{estimatedReturn > 0 ? `${estimatedReturn.toFixed(4)} tBNB` : '—'}</strong>
             </div>
             <div className={styles.summaryRow}>
-              <span>Outcome</span>
+              <span>Direction</span>
               <strong className={activeOutcome === 1 ? styles.textYes : styles.textNo}>
                 {activeOutcome === 1 ? 'YES' : 'NO'}
               </strong>
@@ -223,46 +237,45 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
         </>
       )}
 
-      {/* Primary Action */}
-      {(!isMarketClosed || !market.resolved) ? (
-        <button
-          className={`${styles.tradeBtn} ${activeOutcome === 1 ? styles.tradeBtnYes : styles.tradeBtnNo} ${!canBuy ? styles.tradeBtnDisabled : ''}`}
-          onClick={() => { void handleBuy() }}
-          disabled={!canBuy || isBuyingThis}
-        >
-          {tradeButtonLabel()}
-        </button>
-      ) : null}
+      {/* ── Primary Trade Button ───────────────────── */}
+      <button
+        className={`${styles.tradeBtn} ${activeOutcome === 1 ? styles.tradeBtnYes : styles.tradeBtnNo} ${flashBtn === 'yes' ? styles.flashYes : flashBtn === 'no' ? styles.flashNo : ''}`}
+        onClick={() => { void handleBuy() }}
+        disabled={!canBuy || isBuyingThis}
+      >
+        {isBuyingThis && <span className={styles.btnSpinner} />}
+        {tradeButtonLabel()}
+      </button>
 
-      {/* Claim Winnings */}
+      {/* ── Claim Winnings ─────────────────────────── */}
       {canClaimWinnings && (
         <button
           className={styles.claimBtn}
           onClick={() => { void claimWinnings(market.id) }}
           disabled={isClaiming || isBusy}
         >
-          {isClaiming ? 'Claiming...' : 'Claim Winnings'}
+          {isClaiming ? 'Claiming...' : '🏆 Claim Winnings'}
         </button>
       )}
 
-      {/* Admin Resolve */}
+      {/* ── Admin Resolve ──────────────────────────── */}
       {canResolve && (
         <div className={styles.resolveSection}>
-          <p className={styles.resolveLabel}>Resolve Market (Owner Only)</p>
+          <p className={styles.resolveLabel}>⚡ Resolve Market (Owner Only)</p>
           <div className={styles.resolveBtns}>
             <button
               className={styles.resolveYesBtn}
               onClick={() => { void resolveMarket(market.id, 1) }}
               disabled={isResolving || isBusy}
             >
-              {isResolving ? 'Resolving...' : 'Resolve YES'}
+              {isResolving ? 'Resolving...' : 'YES Wins'}
             </button>
             <button
               className={styles.resolveNoBtn}
               onClick={() => { void resolveMarket(market.id, 2) }}
               disabled={isResolving || isBusy}
             >
-              {isResolving ? 'Resolving...' : 'Resolve NO'}
+              {isResolving ? 'Resolving...' : 'NO Wins'}
             </button>
           </div>
         </div>
@@ -270,10 +283,3 @@ export default function TradePanel({ market, nowInSeconds }: Props) {
     </div>
   )
 }
-
-
-interface Props {
-  market: Market
-  nowInSeconds: number
-}
-

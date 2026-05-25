@@ -15,11 +15,7 @@ export default function CategoryBar({ activeCategory, onCategoryChange, searchQu
   return (
     <div className={styles.bar}>
       <div className={styles.left}>
-        <span className={styles.liveChip}>
-          <span className={styles.liveDot} />
-          {liveCount} Live
-        </span>
-
+       
         <div className={styles.categories}>
           {AVAILABLE_CATEGORIES.map((cat) => (
             <button

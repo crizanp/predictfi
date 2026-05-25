@@ -129,8 +129,8 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
       <div className={styles.header}>
         <h3 className={styles.title}>Odds History</h3>
         <div className={styles.legend}>
-          <span className={styles.legendYes}><span className={styles.dot} style={{ background: '#22c55e' }} />YES</span>
-          <span className={styles.legendNo}><span className={styles.dot} style={{ background: '#ef4444' }} />NO</span>
+          <span className={styles.legendYes}><span className={styles.dot} style={{ background: '#00ff88' }} />YES</span>
+          <span className={styles.legendNo}><span className={styles.dot} style={{ background: '#ff3366' }} />NO</span>
         </div>
       </div>
 
@@ -138,21 +138,21 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
         <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="gradYes" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+              <stop offset="5%" stopColor="#00ff88" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#00ff88" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="gradNo" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+              <stop offset="5%" stopColor="#ff3366" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#ff3366" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-          <XAxis dataKey="time" tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis domain={[0, 100]} tick={{ fill: '#9880c8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+          <XAxis dataKey="time" tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ display: 'none' }} />
-          <Area type="monotone" dataKey="yes" stroke="#22c55e" strokeWidth={2} fill="url(#gradYes)" dot={false} activeDot={{ r: 4, fill: '#22c55e' }} />
-          <Area type="monotone" dataKey="no" stroke="#ef4444" strokeWidth={2} fill="url(#gradNo)" dot={false} activeDot={{ r: 4, fill: '#ef4444' }} />
+          <Area type="monotone" dataKey="yes" stroke="#00ff88" strokeWidth={2.5} fill="url(#gradYes)" dot={false} activeDot={{ r: 5, fill: '#00ff88', stroke: 'rgba(0,255,136,0.4)', strokeWidth: 4 }} />
+          <Area type="monotone" dataKey="no" stroke="#ff3366" strokeWidth={2.5} fill="url(#gradNo)" dot={false} activeDot={{ r: 5, fill: '#ff3366', stroke: 'rgba(255,51,102,0.4)', strokeWidth: 4 }} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

@@ -1,207 +1,291 @@
+﻿/* ── Panel ─────────────────────────────────────────────── */
 .panel {
+  position: relative;
   background: var(--card);
-  border: 1px solid var(--card-border);
+  border: 1px solid rgba(0,255,136,0.1);
   border-radius: var(--radius-lg);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  overflow: visible;
 }
 
-/* Pool Stats */
+/* ── Float labels ──────────────────────────────────────── */
+.floatContainer {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 20;
+}
+
+.floatLabel {
+  font-size: 14px;
+  font-weight: 900;
+  padding: 6px 16px;
+  border-radius: 999px;
+  letter-spacing: -0.01em;
+  animation: float-up 1.5s ease forwards;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.floatYes {
+  background: rgba(0,255,136,0.15);
+  border: 1px solid rgba(0,255,136,0.45);
+  color: var(--yes);
+  box-shadow: 0 0 16px rgba(0,255,136,0.25);
+}
+
+.floatNo {
+  background: rgba(255,51,102,0.15);
+  border: 1px solid rgba(255,51,102,0.45);
+  color: var(--no);
+  box-shadow: 0 0 16px rgba(255,51,102,0.25);
+}
+
+/* ── Pool Stats ────────────────────────────────────────── */
 .poolStats {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
 }
 
-.poolStat {
+.poolSide {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
 }
 
 .poolLabel {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 900;
   color: var(--text-muted);
-  width: 70px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: 1;
 }
 
-.poolValueYes {
-  font-size: 13px;
+.poolValueYes { font-size: 15px; font-weight: 900; color: var(--yes); }
+.poolValueNo  { font-size: 15px; font-weight: 900; color: var(--no); }
+
+.poolPctYes {
+  font-size: 11px;
   font-weight: 700;
   color: var(--yes);
-  flex: 1;
+  opacity: 0.7;
 }
 
-.poolValueNo {
-  font-size: 13px;
+.poolPctNo {
+  font-size: 11px;
   font-weight: 700;
   color: var(--no);
-  flex: 1;
-}
-
-.poolPct {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--text-muted);
-  width: 36px;
-  text-align: right;
+  opacity: 0.7;
 }
 
 .poolBar {
-  height: 10px;
+  height: 4px;
+  background: rgba(255,255,255,0.04);
   border-radius: 999px;
   overflow: hidden;
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
+  margin: 2px 0;
 }
 
 .barYes {
   height: 100%;
-  background: linear-gradient(90deg, #16a34a, #22c55e);
-  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #00cc6a, #00ff88);
+  box-shadow: 0 0 8px rgba(0,255,136,0.5);
+  border-radius: 999px 0 0 999px;
+  transition: width 0.6s ease;
 }
 
 .barNo {
   height: 100%;
-  background: linear-gradient(90deg, #dc2626, #ef4444);
-  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #ff3366, #ff1a4e);
+  box-shadow: 0 0 8px rgba(255,51,102,0.5);
+  border-radius: 0 999px 999px 0;
+  transition: width 0.6s ease;
 }
 
+/* ── Total pool ────────────────────────────────────────── */
 .totalPool {
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-sm);
+  font-weight: 600;
 }
 
-.totalPool strong {
-  color: var(--text-main);
-}
+.totalPool strong { color: var(--text-main); font-weight: 900; }
 
-/* Resolved */
+/* ── Resolved banner ───────────────────────────────────── */
 .resolvedBanner {
-  padding: 10px 14px;
+  text-align: center;
+  padding: 10px 16px;
   border-radius: var(--radius-md);
   font-size: 14px;
-  text-align: center;
+  font-weight: 700;
+  animation: pop-in 0.4s ease;
 }
 
 .resolvedYes {
-  background: var(--yes-dim);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(0,255,136,0.1);
+  border: 1px solid rgba(0,255,136,0.3);
   color: var(--yes);
 }
 
 .resolvedNo {
-  background: var(--no-dim);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(255,51,102,0.1);
+  border: 1px solid rgba(255,51,102,0.3);
   color: var(--no);
 }
 
-/* Position Card */
+/* ── Position card ─────────────────────────────────────── */
 .positionCard {
   border-radius: var(--radius-md);
-  padding: 14px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  animation: pop-in 0.35s ease;
 }
 
 .positionYes {
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(0,255,136,0.06);
+  border: 1px solid rgba(0,255,136,0.2);
 }
 
 .positionNo {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(255,51,102,0.06);
+  border: 1px solid rgba(255,51,102,0.2);
 }
 
 .positionRow {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.positionLabel {
-  color: var(--text-muted);
-}
-
+.positionLabel { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.positionAmount { font-size: 13px; font-weight: 900; color: var(--text-main); }
 .positionOutcome {
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 2px 10px;
+  border-radius: 999px;
 }
 
-.outcomeYes { color: var(--yes); }
-.outcomeNo { color: var(--no); }
-.textYes { color: var(--yes); }
-.textNo { color: var(--no); }
+.outcomeYes { color: var(--yes); background: var(--yes-dim); }
+.outcomeNo  { color: var(--no);  background: var(--no-dim); }
 
-.win {
-  font-weight: 700;
-  color: var(--yes);
-}
-
-.lose {
-  font-weight: 700;
-  color: var(--no);
-}
+.win  { font-size: 13px; font-weight: 900; color: var(--yes); }
+.lose { font-size: 13px; font-weight: 900; color: var(--no); }
 
 .claimedBadge {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--yes);
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--success);
   text-align: center;
-  padding: 4px;
+  padding-top: 4px;
+  letter-spacing: 0.03em;
 }
 
-/* Outcome Select */
+/* ── Outcome selector ──────────────────────────────────── */
 .outcomeSelect {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
-.outcomeBtn,
-.outcomeYesActive,
-.outcomeNoActive {
-  padding: 12px;
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border: 2px solid transparent;
-}
-
 .outcomeBtn {
-  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
   color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 900;
+  transition: all 0.16s ease;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
-.outcomeBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+.outcomeBtn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text-main);
 }
+
+.outcomeBtn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .outcomeYesActive {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: var(--yes);
+  padding: 12px;
+  background: rgba(0,255,136,0.12);
+  border: 2px solid rgba(0,255,136,0.55);
+  border-radius: var(--radius-md);
   color: var(--yes);
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 0 18px rgba(0,255,136,0.18), inset 0 0 16px rgba(0,255,136,0.06);
+  animation: glow-border 3s ease-in-out infinite;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .outcomeNoActive {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: var(--no);
+  padding: 12px;
+  background: rgba(255,51,102,0.12);
+  border: 2px solid rgba(255,51,102,0.55);
+  border-radius: var(--radius-md);
   color: var(--no);
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 0 18px rgba(255,51,102,0.18), inset 0 0 16px rgba(255,51,102,0.06);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
-/* Amount */
+.outcomePct {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+  letter-spacing: 0;
+}
+
+.addNote {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 600;
+}
+
+.addNote strong { color: var(--accent); }
+
+/* ── Amount section ────────────────────────────────────── */
 .amountSection {
   display: flex;
   flex-direction: column;
@@ -209,56 +293,70 @@
 }
 
 .amountLabel {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 900;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .amountInput {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(0,255,136,0.18);
   border-radius: var(--radius-md);
-  padding: 11px 14px;
   color: var(--text-main);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 900;
+  padding: 12px 16px;
   width: 100%;
-  transition: border-color 0.15s;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  letter-spacing: -0.02em;
 }
 
 .amountInput:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(0,255,136,0.15);
 }
 
 .presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 6px;
 }
 
 .preset {
-  padding: 6px;
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  flex: 1;
+  padding: 7px 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-sm);
-  color: var(--accent-light);
+  color: var(--text-muted);
   font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
+  font-weight: 900;
+  transition: all 0.14s ease;
+  letter-spacing: 0.02em;
 }
 
-.preset:hover {
-  background: rgba(139, 92, 246, 0.18);
-  border-color: var(--accent);
+.preset:hover { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.25); color: var(--accent); }
+
+.presetActive {
+  flex: 1;
+  padding: 7px 0;
+  background: rgba(0,255,136,0.12);
+  border: 1px solid rgba(0,255,136,0.45);
+  border-radius: var(--radius-sm);
+  color: var(--yes);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
 }
 
-/* Summary */
+/* ── Summary ───────────────────────────────────────────── */
 .summary {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0,0,0,0.22);
+  border: 1px solid rgba(255,255,255,0.04);
   border-radius: var(--radius-md);
-  padding: 12px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -266,94 +364,120 @@
 
 .summaryRow {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   font-size: 13px;
-  color: var(--text-muted);
 }
 
-.summaryRow strong {
-  color: var(--text-main);
-  font-weight: 700;
-}
+.summaryRow span { color: var(--text-muted); font-weight: 600; }
+.summaryRow strong { color: var(--text-main); font-weight: 900; }
+.textYes { color: var(--yes) !important; text-shadow: 0 0 8px rgba(0,255,136,0.5); }
+.textNo  { color: var(--no)  !important; text-shadow: 0 0 8px rgba(255,51,102,0.5); }
 
-/* Trade Button */
+/* ── Trade button ──────────────────────────────────────── */
 .tradeBtn {
   width: 100%;
-  padding: 14px;
+  padding: 16px;
   border: none;
   border-radius: var(--radius-md);
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.18s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .tradeBtnYes {
-  background: linear-gradient(135deg, #16a34a, #22c55e);
-  color: #fff;
+  background: linear-gradient(135deg, #00cc6a, #00ff88, #17fc93);
+  color: #030305;
+  box-shadow: 0 4px 24px rgba(0,255,136,0.35);
 }
 
-.tradeBtnYes:not(.tradeBtnDisabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+.tradeBtnYes:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(0,255,136,0.55);
+  filter: brightness(1.1);
 }
 
 .tradeBtnNo {
-  background: linear-gradient(135deg, #dc2626, #ef4444);
+  background: linear-gradient(135deg, #cc0033, #ff3366, #ff1a4e);
   color: #fff;
+  box-shadow: 0 4px 24px rgba(255,51,102,0.35);
 }
 
-.tradeBtnNo:not(.tradeBtnDisabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+.tradeBtnNo:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(255,51,102,0.55);
+  filter: brightness(1.1);
 }
 
-.tradeBtnDisabled,
-.tradeBtn:disabled {
-  opacity: 0.55;
+.tradeBtnDisabled {
+  opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  transform: none !important;
+  filter: none !important;
+  box-shadow: none !important;
 }
 
-/* Claim */
+/* Flash animations on successful buy */
+.flashYes { animation: flash-green 0.65s ease forwards; }
+.flashNo  { animation: flash-red  0.65s ease forwards; }
+
+/* Spinner inside button */
+.btnSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0,0,0,0.3);
+  border-top-color: rgba(0,0,0,0.8);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+/* ── Claim button ──────────────────────────────────────── */
 .claimBtn {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(124, 58, 237, 0.4));
-  border: 1px solid var(--accent);
+  background: rgba(255,184,0,0.1);
+  border: 1px solid rgba(255,184,0,0.4);
   border-radius: var(--radius-md);
-  color: var(--accent-light);
+  color: #ffb800;
   font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.15s;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: all 0.18s ease;
+  animation: pulse-glow 3s ease-in-out infinite;
 }
 
 .claimBtn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(124, 58, 237, 0.55));
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+  background: rgba(255,184,0,0.2);
+  box-shadow: 0 0 28px rgba(255,184,0,0.35);
+  transform: translateY(-2px);
 }
 
-.claimBtn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+.claimBtn:disabled { opacity: 0.45; cursor: not-allowed; animation: none; }
 
-/* Resolve */
+/* ── Admin resolve ──────────────────────────────────────── */
 .resolveSection {
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 14px;
 }
 
 .resolveLabel {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 900;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-bottom: 10px;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .resolveBtns {
@@ -362,87 +486,34 @@
   gap: 8px;
 }
 
-.resolveYesBtn,
+.resolveYesBtn {
+  padding: 11px;
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.3);
+  border-radius: var(--radius-md);
+  color: var(--yes);
+  font-size: 13px;
+  font-weight: 900;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.resolveYesBtn:hover:not(:disabled) { background: rgba(0,255,136,0.18); box-shadow: 0 0 16px rgba(0,255,136,0.2); }
+.resolveYesBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .resolveNoBtn {
   padding: 11px;
+  background: rgba(255,51,102,0.08);
+  border: 1px solid rgba(255,51,102,0.3);
   border-radius: var(--radius-md);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.resolveYesBtn {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  color: var(--yes);
-}
-
-.resolveYesBtn:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.25);
-}
-
-.resolveNoBtn {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
   color: var(--no);
-}
-
-.resolveNoBtn:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.25);
-}
-
-.resolveYesBtn:disabled,
-.resolveNoBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Portfolio row (total invested across all markets) */
-.portfolioRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(139, 92, 246, 0.06);
-  border: 1px solid rgba(139, 92, 246, 0.18);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-}
-
-.portfolioLabel {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 900;
+  transition: all 0.15s;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
+  letter-spacing: 0.04em;
 }
 
-.portfolioValue {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--accent-light);
-}
-
-/* Staked amount in position card */
-.positionAmount {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-/* Note when adding to existing position */
-.addNote {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
-  background: rgba(139, 92, 246, 0.06);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  margin: 0;
-}
-
-/* Disabled outcome button */
-.outcomeBtn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
+.resolveNoBtn:hover:not(:disabled) { background: rgba(255,51,102,0.18); box-shadow: 0 0 16px rgba(255,51,102,0.2); }
+.resolveNoBtn:disabled { opacity: 0.4; cursor: not-allowed; }

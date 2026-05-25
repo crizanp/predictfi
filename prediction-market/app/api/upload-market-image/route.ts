@@ -1,24 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { S3Client, PutObjectCommand, CreateBucketCommand } from '@aws-sdk/client-s3'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-// Prefer service-role key for server-side uploads; fall back to anon key
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+const S3_ENDPOINT = process.env.SUPABASE_S3_ENDPOINT ?? `${SUPABASE_URL}/storage/v1/s3`
+const S3_ACCESS_KEY = process.env.SUPABASE_S3_ACCESS_KEY_ID ?? ''
+const S3_SECRET_KEY = process.env.SUPABASE_S3_SECRET_ACCESS_KEY ?? ''
 const BUCKET = 'market-images'
 
+function getPublicUrl(key: string): string {
+  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${key}`
+}
+
 export async function POST(req: NextRequest) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+  if (!S3_ACCESS_KEY || !S3_SECRET_KEY) {
+    return NextResponse.json({ error: 'S3 credentials not configured' }, { status: 500 })
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-    const { error: bucketErr } = await supabase.storage.createBucket(BUCKET, { public: true })
-    if (bucketErr && !bucketErr.message.toLowerCase().includes('already exists')) {
-      console.warn('Bucket create attempt:', bucketErr.message)
-    }
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: S3_ENDPOINT,
+      credentials: { accessKeyId: S3_ACCESS_KEY, secretAccessKey: S3_SECRET_KEY },
+      forcePathStyle: true,
+    })
 
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -32,21 +36,22 @@ export async function POST(req: NextRequest) {
     const key = `market-${marketId}.${ext}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(key, buffer, {
-        contentType: file.type || 'image/jpeg',
-        upsert: true,
-      })
+    // Try to create bucket; ignore "already exists" errors
+    try {
+      await s3.send(new CreateBucketCommand({ Bucket: BUCKET }))
+    } catch { /* bucket likely exists */ }
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    await s3.send(new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type || 'image/jpeg',
+    }))
 
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(key)
-    return NextResponse.json({ url: data.publicUrl })
+    return NextResponse.json({ url: getPublicUrl(key) })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
