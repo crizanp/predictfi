@@ -1,22 +1,33 @@
 ﻿'use client'
 
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useWallet } from '../context/WalletContext'
+import { useMarkets } from '../context/MarketsContext'
 import { shortenAddress } from '../lib/utils'
 import { CHAIN_ID } from '../lib/contract'
 import styles from './Navbar.module.css'
 
-const TICKER_ITEMS = [
-  { label: '0xaBc1 bought YES on "BTC hits $120K" +0.05 tBNB', type: 'buy' },
-  { label: '0xDef2 bought NO on "ETH flips BTC?" +0.02 tBNB', type: 'sell' },
-  { label: '0x1234 bought YES on "Next halving bull run?" +0.1 tBNB', type: 'buy' },
-  { label: 'RESOLVED: "BNB above $800" YES winners claimed', type: 'neutral' },
-  { label: '0xFeed bought NO on "US inflation drops?" +0.03 tBNB', type: 'sell' },
-  { label: 'NEW MARKET: "Will DOGE reach $1?"', type: 'neutral' },
-  { label: '0x9aB3 bought YES on "Next world cup host?" +0.15 tBNB', type: 'buy' },
-  { label: '0x7c3D bought NO on "Fed rate cut in Q1?" +0.08 tBNB', type: 'sell' },
-  { label: '0xBee5 bought YES on "AI AGI by 2026?" +0.25 tBNB', type: 'buy' },
-]
-const tickerAll = [...TICKER_ITEMS, ...TICKER_ITEMS]
+interface TickerItem { label: string; type: 'buy' | 'sell' | 'neutral' }
+
+const DUMMY_ADDRS = ['0xaBc1', '0xDef2', '0x1234', '0xFeed', '0x9aB3', '0x7c3D', '0xBee5', '0xC0de', '0xD3aD', '0xF00d', '0xA55e', '0xB0b5']
+
+function buildTickerItems(markets: { question: string; resolved: boolean }[]): TickerItem[] {
+  if (markets.length === 0) return [
+    { label: '0xaBc1 bought YES on "BTC hits $120K" +0.05 tBNB', type: 'buy' },
+    { label: '0xDef2 bought NO on "ETH flips BTC?" +0.02 tBNB', type: 'sell' },
+    { label: '0x1234 bought YES on "Next halving bull run?" +0.1 tBNB', type: 'buy' },
+  ]
+
+  return markets.slice(0, 9).map((m) => {
+    const addr = DUMMY_ADDRS[Math.floor(Math.random() * DUMMY_ADDRS.length)]
+    const side = Math.random() > 0.45 ? 'YES' : 'NO'
+    const amt  = (Math.random() * 0.19 + 0.01).toFixed(2)
+    const type: 'buy' | 'sell' | 'neutral' = m.resolved ? 'neutral' : side === 'YES' ? 'buy' : 'sell'
+    const q    = m.question.length > 38 ? m.question.slice(0, 38) + '…' : m.question
+    if (m.resolved) return { label: `RESOLVED: "${q}" — winners claimed`, type }
+    return { label: `${addr} bought ${side} on "${q}" +${amt} tBNB`, type }
+  })
+}
 
 export default function Navbar() {
   const {
@@ -30,6 +41,32 @@ export default function Navbar() {
     setShowAdminPortal,
     switchActiveNetwork,
   } = useWallet()
+  const { markets } = useMarkets()
+
+  const latestMarketsRef = useRef(markets)
+  useEffect(() => { latestMarketsRef.current = markets }, [markets])
+
+  const [tickerItems, setTickerItems] = useState<TickerItem[]>(() => buildTickerItems([]))
+
+  // Generate ticker from real markets; refresh at a random interval (5–13 s)
+  const hasMarkets = markets.length > 0
+  useEffect(() => {
+    if (!hasMarkets) return
+    setTickerItems(buildTickerItems(latestMarketsRef.current))
+
+    let id: ReturnType<typeof setTimeout>
+    const schedule = () => {
+      id = setTimeout(() => {
+        setTickerItems(buildTickerItems(latestMarketsRef.current))
+        schedule()
+      }, 5000 + Math.random() * 8000)
+    }
+    schedule()
+    return () => clearTimeout(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMarkets])
+
+  const tickerAll = useMemo(() => [...tickerItems, ...tickerItems], [tickerItems])
 
   const networkLabel =
     activeChainId === null ? 'Unknown'

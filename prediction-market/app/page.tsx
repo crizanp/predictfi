@@ -1,17 +1,14 @@
 ﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useMarkets } from '../context/MarketsContext'
-import { getMarketCategory } from '../lib/utils'
 import MarketCard from '../components/MarketCard'
-import CategoryBar from '../components/CategoryBar'
 import styles from './page.module.css'
 
 export default function HomePage() {
-  const { markets, isLoadingMarkets, totalInvested } = useMarkets()
+  const { markets, isLoadingMarkets } = useMarkets()
   const [nowInSeconds, setNowInSeconds] = useState(0)
-  const [activeCategory, setActiveCategory] = useState('Trending')
-  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const interval = setInterval(() => setNowInSeconds(Math.floor(Date.now() / 1000)), 1000)
@@ -23,30 +20,16 @@ export default function HomePage() {
     [markets, nowInSeconds]
   )
 
-  const totalPoolTBNB = useMemo(() => {
-    if (typeof totalInvested === 'bigint') {
-      return (Number(totalInvested) / 1e18).toFixed(2)
-    }
-    return '0.00'
-  }, [totalInvested])
-
-  const newestId = useMemo(() =>
-    markets.length > 0 ? Math.max(...markets.map((m) => m.id)) : 0,
+  const totalPoolTBNB = useMemo(() =>
+    markets.reduce((sum, m) => sum + (parseFloat(m.totalPool) || 0), 0).toFixed(2),
     [markets]
   )
 
-  const visibleMarkets = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase()
-    return markets.filter((market) => {
-      const category = getMarketCategory(market.id, market.question)
-      const categoryMatch =
-        activeCategory === 'Trending' ? true
-        : activeCategory === 'New' ? market.id >= newestId - 5
-        : category === activeCategory
-      const searchMatch = !q || market.question.toLowerCase().includes(q)
-      return categoryMatch && searchMatch
-    })
-  }, [activeCategory, markets, newestId, searchQuery])
+  // Top 6 by volume for homepage
+  const top6 = useMemo(() =>
+    [...markets].sort((a, b) => (parseFloat(b.totalPool) || 0) - (parseFloat(a.totalPool) || 0)).slice(0, 6),
+    [markets]
+  )
 
   return (
     <main className={styles.main}>
@@ -94,15 +77,17 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* ── Market grid ─────────────────────────────────── */}
+      {/* ── Trending Markets (top 6) ─────────────────────── */}
       <div className={styles.content}>
-        <CategoryBar
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          liveCount={liveCount}
-        />
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 className={styles.sectionTitle}>🔥 Trending Markets</h2>
+            <p className={styles.sectionSub}>Highest volume markets right now</p>
+          </div>
+          <Link href="/markets" className={styles.viewAllBtn}>
+            View All Markets →
+          </Link>
+        </div>
 
         {isLoadingMarkets ? (
           <div className={styles.loadingState}>
@@ -115,26 +100,122 @@ export default function HomePage() {
             <h2>No Markets Yet</h2>
             <p>Connect as the owner to create prediction markets via the Admin Portal.</p>
           </div>
-        ) : visibleMarkets.length === 0 ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyIcon}>🔍</div>
-            <h2>No Markets Found</h2>
-            <p>No markets match this filter. Try a different category or search.</p>
-          </div>
         ) : (
           <div className={styles.grid}>
-            {visibleMarkets.map((market) => (
-              <MarketCard
-                key={market.id}
-                market={market}
-                nowInSeconds={nowInSeconds}
-              />
+            {top6.map((market) => (
+              <MarketCard key={market.id} market={market} nowInSeconds={nowInSeconds} />
             ))}
+          </div>
+        )}
+
+        {markets.length > 6 && (
+          <div className={styles.viewAllWrap}>
+            <Link href="/markets" className={styles.viewAllBig}>
+              Explore all {markets.length} markets →
+            </Link>
           </div>
         )}
       </div>
 
-      {/* ── Features ────────────────────────────────────── */}
+      {/* ── PRFI Token Section ──────────────────────────── */}
+      <div className={styles.prfiSection}>
+
+        {/* Header */}
+        <div className={styles.prfiHeader}>
+          <div className={styles.prfiBadge}>TOKEN</div>
+          <h2 className={styles.prfiTitle}>
+            <span className={styles.prfiGreen}>PRFI</span> Token
+          </h2>
+          <p className={styles.prfiTagline}>
+            The utility token powering the PredictFi ecosystem
+          </p>
+        </div>
+
+        {/* Use Cases Grid */}
+        <div className={styles.useCasesGrid}>
+          {[
+            { icon: '💸', title: 'Fee Discounts', desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
+            { icon: '🏆', title: 'Staking Rewards', desc: 'Stake PRFI to earn a share of platform revenue and yield' },
+            { icon: '🗳️', title: 'Governance', desc: 'Vote on new market proposals, fee structures, and protocol upgrades' },
+            { icon: '⚡', title: 'Priority Access', desc: 'PRFI holders get early access to high-volume markets and new features' },
+            { icon: '🎁', title: 'Airdrop Rewards', desc: 'Active predictors earn PRFI airdrops based on accuracy and volume' },
+            { icon: '🔮', title: 'Premium Markets', desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
+          ].map((item) => (
+            <div key={item.title} className={styles.useCase}>
+              <div className={styles.useCaseIcon}>{item.icon}</div>
+              <div className={styles.useCaseTitle}>{item.title}</div>
+              <div className={styles.useCaseDesc}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tokenomics + Presale row */}
+        <div className={styles.prfiRow}>
+
+          {/* Tokenomics */}
+          <div className={styles.tokenomicsCard}>
+            <div className={styles.cardLabel}>TOKENOMICS</div>
+            <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
+            <div className={styles.allocationList}>
+              {[
+                { label: 'Public Sale', pct: 40, color: '#00ff88' },
+                { label: 'Ecosystem & Rewards', pct: 20, color: '#3b82f6' },
+                { label: 'Team (3yr vesting)', pct: 15, color: '#a855f7' },
+                { label: 'Reserve', pct: 10, color: '#f59e0b' },
+                { label: 'Advisors', pct: 10, color: '#06b6d4' },
+                { label: 'Airdrop', pct: 5, color: '#ff3366' },
+              ].map((row) => (
+                <div key={row.label} className={styles.allocRow}>
+                  <div className={styles.allocDot} style={{ background: row.color }} />
+                  <span className={styles.allocLabel}>{row.label}</span>
+                  <div className={styles.allocBarWrap}>
+                    <div className={styles.allocBar} style={{ width: `${row.pct}%`, background: row.color }} />
+                  </div>
+                  <span className={styles.allocPct}>{row.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Presale */}
+          <div className={styles.presaleCard}>
+            <div className={styles.cardLabel}>PRESALE</div>
+            <div className={styles.presalePlatform}>
+              <div className={styles.moonIcon}>🌙</div>
+              <div>
+                <div className={styles.presalePlatformName}>Launching on</div>
+                <div className={styles.presalePlatformBig}>Moonsale</div>
+              </div>
+            </div>
+            <div className={styles.presaleDivider} />
+            <div className={styles.presaleDetails}>
+              <div className={styles.presaleDetail}>
+                <span className={styles.detailLabel}>SALE DATE</span>
+                <span className={styles.detailValue}>TBA</span>
+              </div>
+              <div className={styles.presaleDetail}>
+                <span className={styles.detailLabel}>TOTAL RAISE</span>
+                <span className={styles.detailValue}>TBA</span>
+              </div>
+              <div className={styles.presaleDetail}>
+                <span className={styles.detailLabel}>INITIAL PRICE</span>
+                <span className={styles.detailValue}>TBA</span>
+              </div>
+              <div className={styles.presaleDetail}>
+                <span className={styles.detailLabel}>VESTING</span>
+                <span className={styles.detailValue}>TBA</span>
+              </div>
+            </div>
+            <button className={styles.waitlistBtn}>
+              🔔 &nbsp;Join the Waitlist
+            </button>
+            <p className={styles.waitlistSub}>Get notified when the sale goes live</p>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Features bar ────────────────────────────────── */}
       <div className={styles.features}>
         <div className={styles.feature}>
           <div className={styles.featureIcon}>

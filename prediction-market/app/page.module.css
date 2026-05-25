@@ -65,14 +65,11 @@
   opacity: 0.5;
 }
 
-.sparkline {
-  width: 100%;
-  height: 100%;
-}
+.sparkline { width: 100%; height: 100%; }
 
 /* ── Hero ─────────────────────────────────────────────────── */
 .hero {
-  padding: 28px 28px 16px;
+  padding: 28px 28px 10px;
 }
 
 .heroTitle {
@@ -83,9 +80,7 @@
   line-height: 1.1;
 }
 
-.heroAccent {
-  color: #00ff88;
-}
+.heroAccent { color: #00ff88; }
 
 .heroSub {
   margin-top: 8px;
@@ -94,17 +89,76 @@
   font-weight: 400;
 }
 
-/* ── Content / Grid ───────────────────────────────────────── */
+/* ── Section header ───────────────────────────────────────── */
 .content {
   flex: 1;
   padding: 0 28px 28px;
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 24px 0 16px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: #e8eaf0;
+  letter-spacing: -0.01em;
+}
+
+.sectionSub {
+  font-size: 12px;
+  color: #374151;
+  margin-top: 3px;
+}
+
+.viewAllBtn {
+  font-size: 12px;
+  font-weight: 700;
+  color: #00ff88;
+  text-decoration: none;
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 8px;
+  padding: 7px 14px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.viewAllBtn:hover {
+  background: rgba(0,255,136,0.08);
+}
+
+/* ── Grid ─────────────────────────────────────────────────── */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-top: 16px;
+}
+
+.viewAllWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.viewAllBig {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6b7280;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 11px 28px;
+  transition: all 0.15s;
+}
+
+.viewAllBig:hover {
+  color: #e8eaf0;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.03);
 }
 
 /* ── States ───────────────────────────────────────────────── */
@@ -154,7 +208,264 @@
   max-width: 300px;
 }
 
-/* ── Features ─────────────────────────────────────────────── */
+/* ── PRFI Token Section ───────────────────────────────────── */
+.prfiSection {
+  margin: 0 28px 32px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0a0d14 0%, #080b12 100%);
+  overflow: hidden;
+}
+
+.prfiHeader {
+  text-align: center;
+  padding: 44px 28px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.prfiBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #00ff88;
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  margin-bottom: 14px;
+}
+
+.prfiTitle {
+  font-size: 38px;
+  font-weight: 900;
+  color: #f0f0f5;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.prfiGreen { color: #00ff88; }
+
+.prfiTagline {
+  font-size: 14px;
+  color: #4b5563;
+  font-weight: 400;
+}
+
+/* ── Use Cases Grid ───────────────────────────────────────── */
+.useCasesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.useCase {
+  padding: 24px 22px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+
+.useCase:nth-child(3n) { border-right: none; }
+.useCase:nth-child(n+4) { border-bottom: none; }
+
+.useCase:hover { background: rgba(255,255,255,0.02); }
+
+.useCaseIcon {
+  font-size: 24px;
+  margin-bottom: 10px;
+  line-height: 1;
+}
+
+.useCaseTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d1d5db;
+  margin-bottom: 5px;
+}
+
+.useCaseDesc {
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.6;
+}
+
+/* ── Tokenomics + Presale ─────────────────────────────────── */
+.prfiRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.tokenomicsCard {
+  padding: 28px 28px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.presaleCard {
+  padding: 28px 28px;
+}
+
+.cardLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #374151;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.totalSupply {
+  font-size: 22px;
+  font-weight: 900;
+  color: #e8eaf0;
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+}
+
+.totalSupply span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.allocationList {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.allocRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.allocDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.allocLabel {
+  font-size: 12px;
+  color: #6b7280;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.allocBarWrap {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.allocBar {
+  height: 100%;
+  border-radius: 999px;
+  opacity: 0.7;
+}
+
+.allocPct {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Presale */
+.presalePlatform {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.moonIcon {
+  font-size: 36px;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(255,200,50,0.4));
+}
+
+.presalePlatformName {
+  font-size: 11px;
+  color: #4b5563;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.presalePlatformBig {
+  font-size: 26px;
+  font-weight: 900;
+  color: #e8eaf0;
+  letter-spacing: -0.01em;
+}
+
+.presaleDivider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin-bottom: 20px;
+}
+
+.presaleDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  margin-bottom: 24px;
+}
+
+.presaleDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailLabel {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #374151;
+  text-transform: uppercase;
+}
+
+.detailValue {
+  font-size: 15px;
+  font-weight: 800;
+  color: #9ca3af;
+}
+
+.waitlistBtn {
+  width: 100%;
+  padding: 13px 0;
+  background: #00ff88;
+  color: #07060e;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.waitlistBtn:hover { opacity: 0.88; }
+
+.waitlistSub {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #374151;
+}
+
+/* ── Features bar ─────────────────────────────────────────── */
 .features {
   display: flex;
   gap: 0;

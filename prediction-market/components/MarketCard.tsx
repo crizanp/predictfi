@@ -42,8 +42,8 @@ export default function MarketCard({ market, nowInSeconds }: Props) {
     })
   }, [market.id])
 
-  const yesPool = Number(market.yesPool) / 1e18
-  const noPool  = Number(market.noPool)  / 1e18
+  const yesPool = parseFloat(market.yesPool) || 0
+  const noPool  = parseFloat(market.noPool)  || 0
   const total   = yesPool + noPool
 
   const yesOdds = total > 0 ? Math.round((yesPool / total) * 100) : 50

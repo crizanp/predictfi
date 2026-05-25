@@ -12,7 +12,7 @@ const NAV = [
     d: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10',
   },
   {
-    href: '#',
+    href: '/markets',
     label: 'Markets',
     d: 'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z',
   },
