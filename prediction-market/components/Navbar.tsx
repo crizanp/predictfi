@@ -1,6 +1,9 @@
 ﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { RiSettings3Line } from 'react-icons/ri'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import { shortenAddress } from '../lib/utils'
@@ -29,7 +32,18 @@ function buildTickerItems(markets: { question: string; resolved: boolean }[]): T
   })
 }
 
+const HOME_NAV = [
+  { label: 'PRFI Token', href: '#prfi' },
+  { label: 'Whitepaper', href: '#whitepaper' },
+  { label: 'Whitelist', href: '#whitelist' },
+  { label: 'Partnership', href: '#partnership' },
+  { label: 'Social', href: '#social' },
+]
+
 export default function Navbar() {
+  const pathname = usePathname()
+  const isHome = pathname === '/'
+
   const {
     account,
     isOwner,
@@ -76,10 +90,23 @@ export default function Navbar() {
   return (
     <header className={styles.header}>
       <div className={styles.controlsRow}>
+        {isHome ? (
+          <nav className={styles.homeNav}>
+            {HOME_NAV.map(item => (
+              <a key={item.label} href={item.href} className={styles.homeNavLink}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        ) : (
+          <div className={styles.pageNavLeft}>
+            <Link href="/" className={styles.backToHome}>← PredictFi</Link>
+          </div>
+        )}
         <div className={styles.right}>
           {isOwner && (
             <button className={styles.adminBtn} onClick={() => setShowAdminPortal(true)}>
-              <span className={styles.adminIcon}>⚙</span> ADMIN
+              <RiSettings3Line className={styles.adminIcon} /> ADMIN
             </button>
           )}
           {!account ? (

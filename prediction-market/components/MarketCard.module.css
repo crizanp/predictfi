@@ -12,11 +12,45 @@
   transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
   min-height: 195px;
   animation: card-appear 0.35s ease both;
+  position: relative;
 }
+
+/* Purple animated texture overlay */
+.card::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(139,92,246,0.05) 60deg,
+    transparent 120deg,
+    rgba(168,85,247,0.03) 200deg,
+    transparent 260deg,
+    rgba(109,40,217,0.05) 320deg,
+    transparent 360deg
+  );
+  animation: cardPurpleRotate 18s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card:hover::before {
+  animation-duration: 9s;
+}
+
 .card:hover {
-  border-color: rgba(255,255,255,0.1);
+  border-color: rgba(139,92,246,0.25);
   transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(139,92,246,0.06);
+}
+
+@keyframes cardPurpleRotate {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* ── Content (left column) ────────────────────────────────── */
@@ -27,6 +61,8 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Status badges ────────────────────────────────────────── */
@@ -206,6 +242,7 @@
   position: relative;
   background: #080b10;
   overflow: hidden;
+  z-index: 1;
 }
 
 .thumbImg { object-fit: cover; }

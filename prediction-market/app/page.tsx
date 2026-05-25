@@ -2,6 +2,22 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import {
+  RiFireLine,
+  RiShieldCheckLine,
+  RiTrophyLine,
+  RiFlashlightLine,
+  RiPercentLine,
+  RiStackLine,
+  RiGovernmentLine,
+  RiVipCrownLine,
+  RiGiftLine,
+  RiDiamondLine,
+  RiTwitterXLine,
+  RiTelegramLine,
+  RiDiscordLine,
+  RiMailLine,
+} from 'react-icons/ri'
 import { useMarkets } from '../context/MarketsContext'
 import MarketCard from '../components/MarketCard'
 import styles from './page.module.css'
@@ -81,7 +97,7 @@ export default function HomePage() {
       <div className={styles.content}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2 className={styles.sectionTitle}>🔥 Trending Markets</h2>
+            <h2 className={styles.sectionTitle}><RiFireLine style={{verticalAlign:'middle', marginRight:6}} />Trending Markets</h2>
             <p className={styles.sectionSub}>Highest volume markets right now</p>
           </div>
           <Link href="/markets" className={styles.viewAllBtn}>
@@ -118,7 +134,7 @@ export default function HomePage() {
       </div>
 
       {/* ── PRFI Token Section ──────────────────────────── */}
-      <div className={styles.prfiSection}>
+      <div id="prfi" className={styles.prfiSection}>
 
         {/* Header */}
         <div className={styles.prfiHeader}>
@@ -134,15 +150,15 @@ export default function HomePage() {
         {/* Use Cases Grid */}
         <div className={styles.useCasesGrid}>
           {[
-            { icon: '💸', title: 'Fee Discounts', desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
-            { icon: '🏆', title: 'Staking Rewards', desc: 'Stake PRFI to earn a share of platform revenue and yield' },
-            { icon: '🗳️', title: 'Governance', desc: 'Vote on new market proposals, fee structures, and protocol upgrades' },
-            { icon: '⚡', title: 'Priority Access', desc: 'PRFI holders get early access to high-volume markets and new features' },
-            { icon: '🎁', title: 'Airdrop Rewards', desc: 'Active predictors earn PRFI airdrops based on accuracy and volume' },
-            { icon: '🔮', title: 'Premium Markets', desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
+            { Icon: RiPercentLine,   color: '#00ff88', title: 'Fee Discounts',    desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
+            { Icon: RiStackLine,     color: '#a855f7', title: 'Staking Rewards',  desc: 'Stake PRFI to earn a share of platform revenue and yield' },
+            { Icon: RiGovernmentLine,color: '#3b82f6', title: 'Governance',       desc: 'Vote on new market proposals, fee structures, and protocol upgrades' },
+            { Icon: RiVipCrownLine,  color: '#f59e0b', title: 'Priority Access',  desc: 'PRFI holders get early access to high-volume markets and new features' },
+            { Icon: RiGiftLine,      color: '#06b6d4', title: 'Airdrop Rewards',  desc: 'Active predictors earn PRFI airdrops based on accuracy and volume' },
+            { Icon: RiDiamondLine,      color: '#ff3366', title: 'Premium Markets',  desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
           ].map((item) => (
             <div key={item.title} className={styles.useCase}>
-              <div className={styles.useCaseIcon}>{item.icon}</div>
+              <item.Icon className={styles.useCaseIcon} style={{ color: item.color }} />
               <div className={styles.useCaseTitle}>{item.title}</div>
               <div className={styles.useCaseDesc}>{item.desc}</div>
             </div>
@@ -207,11 +223,65 @@ export default function HomePage() {
               </div>
             </div>
             <button className={styles.waitlistBtn}>
-              🔔 &nbsp;Join the Waitlist
+              <RiMailLine style={{verticalAlign:'middle',marginRight:6}} />Join the Waitlist
             </button>
             <p className={styles.waitlistSub}>Get notified when the sale goes live</p>
           </div>
 
+        </div>
+      </div>
+
+      {/* ── Whitepaper Section ──────────────────────────── */}
+      <div id="whitepaper" className={styles.whitepaperSection}>
+        <div className={styles.whitepaperLeft}>
+          <div className={styles.whitepaperBadge}>WHITEPAPER</div>
+          <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
+          <p className={styles.whitepaperDesc}>
+            Dive deep into the PredictFi architecture — automated market makers, oracle integrations, 
+            PRFI tokenomics, and governance mechanisms. Everything you need to know about how the 
+            decentralized prediction market engine works.
+          </p>
+          <div className={styles.whitepaperActions}>
+            <a href="#whitepaper" className={styles.readBtn}><RiFlashlightLine style={{verticalAlign:'middle',marginRight:6}} />Read Whitepaper</a>
+            <a href="#whitepaper" className={styles.downloadBtn}>Download PDF</a>
+          </div>
+        </div>
+        <div className={styles.whitepaperRight}>
+          {[
+            { num: '01', title: 'Protocol Overview',    desc: 'Architecture and smart contract design' },
+            { num: '02', title: 'Market Mechanics',     desc: 'AMM model, liquidity, and price discovery' },
+            { num: '03', title: 'PRFI Token',           desc: 'Utility, tokenomics, and distribution' },
+            { num: '04', title: 'Governance',           desc: 'On-chain voting and protocol upgrades' },
+          ].map((ch) => (
+            <div key={ch.num} className={styles.chapterCard}>
+              <div className={styles.chapterNum}>{ch.num}</div>
+              <div>
+                <div className={styles.chapterTitle}>{ch.title}</div>
+                <div className={styles.chapterDesc}>{ch.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Social / Community Section ───────────────────── */}
+      <div id="social" className={styles.socialSection}>
+        <div className={styles.socialHeader}>
+          <h2 className={styles.socialTitle}>Join the Community</h2>
+          <p className={styles.socialSub}>Stay updated, get alpha, and connect with other predictors</p>
+        </div>
+        <div className={styles.socialGrid}>
+          {[
+            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',    color: '#e8eaf0', bg: '#111111' },
+            { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictfi',color: '#229ED9', bg: '#0a1828' },
+            { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/...',color: '#5865F2', bg: '#0a0c1e' },
+          ].map((s) => (
+            <a key={s.label} href="#social" className={styles.socialCard} style={{ borderColor: `${s.color}18` }}>
+              <s.Icon className={styles.socialIcon} style={{ color: s.color }} />
+              <div className={styles.socialLabel}>{s.label}</div>
+              <div className={styles.socialHandle} style={{ color: s.color }}>{s.handle}</div>
+            </a>
+          ))}
         </div>
       </div>
 

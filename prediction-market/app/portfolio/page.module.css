@@ -1,0 +1,356 @@
+/* ── Page ─────────────────────────────────────────────────── */
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 28px 48px;
+  gap: 0;
+}
+
+/* ── Connect prompt ────────────────────────────────────────── */
+.connectPrompt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 80px 0;
+}
+
+.promptIcon {
+  font-size: 56px;
+  color: #a855f7;
+  opacity: 0.7;
+}
+
+.promptTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #e8eaf0;
+}
+
+.promptSub {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.connectBtn {
+  padding: 11px 28px;
+  background: #00ff88;
+  border: none;
+  border-radius: 10px;
+  color: #07060e;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.connectBtn:hover {
+  background: #33ffaa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0,255,136,0.3);
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  margin-bottom: 24px;
+}
+
+.pageTitle {
+  font-size: 28px;
+  font-weight: 900;
+  color: #e8eaf0;
+  letter-spacing: -0.02em;
+}
+
+.pageSub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+/* ── Stats ────────────────────────────────────────────────── */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.statCard {
+  background: #0d1014;
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statIcon {
+  font-size: 22px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.statNum {
+  font-size: 26px;
+  font-weight: 900;
+  color: #e8eaf0;
+  line-height: 1;
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Section label ────────────────────────────────────────── */
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 14px;
+}
+
+/* ── Position cards grid ──────────────────────────────────── */
+.posGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.posCard {
+  background: #0d1014;
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.wonCard {
+  border-color: rgba(0,255,136,0.2);
+  background: #0a1410;
+}
+
+.lostCard {
+  border-color: rgba(255,51,102,0.12);
+}
+
+.canClaim {
+  border-color: rgba(245,158,11,0.3);
+  background: #120e04;
+  animation: claimPulse 2s ease-in-out infinite;
+}
+
+@keyframes claimPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+  50% { box-shadow: 0 0 0 4px rgba(245,158,11,0.08); }
+}
+
+/* ── Position top row ─────────────────────────────────────── */
+.posTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sideBadge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.sideYes {
+  background: rgba(0,255,136,0.1);
+  color: #00ff88;
+  border: 1px solid rgba(0,255,136,0.2);
+}
+
+.sideNo {
+  background: rgba(255,51,102,0.1);
+  color: #ff3366;
+  border: 1px solid rgba(255,51,102,0.2);
+}
+
+.posStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wonBadge, .claimedBadge, .lostBadge, .activeBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.wonBadge {
+  color: #f59e0b;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.2);
+}
+
+.claimedBadge {
+  color: #4b5563;
+  background: rgba(75,85,99,0.1);
+  border: 1px solid rgba(75,85,99,0.2);
+}
+
+.lostBadge {
+  color: #ff3366;
+  background: rgba(255,51,102,0.08);
+  border: 1px solid rgba(255,51,102,0.15);
+}
+
+.activeBadge {
+  color: #00ff88;
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.15);
+}
+
+.liveDot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 6px #00ff88;
+  animation: pulseDot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Question ─────────────────────────────────────────────── */
+.posQuestion {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d1d5db;
+  line-height: 1.45;
+  flex: 1;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+.posFooter {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding-top: 12px;
+}
+
+.posAmount, .posPotential {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.posAmountLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.posAmountVal {
+  font-size: 14px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.posAmountValGreen {
+  font-size: 14px;
+  font-weight: 700;
+  color: #00ff88;
+}
+
+/* Claim button */
+.claimBtn {
+  margin-left: auto;
+  padding: 8px 18px;
+  background: #f59e0b;
+  border: none;
+  border-radius: 8px;
+  color: #07060e;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.claimBtn:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245,158,11,0.3);
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.emptyState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.emptyIcon { font-size: 48px; opacity: 0.4; }
+
+.emptyTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.emptySub {
+  font-size: 14px;
+  color: #374151;
+}
+
+.browseBtn {
+  margin-top: 8px;
+  padding: 10px 24px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.browseBtn:hover {
+  background: rgba(255,255,255,0.09);
+  color: #e8eaf0;
+}

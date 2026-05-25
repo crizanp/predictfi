@@ -512,3 +512,202 @@
   color: #374151;
   line-height: 1.5;
 }
+
+/* ── Whitepaper Section ───────────────────────────────────── */
+.whitepaperSection {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  padding: 52px 40px;
+  background: #ffffff;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.whitepaperLeft {
+  flex: 1;
+  min-width: 0;
+}
+
+.whitepaperBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #6b7280;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.whitepaperTitle {
+  font-size: 32px;
+  font-weight: 900;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.whitepaperDesc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.7;
+  max-width: 420px;
+  margin-bottom: 24px;
+}
+
+.whitepaperActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.readBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: #111827;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.readBtn:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}
+
+.downloadBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: transparent;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.downloadBtn:hover {
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.whitepaperRight {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chapterCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f9fafb;
+  border: 1px solid #f3f4f6;
+  border-radius: 10px;
+  transition: border-color 0.15s;
+}
+
+.chapterCard:hover { border-color: #e5e7eb; }
+
+.chapterNum {
+  font-size: 11px;
+  font-weight: 900;
+  color: #a855f7;
+  min-width: 22px;
+  margin-top: 1px;
+  letter-spacing: 0.04em;
+}
+
+.chapterTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 3px;
+}
+
+.chapterDesc {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ── Social Section ───────────────────────────────────────── */
+.socialSection {
+  padding: 52px 40px;
+  background: #08070f;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  text-align: center;
+}
+
+.socialHeader {
+  margin-bottom: 32px;
+}
+
+.socialTitle {
+  font-size: 28px;
+  font-weight: 900;
+  color: #e8eaf0;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.socialSub {
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.socialGrid {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.socialCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 32px;
+  background: #0d1014;
+  border: 1px solid rgba(255,255,255,0.055);
+  border-radius: 14px;
+  text-decoration: none;
+  min-width: 160px;
+  transition: all 0.15s;
+}
+
+.socialCard:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.socialIcon {
+  font-size: 28px;
+}
+
+.socialLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.socialHandle {
+  font-size: 12px;
+  font-weight: 600;
+}

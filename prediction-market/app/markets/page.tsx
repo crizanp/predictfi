@@ -108,88 +108,56 @@ export default function MarketsPage() {
           </div>
           <div className={styles.hStat}>
             <span className={styles.hStatNum}>{totalVol}</span>
-            <span className={styles.hStatLabel}>tBNB volume</span>
+            <span className={styles.hStatLabel}>tBNB vol</span>
           </div>
         </div>
       </div>
 
-      <div className={styles.body}>
+      {/* ── Horizontal filter bar ─────────────────────── */}
+      <div className={styles.filterBar}>
 
-        {/* ── Filter sidebar ────────────────────────── */}
-        <aside className={styles.sidebar}>
-
-          {/* Search */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>Search</div>
-            <div className={styles.searchWrap}>
-              <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" strokeWidth={2} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
-              <input
-                className={styles.searchInput}
-                placeholder="Search markets…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              {search && <button className={styles.clearBtn} onClick={() => setSearch('')}>✕</button>}
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>Status</div>
-            <div className={styles.filterChips}>
-              {STATUSES.map(s => (
-                <button
-                  key={s}
-                  className={`${styles.chip} ${status === s ? styles.chipActive : ''}`}
-                  onClick={() => setStatus(s)}
-                >
-                  {s === 'Live' && <span className={styles.liveDot} />}
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Category */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>Category</div>
-            <div className={styles.filterChips}>
-              {CATEGORIES.map(c => (
-                <button
-                  key={c}
-                  className={`${styles.chip} ${category === c ? styles.chipActive : ''}`}
-                  onClick={() => setCategory(c)}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Sort */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>Sort By</div>
-            <div className={styles.sortList}>
-              {SORTS.map(s => (
-                <button
-                  key={s.value}
-                  className={`${styles.sortBtn} ${sort === s.value ? styles.sortActive : ''}`}
-                  onClick={() => setSort(s.value as SortKey)}
-                >
-                  {sort === s.value && <span className={styles.sortCheck}>✓</span>}
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Min volume */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>Min Volume (tBNB)</div>
+        {/* Row 1: search + sort + reset */}
+        <div className={styles.filterRow}>
+          <div className={styles.searchWrap}>
+            <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" strokeWidth={2} stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
             <input
-              className={styles.numInput}
+              className={styles.searchInput}
+              placeholder="Search markets…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && <button className={styles.clearBtn} onClick={() => setSearch('')}>✕</button>}
+          </div>
+
+          <div className={styles.statusChips}>
+            {STATUSES.map(s => (
+              <button
+                key={s}
+                className={`${styles.chip} ${status === s ? styles.chipActive : ''}`}
+                onClick={() => setStatus(s)}
+              >
+                {s === 'Live' && <span className={styles.liveDot} />}
+                {s}
+              </button>
+            ))}
+          </div>
+
+          <select
+            className={styles.sortSelect}
+            value={sort}
+            onChange={e => setSort(e.target.value as SortKey)}
+          >
+            {SORTS.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+
+          <div className={styles.volWrap}>
+            <span className={styles.volLabel}>Min Vol</span>
+            <input
+              className={styles.volInput}
               type="number"
               min="0"
               step="0.01"
@@ -199,31 +167,6 @@ export default function MarketsPage() {
             />
           </div>
 
-          {/* YES% range */}
-          <div className={styles.filterBlock}>
-            <div className={styles.filterLabel}>YES% Range</div>
-            <div className={styles.rangeRow}>
-              <input
-                className={styles.numInput}
-                type="number"
-                min="0" max="100"
-                placeholder="0"
-                value={minYes}
-                onChange={e => setMinYes(Number(e.target.value))}
-              />
-              <span className={styles.rangeSep}>–</span>
-              <input
-                className={styles.numInput}
-                type="number"
-                min="0" max="100"
-                placeholder="100"
-                value={maxYes}
-                onChange={e => setMaxYes(Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Reset */}
           <button
             className={styles.resetBtn}
             onClick={() => {
@@ -236,42 +179,72 @@ export default function MarketsPage() {
               setMaxYes(100)
             }}
           >
-            Reset Filters
+            Reset
           </button>
-        </aside>
+        </div>
 
-        {/* ── Markets list ──────────────────────────── */}
-        <main className={styles.results}>
-          <div className={styles.resultsHeader}>
-            <span className={styles.resultCount}>
-              {sorted.length} {sorted.length === 1 ? 'market' : 'markets'}
-              {sorted.length !== markets.length && ` (filtered from ${markets.length})`}
-            </span>
-            <div className={styles.viewToggle}>
-              <span className={styles.sortingBy}>Sorted by: <strong>{SORTS.find(s => s.value === sort)?.label}</strong></span>
-            </div>
+        {/* Row 2: category chips */}
+        <div className={styles.catRow}>
+          {CATEGORIES.map(c => (
+            <button
+              key={c}
+              className={`${styles.catChip} ${category === c ? styles.catChipActive : ''}`}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+          <div className={styles.yesRange}>
+            <span className={styles.yesLabel}>YES%</span>
+            <input
+              className={styles.rangeInput}
+              type="number"
+              min="0" max="100"
+              placeholder="0"
+              value={minYes}
+              onChange={e => setMinYes(Number(e.target.value))}
+            />
+            <span>–</span>
+            <input
+              className={styles.rangeInput}
+              type="number"
+              min="0" max="100"
+              placeholder="100"
+              value={maxYes}
+              onChange={e => setMaxYes(Number(e.target.value))}
+            />
           </div>
-
-          {isLoadingMarkets ? (
-            <div className={styles.loadingState}>
-              <div className={styles.spinner} />
-              <p>Loading markets from BSC Testnet…</p>
-            </div>
-          ) : sorted.length === 0 ? (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>🔍</div>
-              <h2>No Markets Match</h2>
-              <p>Try adjusting your filters or search query</p>
-            </div>
-          ) : (
-            <div className={styles.grid}>
-              {sorted.map(m => (
-                <MarketCard key={m.id} market={m} nowInSeconds={nowInSeconds} />
-              ))}
-            </div>
-          )}
-        </main>
+        </div>
       </div>
+
+      {/* ── Results header ───────────────────────────── */}
+      <div className={styles.resultsHeader}>
+        <span className={styles.resultCount}>
+          {sorted.length} {sorted.length === 1 ? 'market' : 'markets'}
+          {sorted.length !== markets.length && ` (filtered from ${markets.length})`}
+        </span>
+        <span className={styles.sortingBy}>Sorted by: <strong>{SORTS.find(s => s.value === sort)?.label}</strong></span>
+      </div>
+
+      {/* ── Markets grid ─────────────────────────────── */}
+      {isLoadingMarkets ? (
+        <div className={styles.loadingState}>
+          <div className={styles.spinner} />
+          <p>Loading markets from BSC Testnet…</p>
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>🔍</div>
+          <h2>No Markets Match</h2>
+          <p>Try adjusting your filters or search query</p>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {sorted.map(m => (
+            <MarketCard key={m.id} market={m} nowInSeconds={nowInSeconds} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

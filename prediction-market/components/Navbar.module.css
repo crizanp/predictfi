@@ -12,10 +12,45 @@
 .controlsRow {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 0 24px;
   height: 48px;
   gap: 8px;
+}
+
+/* ── Home marketing nav ─────────────────────────────────────── */
+.homeNav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.homeNavLink {
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: color 0.15s;
+}
+
+.homeNavLink:hover {
+  color: #e8eaf0;
+}
+
+/* ── Back link for inner pages ──────────────────────────────── */
+.pageNavLeft {}
+
+.backToHome {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.backToHome:hover {
+  color: #e8eaf0;
 }
 
 .right {
@@ -43,7 +78,7 @@
   background: rgba(255,255,255,0.08);
   color: #e8eaf0;
 }
-.adminIcon { font-size: 12px; }
+.adminIcon { font-size: 14px; vertical-align: middle; }
 
 /* Connect */
 .connectBtn {

@@ -17,17 +17,17 @@ const NAV = [
     d: 'M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z',
   },
   {
-    href: '#',
+    href: '/portfolio',
     label: 'Portfolio',
     d: 'M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z',
   },
   {
-    href: '#',
+    href: '/activity',
     label: 'Activity',
     d: 'M22 12h-4l-3 9L9 3l-3 9H2',
   },
   {
-    href: '#',
+    href: '/leaderboard',
     label: 'Leaderboard',
     d: 'M18 20V10M12 20V4M6 20v-6',
   },
