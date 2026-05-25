@@ -76,16 +76,7 @@
 }
 
 .resolvedOverlay::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 4%;
-  right: 4%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, rgba(192,132,252,0.25) 25%, rgba(192,132,252,0.35) 50%, rgba(192,132,252,0.25) 75%, transparent 100%);
-  transform: translateY(-50%) rotate(-1deg);
-  border-radius: 1px;
-  animation: resolved-slash 0.8s 0.1s ease both;
+  display: none;
 }
 
 @keyframes cardPurpleRotate {

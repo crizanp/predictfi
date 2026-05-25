@@ -67,3 +67,40 @@ export async function getOddsHistory(marketId: number): Promise<OddsSnapshot[]> 
   if (error) return []
   return (data as OddsSnapshot[]) ?? []
 }
+
+// ── Whitelist applications ────────────────────────────────────────────────────
+
+export interface WhitelistApplication {
+  id?: number
+  wallet_address: string
+  name: string
+  email: string
+  telegram: string
+  status?: 'pending' | 'approved' | 'rejected'
+  created_at?: string
+}
+
+export async function getWhitelistApplication(wallet: string): Promise<WhitelistApplication | null> {
+  if (!supabaseKey) return null
+  const { data, error } = await supabase
+    .from('whitelist_applications')
+    .select('*')
+    .eq('wallet_address', wallet.toLowerCase())
+    .maybeSingle()
+  if (error) return null
+  return data as WhitelistApplication | null
+}
+
+export async function submitWhitelistApplication(app: Omit<WhitelistApplication, 'id' | 'status' | 'created_at'>): Promise<{ success: boolean; error?: string }> {
+  if (!supabaseKey) return { success: false, error: 'Supabase not configured' }
+  const { error } = await supabase
+    .from('whitelist_applications')
+    .upsert({
+      ...app,
+      wallet_address: app.wallet_address.toLowerCase(),
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }, { onConflict: 'wallet_address' })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}

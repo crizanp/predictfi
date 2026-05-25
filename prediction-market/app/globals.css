@@ -27,6 +27,7 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
   --nav-h: 60px;
+  --banner-h: 32px;
 }
 
 /* ── Reset ─────────────────────────────────────────────────── */
@@ -47,7 +48,7 @@ body {
 .mainnetBanner {
   position: sticky;
   top: 0;
-  z-index: 1100;
+  z-index: 800;
   background: linear-gradient(90deg, #3b0764 0%, #581c87 50%, #3b0764 100%);
   color: #e9d5ff;
   font-size: 12px;

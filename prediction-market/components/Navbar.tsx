@@ -35,7 +35,7 @@ function buildTickerItems(markets: { question: string; resolved: boolean }[]): T
 const HOME_NAV = [
   { label: 'PRFI Token', href: '#prfi' },
   { label: 'Whitepaper', href: '#whitepaper' },
-  { label: 'Whitelist', href: '#whitelist' },
+  { label: 'Whitelist', href: '/whitelist' },
   { label: 'Partnership', href: '#partnership' },
   { label: 'Social', href: '#social' },
 ]
@@ -45,6 +45,7 @@ const INNER_NAV = [
   { label: 'Portfolio', href: '/portfolio' },
   { label: 'Activity', href: '/activity' },
   { label: 'Leaderboard', href: '/leaderboard' },
+  { label: 'Whitelist', href: '/whitelist' },
 ]
 
 export default function Navbar() {

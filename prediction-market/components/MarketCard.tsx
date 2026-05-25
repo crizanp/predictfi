@@ -75,7 +75,6 @@ export default function MarketCard({ market, nowInSeconds }: Props) {
 
         {/* Status badges */}
         <div className={styles.badgeRow}>
-          {market.resolved && <span className={styles.statusResolved}>RESOLVED</span>}
           {isLive && <span className={styles.statusLive}><span className={styles.liveDot} />LIVE</span>}
           {isEnded && !market.resolved && <span className={styles.statusEnded}>ENDED</span>}
         </div>

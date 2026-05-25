@@ -51,6 +51,45 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* ── Homepage Banner (1680 × 238) ────────────────── */}
+      <div className={styles.heroBannerWrap}>
+        <div className={styles.heroBanner}>
+          <div className={styles.heroBannerInner}>
+            <div className={styles.heroBannerLeft}>
+              <div className={styles.heroBannerTag}>🚀 PRESALE NOW OPEN</div>
+              <div className={styles.heroBannerHeadline}>
+                PredictFi <span>PRFI</span> Token
+              </div>
+              <div className={styles.heroBannerSub}>
+                Jun 1 – 7 · 150 BNB raise · 0.00015 BNB per PRFI · 25% TGE vesting
+              </div>
+              <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.heroBannerBtn}>
+                Buy on moonsale.app →
+              </a>
+            </div>
+            <div className={styles.heroBannerRight}>
+              <div className={styles.heroBannerOrb} />
+              <div className={styles.heroBannerStats}>
+                <div className={styles.heroBannerStat}>
+                  <span className={styles.heroBannerStatVal}>150</span>
+                  <span className={styles.heroBannerStatLabel}>BNB Raise</span>
+                </div>
+                <div className={styles.heroBannerDivider} />
+                <div className={styles.heroBannerStat}>
+                  <span className={styles.heroBannerStatVal}>1B</span>
+                  <span className={styles.heroBannerStatLabel}>Total Supply</span>
+                </div>
+                <div className={styles.heroBannerDivider} />
+                <div className={styles.heroBannerStat}>
+                  <span className={styles.heroBannerStatVal}>7</span>
+                  <span className={styles.heroBannerStatLabel}>Days Only</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Trending Markets (top 6) ─────────────────────── */}
       <div className={styles.content}>
         <div className={styles.sectionHeader}>

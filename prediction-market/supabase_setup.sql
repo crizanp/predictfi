@@ -52,3 +52,36 @@ CREATE POLICY "Allow insert odds history"
 -- Supabase Dashboard → Storage → New Bucket → "market-images"
 -- Set bucket to PUBLIC so images are accessible without auth.
 -- ============================================================
+
+-- ============================================================
+-- 3. card_bg / card_text columns on market_metadata
+-- ============================================================
+ALTER TABLE market_metadata ADD COLUMN IF NOT EXISTS card_bg   TEXT;
+ALTER TABLE market_metadata ADD COLUMN IF NOT EXISTS card_text TEXT;
+
+-- ============================================================
+-- 4. whitelist_applications table
+-- ============================================================
+CREATE TABLE IF NOT EXISTS whitelist_applications (
+  id             BIGSERIAL PRIMARY KEY,
+  wallet_address TEXT        UNIQUE NOT NULL,
+  name           TEXT        NOT NULL,
+  email          TEXT        NOT NULL,
+  telegram       TEXT        NOT NULL,
+  status         TEXT        NOT NULL DEFAULT 'pending',
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_whitelist_wallet ON whitelist_applications (wallet_address);
+
+ALTER TABLE whitelist_applications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read own whitelist application"
+  ON whitelist_applications FOR SELECT USING (true);
+
+CREATE POLICY "Allow insert whitelist application"
+  ON whitelist_applications FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow update whitelist application"
+  ON whitelist_applications FOR UPDATE USING (true);
+

@@ -34,6 +34,11 @@ const NAV = [
     d: 'M18 20V10M12 20V4M6 20v-6',
   },
   {
+    href: '/whitelist',
+    label: 'Whitelist',
+    d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+  },
+  {
     href: '#',
     label: 'Create Market',
     d: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v8M8 12h8',
