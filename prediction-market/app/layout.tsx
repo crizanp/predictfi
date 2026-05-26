@@ -4,6 +4,7 @@ import Providers from '../components/Providers'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import CornerNotifications from '../components/CornerNotifications'
+import GlobalBanner from '../components/GlobalBanner'
 import { ToastProvider } from '../context/ToastContext'
 
 export const metadata: Metadata = {
@@ -28,16 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Sidebar />
               <div className="appMain">
                 <Navbar />
-                <div className="globalPageBannerWrap">
-                  <div className="globalPageBanner">
-                    <span className="globalPageBannerAds">Ads</span>
-                    <img
-                      src="/banner-placeholder.png"
-                      alt="PredictFi Banner"
-                      className="globalPageBannerImg"
-                    />
-                  </div>
-                </div>
+                <GlobalBanner />
                 {children}
               </div>
               <CornerNotifications />

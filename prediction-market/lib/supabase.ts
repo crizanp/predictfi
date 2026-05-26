@@ -173,6 +173,19 @@ export interface MarketActivity {
   created_at: string
 }
 
+export interface BannerAd {
+  id: number
+  title: string
+  image_url: string | null
+  link_url: string | null
+  pages: string[]
+  start_date: string
+  end_date: string
+  is_active: boolean
+  contact_handle: string | null
+  created_at: string
+}
+
 export async function getActivity(marketId: number): Promise<MarketActivity[]> {
   if (!supabaseKey) return []
   const { data } = await supabase

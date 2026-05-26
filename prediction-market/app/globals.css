@@ -110,6 +110,39 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  position: absolute;
+  inset: 0;
+}
+.globalPageBannerImgVisible {
+  opacity: 1;
+}
+
+.globalPageBannerSkeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #150d28 25%, #1e1140 50%, #150d28 75%);
+  background-size: 200% 100%;
+  animation: bannerShimmer 1.6s infinite;
+}
+@keyframes bannerShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.globalPageBannerTextOnly {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.globalPageBannerTextTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(192,132,252,0.6);
+  letter-spacing: 0.04em;
 }
 
 a { color: inherit; text-decoration: none; }

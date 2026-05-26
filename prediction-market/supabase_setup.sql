@@ -139,3 +139,44 @@ ALTER TABLE market_activity ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read activity"  ON market_activity FOR SELECT USING (true);
 CREATE POLICY "Allow insert activity" ON market_activity FOR INSERT WITH CHECK (true);
 
+
+-- ============================================================
+-- 7. banner_ads table (Ads Management)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS banner_ads (
+  id              BIGSERIAL PRIMARY KEY,
+  title           TEXT          NOT NULL,
+  image_url       TEXT,
+  link_url        TEXT,
+  -- pages is an array: ['all'] OR any subset of
+  -- ['home','markets','market_detail','portfolio','activity','leaderboard','whitelist']
+  pages           TEXT[]        NOT NULL DEFAULT ARRAY['all'],
+  start_date      TIMESTAMPTZ   NOT NULL,
+  end_date        TIMESTAMPTZ   NOT NULL,
+  is_active       BOOLEAN       NOT NULL DEFAULT true,
+  contact_handle  TEXT          DEFAULT 'cixanp',
+  created_at      TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_banner_ads_active     ON banner_ads (is_active);
+CREATE INDEX IF NOT EXISTS idx_banner_ads_start_date ON banner_ads (start_date);
+CREATE INDEX IF NOT EXISTS idx_banner_ads_end_date   ON banner_ads (end_date);
+
+ALTER TABLE banner_ads ENABLE ROW LEVEL SECURITY;
+
+-- Public can read active ads (needed by GlobalBanner component)
+CREATE POLICY "Public read banner_ads"
+  ON banner_ads FOR SELECT USING (true);
+
+-- Only authenticated/admin can insert/update/delete
+-- For now we allow open insert/update so the admin page works without auth.
+-- Tighten this once you add admin authentication.
+CREATE POLICY "Allow insert banner_ads"
+  ON banner_ads FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow update banner_ads"
+  ON banner_ads FOR UPDATE USING (true);
+
+CREATE POLICY "Allow delete banner_ads"
+  ON banner_ads FOR DELETE USING (true);
+
