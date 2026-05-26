@@ -1,6 +1,6 @@
 .container {
   position: fixed;
-  top: 88px; /* below navbar */
+  top: 58px; /* just below sticky navbar */
   right: 20px; /* just past sidebar */
   z-index: 999;
   display: flex;

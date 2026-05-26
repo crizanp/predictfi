@@ -176,6 +176,19 @@ export default function Navbar() {
       </div>
 
      
+      {/* Wrong-network banner — shown below nav, full width */}
+      {account && isWrongNetwork && (
+        <div className={styles.wrongNetworkBanner}>
+          <span>⚠ Wrong network selected. Please switch to BSC Testnet.</span>
+          <button
+            className={styles.switchNetBannerBtn}
+            onClick={() => { void switchActiveNetwork() }}
+            disabled={isBusy}
+          >
+            {busyAction === 'switch-network' ? 'Switching…' : 'Switch Network'}
+          </button>
+        </div>
+      )}
     </header>
   )
 }

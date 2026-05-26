@@ -33,11 +33,12 @@
   letter-spacing: 0.01em;
   padding: 5px 11px;
   border-radius: 8px;
+  background: rgba(255,255,255,0.05);
   transition: background 0.12s, color 0.12s;
 }
 
 .homeNavLink:hover {
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.12);
   color: #e8eaf0;
 }
 
@@ -64,8 +65,8 @@
 }
 
 .innerNavLink.activeLink {
-  background: rgba(192,132,252,0.1);
-  color: #c084fc;
+  background: rgba(255,255,255,0.12);
+  color: #f0e6ff;
   font-weight: 700;
 }
 
@@ -190,6 +191,34 @@
   transition: all 0.15s;
 }
 .switchNetBtn:hover { background: rgba(255,51,102,0.16); }
+
+/* Wrong network banner (full-width below nav) */
+.wrongNetworkBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: rgba(255,51,102,0.1);
+  border-top: 1px solid rgba(255,51,102,0.18);
+  font-size: 12px;
+  font-weight: 600;
+  color: #ff6b8a;
+  flex-wrap: wrap;
+}
+
+.switchNetBannerBtn {
+  padding: 4px 14px;
+  background: rgba(255,51,102,0.18);
+  border: 1px solid rgba(255,51,102,0.4);
+  border-radius: 6px;
+  color: #ff3366;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background 0.12s;
+}
+.switchNetBannerBtn:hover { background: rgba(255,51,102,0.28); }
+.switchNetBannerBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* Account */
 .accountGroup { display: flex; align-items: center; gap: 8px; }

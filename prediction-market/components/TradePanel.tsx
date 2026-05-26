@@ -27,7 +27,6 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
 
   const userPrediction: UserPrediction | undefined = account ? userPredictions[market.id] : undefined
 
-  const [tab, setTab] = useState<'buy' | 'sell'>('buy')
   const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
   const lockedOutcome = userPrediction ? (userPrediction.choice as 1 | 2) : null
   const activeOutcome = lockedOutcome ?? selectedOutcome
@@ -106,24 +105,14 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
         ))}
       </div>
 
-      {/* -- Header: Buy/Sell tabs + Market type ------- */}
+      {/* -- Header ------------------------------------ */}
       <div className={styles.panelHeader}>
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${tab === 'buy' ? styles.tabActive : ''}`}
-            onClick={() => setTab('buy')}
-          >Buy</button>
-          <button
-            className={`${styles.tab} ${tab === 'sell' ? styles.tabActive : ''}`}
-            onClick={() => setTab('sell')}
-          >Sell</button>
-        </div>
-        <span className={styles.orderType}>Market ?</span>
+        <span className={styles.panelTitle}>Predict</span>
+        <span className={styles.orderType}>Market Order</span>
       </div>
 
-      {/* -- BUY TAB ----------------------------------- */}
-      {tab === 'buy' && (
-        <>
+      {/* -- Outcome selector + trade form ------------ */}
+      <>
           {/* Outcome selector */}
           {!isMarketClosed && (
             <div className={styles.outcomeSelect}>
@@ -256,44 +245,6 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
             </div>
           )}
         </>
-      )}
-
-      {/* -- SELL TAB ----------------------------------- */}
-      {tab === 'sell' && (
-        <div className={styles.sellTab}>
-          {userPrediction ? (
-            <>
-              <div className={styles.sellInfo}>
-                <div className={styles.sellRow}>
-                  <span className={styles.sellRowLabel}>Your position</span>
-                  <strong className={userPrediction.choice === 1 ? styles.textYes : styles.textNo}>
-                    {userPrediction.choice === 1 ? yesLabel : noLabel}
-                  </strong>
-                </div>
-                <div className={styles.sellRow}>
-                  <span className={styles.sellRowLabel}>Amount staked</span>
-                  <strong>{formatToken(userPrediction.amount)} tBNB</strong>
-                </div>
-                {market.resolved && (
-                  <div className={styles.sellRow}>
-                    <span className={styles.sellRowLabel}>Est. payout</span>
-                    <strong className={userPrediction.choice === market.result ? styles.textYes : styles.textNo}>
-                      {userPrediction.choice === market.result
-                        ? `${potentialReward.toFixed(4)} tBNB`
-                        : 'LOST'}
-                    </strong>
-                  </div>
-                )}
-              </div>
-              <p className={styles.sellNote}>
-                This market does not support early exit. Wait for resolution to claim winnings.
-              </p>
-            </>
-          ) : (
-            <div className={styles.noPosition}>No open position on this market.</div>
-          )}
-        </div>
-      )}
 
       {/* -- Claim Winnings ---------------------------- */}
       {canClaimWinnings && (

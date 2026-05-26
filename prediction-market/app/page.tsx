@@ -22,6 +22,8 @@ import { useMarkets } from '../context/MarketsContext'
 import MarketCard from '../components/MarketCard'
 import styles from './page.module.css'
 
+type UseCase = typeof tokenUseCases[number]
+
 const tokenUseCases = [
   {
     Icon: RiPercentLine,
@@ -112,47 +114,20 @@ const tokenAllocations = [
   },
 ]
 
-const whitepaperChapters = [
-  {
-    num: '01',
-    title: 'Protocol Overview',
-    desc: 'Architecture and smart contract design',
-    why: 'This chapter defines why PredictFi exists, what problems it solves, and how trust is enforced on-chain.',
-    plan: 'Document system architecture, core contracts, and safety assumptions before scaling market volume.',
-    milestones: ['Market factory + settlement flow', 'Oracle integrity and fallback design', 'Risk controls and circuit breakers'],
-  },
-  {
-    num: '02',
-    title: 'Market Mechanics',
-    desc: 'AMM model, liquidity, and price discovery',
-    why: 'Clear market mechanics help users understand how odds move, where liquidity comes from, and how outcomes are priced.',
-    plan: 'Roll out liquidity tooling, dynamic fee curves, and transparent settlement logic in phased releases.',
-    milestones: ['Dynamic odds model', 'LP incentive framework', 'Settlement and dispute finalization'],
-  },
-  {
-    num: '03',
-    title: 'PRFI Token',
-    desc: 'Utility, tokenomics, and distribution',
-    why: 'The token chapter explains utility first so value is tied to platform activity instead of pure speculation.',
-    plan: 'Sequence token utility launches: fee discounts, staking rewards, and governance rights with usage metrics.',
-    milestones: ['Fee utility activation', 'Staking rewards module', 'In-protocol governance voting'],
-  },
-  {
-    num: '04',
-    title: 'Governance',
-    desc: 'On-chain voting and protocol upgrades',
-    why: 'Governance gives the community control over emissions, listings, and treasury decisions as the protocol matures.',
-    plan: 'Start with guarded governance, then transition to community-led execution with timelocks and transparent voting.',
-    milestones: ['Proposal framework launch', 'Treasury voting permissions', 'Full community upgrade lifecycle'],
-  },
+const DOC_LINKS = [
+  { label: 'Whitepaper', href: '#' },
+  { label: 'Pitchdeck', href: '#' },
+  { label: 'Download PDF Outline', href: '#' },
+  { label: 'Audit', href: '#' },
+  { label: 'Roadmap', href: '#' },
 ]
 
 export default function HomePage() {
   const { markets, isLoadingMarkets } = useMarkets()
   const [nowInSeconds, setNowInSeconds] = useState(0)
   const [activeAllocation, setActiveAllocation] = useState(tokenAllocations[0].label)
-  const [activeChapter, setActiveChapter] = useState(whitepaperChapters[0].num)
   const [isTokenomicsModalOpen, setIsTokenomicsModalOpen] = useState(false)
+  const [activeUseCase, setActiveUseCase] = useState<UseCase | null>(null)
 
   useEffect(() => {
     const interval = setInterval(() => setNowInSeconds(Math.floor(Date.now() / 1000)), 1000)
@@ -160,39 +135,31 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (!isTokenomicsModalOpen) {
-      return
-    }
-
+    const isOpen = isTokenomicsModalOpen || activeUseCase !== null
+    if (!isOpen) return
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsTokenomicsModalOpen(false)
+        setActiveUseCase(null)
       }
     }
-
     document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleEscape)
-
     return () => {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [isTokenomicsModalOpen])
+  }, [isTokenomicsModalOpen, activeUseCase])
 
-  // Top 6 by volume for homepage
+  // Top 6 – latest first
   const top6 = useMemo(() =>
-    [...markets].sort((a, b) => (parseFloat(b.totalPool) || 0) - (parseFloat(a.totalPool) || 0)).slice(0, 6),
+    [...markets].sort((a, b) => b.id - a.id).slice(0, 6),
     [markets]
   )
 
   const selectedAllocation = useMemo(() =>
     tokenAllocations.find((allocation) => allocation.label === activeAllocation) ?? tokenAllocations[0],
     [activeAllocation]
-  )
-
-  const selectedChapter = useMemo(() =>
-    whitepaperChapters.find((chapter) => chapter.num === activeChapter) ?? whitepaperChapters[0],
-    [activeChapter]
   )
 
   const donutSlices = useMemo(() => {
@@ -328,13 +295,17 @@ export default function HomePage() {
 
         {/* Use Cases Grid */}
         <div className={styles.useCasesGrid}>
-          {tokenUseCases.map((item, index) => (
-            <div key={item.title} className={styles.useCase}>
-              <div className={styles.useCaseIndex}>{String(index + 1).padStart(2, '0')}</div>
+          {tokenUseCases.map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              className={styles.useCase}
+              onClick={() => setActiveUseCase(item)}
+            >
               <item.Icon className={styles.useCaseIcon} style={{ color: item.color }} />
               <div className={styles.useCaseTitle}>{item.title}</div>
               <div className={styles.useCaseDesc}>{item.desc}</div>
-            </div>
+            </button>
           ))}
         </div>
         </div>  {/* Tokenomics + Presale row */}
@@ -344,7 +315,6 @@ export default function HomePage() {
           <div className={styles.tokenomicsCard}>
             <div className={styles.cardLabel}>TOKENOMICS</div>
             <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
-            <div className={styles.supplySubtitle}>Fixed supply · No inflation · Deflationary buybacks</div>
 
             {/* SVG Donut chart */}
             <div className={styles.donutWrap}>
@@ -484,7 +454,7 @@ export default function HomePage() {
               onClick={() => setIsTokenomicsModalOpen(false)}
               aria-label="Close tokenomics modal"
             >
-              Close
+              ✕ Close
             </button>
 
             <div className={styles.tokenomicsModalHead}>
@@ -512,67 +482,63 @@ export default function HomePage() {
 
       
 
-      {/* ── Whitepaper Section ──────────────────────────── */}
-      <div id="whitepaper" className={styles.whitepaperSection}>
-        <div className={styles.whitepaperAura} />
-        <div className={styles.whitepaperLeft}>
-          <div className={styles.whitepaperBadge}>WHITEPAPER</div>
-          <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
-          <p className={styles.whitepaperDesc}>
-            Dive deep into the PredictFi architecture — automated market makers, oracle integrations, 
-            PRFI tokenomics, and governance mechanisms. Everything you need to know about how the 
-            decentralized prediction market engine works.
-          </p>
-          <div className={styles.whitepaperMeta}>
-            <div className={styles.whitepaperMetaItem}>4 Strategic Chapters</div>
-            <div className={styles.whitepaperMetaItem}>Execution-first Roadmap</div>
-            <div className={styles.whitepaperMetaItem}>Transparent Governance Model</div>
-          </div>
-          <div className={styles.whitepaperActions}>
-            <a href="#whitepaper-details" className={styles.readBtn}><RiFlashlightLine style={{verticalAlign:'middle',marginRight:6}} />Read Whitepaper</a>
-            <a href="#whitepaper-details" className={styles.downloadBtn}>Download PDF Outline</a>
+      {activeUseCase && (
+        <div className={styles.tokenomicsModalOverlay} onClick={() => setActiveUseCase(null)}>
+          <div
+            className={styles.tokenomicsModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="usecase-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.tokenomicsModalClose}
+              onClick={() => setActiveUseCase(null)}
+              aria-label="Close use case modal"
+            >
+              ✕ Close
+            </button>
+            <div className={styles.tokenomicsModalHead}>
+              <div className={styles.tokenomicsModalBadge} style={{ background: `${activeUseCase.color}18`, borderColor: `${activeUseCase.color}44`, color: activeUseCase.color }}>PRFI UTILITY</div>
+              <h3 id="usecase-modal-title" className={styles.tokenomicsModalTitle}>
+                {activeUseCase.title}
+              </h3>
+              <p className={styles.tokenomicsModalSubtitle}>{activeUseCase.desc}</p>
+            </div>
+            <div className={styles.tokenomicsModalGrid}>
+              <div className={styles.tokenomicsModalCard} style={{ gridColumn: '1 / -1' }}>
+                <div className={styles.tokenomicsModalCardLabel}>What this means for holders</div>
+                <p>{activeUseCase.desc}</p>
+              </div>
+            </div>
           </div>
         </div>
-        <div className={styles.whitepaperRight}>
-          <div className={styles.chapterGrid}>
-            {whitepaperChapters.map((ch) => (
-              <button
-                type="button"
-                key={ch.num}
-                className={`${styles.chapterCard} ${activeChapter === ch.num ? styles.chapterCardActive : ''}`}
-                onClick={() => setActiveChapter(ch.num)}
-              >
-                <div className={styles.chapterNum}>{ch.num}</div>
-                <div>
-                  <div className={styles.chapterTitle}>{ch.title}</div>
-                  <div className={styles.chapterDesc}>{ch.desc}</div>
-                </div>
-              </button>
-            ))}
-          </div>
+      )}
 
-          <div id="whitepaper-details" className={styles.chapterDetailCard}>
-            <div className={styles.chapterDetailLabel}>Why this chapter exists</div>
-            <h3 className={styles.chapterDetailTitle}>{selectedChapter.num} · {selectedChapter.title}</h3>
-            <p className={styles.chapterDetailText}>{selectedChapter.why}</p>
-            <div className={styles.chapterDetailPlan}>
-              <div className={styles.chapterDetailLabel}>Execution Plan</div>
-              <p>{selectedChapter.plan}</p>
-            </div>
-            <div className={styles.chapterMilestones}>
-              {selectedChapter.milestones.map((item) => (
-                <div key={item} className={styles.chapterMilestone}>
-                  <span className={styles.chapterMilestoneDot} />
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* ── Whitepaper Section ──────────────────────────── */}
+      <div id="whitepaper" className={styles.whitepaperSection}>
+        <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
+        <p className={styles.whitepaperDesc}>
+          Dive deep into the PredictFi architecture — automated market makers, oracle integrations,
+          PRFI tokenomics, and governance mechanisms. Everything you need to know about how the
+          decentralized prediction market engine works.
+        </p>
+        <div className={styles.docLinks}>
+          {DOC_LINKS.map((doc) => (
+            <a key={doc.label} href={doc.href} className={styles.docLink}>
+              {doc.label}
+            </a>
+          ))}
         </div>
       </div>
 
       {/* ── Social / Community Section ───────────────────── */}
       <div id="social" className={styles.socialSection}>
+        <span className={styles.cornerTL} aria-hidden />
+        <span className={styles.cornerTR} aria-hidden />
+        <span className={styles.cornerBL} aria-hidden />
+        <span className={styles.cornerBR} aria-hidden />
         <div className={styles.socialHeader}>
           <h2 className={styles.socialTitle}>Join the Community</h2>
           <p className={styles.socialSub}>Stay updated, get alpha, and connect with other predictors</p>
