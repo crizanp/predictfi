@@ -146,13 +146,33 @@ export default function AdminPortal() {
       form.append('marketId', String(marketId))
       const res = await fetch('/api/upload-market-image', { method: 'POST', body: form })
       const data = await res.json() as { url?: string; error?: string }
-      if (data.url) {
-        setMetaEditing((prev) => ({ ...prev, [marketId]: { ...prev[marketId], image_url: data.url } }))
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || 'Image upload failed')
       }
+
+      setMetaEditing((prev) => ({ ...prev, [marketId]: { ...prev[marketId], image_url: data.url } }))
+
+      const current = metaEditing[marketId] ?? {}
+      await upsertMarketMeta({
+        market_id: marketId,
+        image_url: data.url,
+        description: (current.description as string | undefined) || null,
+        rules: (current.rules as string | undefined) || null,
+        card_bg: (current.card_bg as string | undefined) || null,
+        card_text: (current.card_text as string | undefined) || null,
+        events_json: (current.events_json as string | undefined) || null,
+        yes_label: (current.yes_label as string | undefined) || null,
+        no_label: (current.no_label as string | undefined) || null,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Image upload failed'
+      window.alert(`Upload failed: ${message}`)
     } finally {
       setUploadingImage((prev) => ({ ...prev, [marketId]: false }))
+      const input = fileInputRefs.current[marketId]
+      if (input) input.value = ''
     }
-  }, [])
+  }, [metaEditing])
 
   const stats = useMemo(() => {
     const total = markets.length
