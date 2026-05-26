@@ -22,6 +22,14 @@ export interface UserPrediction {
   claimed: boolean
 }
 
+export interface PredictionEvent {
+  address: string
+  choice: number
+  amount: string
+  txHash: string
+  blockNumber: number
+}
+
 export interface MarketsContextValue {
   markets: Market[]
   userPredictions: Record<number, UserPrediction>
@@ -34,6 +42,7 @@ export interface MarketsContextValue {
   claimWinnings: (marketId: number) => Promise<void>
   createMarket: (question: string, durationMinutes: number) => Promise<void>
   fetchMarket: (id: number) => Promise<Market | null>
+  getMarketPredictions: (marketId: number) => Promise<PredictionEvent[]>
 }
 
 const MarketsContext = createContext<MarketsContextValue | null>(null)
@@ -318,6 +327,29 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     [account, getPreparedWriteContract, isContractConfigured, isOwner, isWrongNetwork, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
   )
 
+  const getMarketPredictions = useCallback(
+    async (marketId: number): Promise<PredictionEvent[]> => {
+      if (!isContractConfigured) return []
+      try {
+        const contract = getReadContract()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const filter = (contract.filters as any).PredictionPlaced(marketId)
+        const events = await contract.queryFilter(filter)
+        return events.map((e) => {
+          const args = (e as { args?: unknown[] }).args ?? []
+          return {
+            address: (args[1] as string) ?? '0x???',
+            choice: Number(args[2] ?? 0),
+            amount: ethers.formatEther((args[3] as bigint) ?? 0n),
+            txHash: e.transactionHash,
+            blockNumber: e.blockNumber,
+          }
+        }).reverse() // newest first
+      } catch { return [] }
+    },
+    [getReadContract, isContractConfigured]
+  )
+
   // Keep silentRefreshRef pointing to the latest fetch logic
   useEffect(() => {
     silentRefreshRef.current = async () => {
@@ -409,6 +441,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         claimWinnings,
         createMarket,
         fetchMarket,
+        getMarketPredictions,
       }}
     >
       {children}

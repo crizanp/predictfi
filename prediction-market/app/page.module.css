@@ -310,6 +310,58 @@
   font-size: 14px;
 }
 
+/* ── Skeleton card (loading state for homepage grid) ── */
+.skeletonCard {
+  display: flex;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(192,132,252,0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  min-height: 160px;
+}
+
+.skeletonContent {
+  flex: 1;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeletonThumb {
+  width: 120px;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 100%);
+  background-size: 200% 100%;
+  animation: homeSkeleton 1.4s ease infinite;
+}
+
+.skeletonLine {
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: homeSkeleton 1.4s ease infinite;
+}
+
+.skeletonBadge     { height: 14px; width: 60px; }
+.skeletonTitle     { height: 16px; width: 90%; }
+.skeletonTitleShort{ height: 16px; width: 60%; }
+.skeletonOdds      { height: 28px; width: 110px; }
+
+.skeletonBar {
+  height: 6px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: homeSkeleton 1.4s ease infinite;
+  margin-top: auto;
+}
+
+@keyframes homeSkeleton {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
 .spinner {
   width: 32px;
   height: 32px;

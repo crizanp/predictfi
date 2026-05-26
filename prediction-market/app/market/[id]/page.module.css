@@ -464,6 +464,57 @@
 }
 .backLink:hover { opacity: 0.7; }
 
+/* ── Holders tab ── */
+.holdersList { display: flex; flex-direction: column; gap: 0; }
+
+.holdersHeader {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(192,132,252,0.08);
+}
+
+.holderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+.holderRow:hover { background: rgba(192,132,252,0.04); }
+
+.holderRank   { font-size: 11px; font-weight: 800; color: var(--text-dim); width: 24px; flex-shrink: 0; }
+.holderAddr   { font-size: 13px; font-weight: 700; color: var(--text-muted); font-family: monospace; flex: 1; }
+.holderYes    { font-size: 12px; font-weight: 800; color: #c084fc; background: rgba(192,132,252,0.12); border-radius: 6px; padding: 2px 8px; min-width: 40px; text-align: center; }
+.holderNo     { font-size: 12px; font-weight: 800; color: #ff3366; background: rgba(255,51,102,0.12); border-radius: 6px; padding: 2px 8px; min-width: 40px; text-align: center; }
+.holderAmount { font-size: 13px; font-weight: 700; color: var(--text-main); text-align: right; min-width: 90px; }
+
+/* ── Activity tab ── */
+.activityList { display: flex; flex-direction: column; gap: 0; }
+
+.activityRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+.activityRow:hover { background: rgba(192,132,252,0.04); }
+
+.activityAddr   { font-size: 13px; font-weight: 700; color: var(--text-muted); font-family: monospace; flex: 1; }
+.activityAmount { font-size: 13px; font-weight: 700; color: var(--text-main); }
+.activityTx     { font-size: 12px; font-weight: 700; color: var(--accent); text-decoration: none; margin-left: auto; opacity: 0.7; transition: opacity 0.15s; }
+.activityTx:hover { opacity: 1; }
+
+.tabLoading { display: flex; align-items: center; justify-content: center; padding: 40px; }
+
 /* ── Animations ── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
@@ -488,3 +539,4 @@
   .tabBtn { padding: 12px 14px; font-size: 12px; }
   .discussionTab { padding: 14px 16px; }
 }
+

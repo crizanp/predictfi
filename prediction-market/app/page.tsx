@@ -239,9 +239,19 @@ export default function HomePage() {
         </div>
 
         {isLoadingMarkets ? (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading markets from BSC Testnet...</p>
+          <div className={styles.grid}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className={styles.skeletonCard}>
+                <div className={styles.skeletonContent}>
+                  <div className={`${styles.skeletonLine} ${styles.skeletonBadge}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonTitleShort}`} />
+                  <div className={`${styles.skeletonLine} ${styles.skeletonOdds}`} />
+                  <div className={styles.skeletonBar} />
+                </div>
+                <div className={styles.skeletonThumb} />
+              </div>
+            ))}
           </div>
         ) : markets.length === 0 ? (
           <div className={styles.emptyState}>

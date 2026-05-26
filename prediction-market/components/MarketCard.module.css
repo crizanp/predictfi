@@ -59,6 +59,11 @@
   100% { transform: rotate(360deg); }
 }
 
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
 /* -- Content (left column) ---------------------------------- */
 .content {
   flex: 1;
@@ -255,6 +260,14 @@
 }
 
 .thumbImg { object-fit: contain; padding: 10px; }
+
+.thumbSkeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
 
 .thumbPlaceholder {
   display: flex;
