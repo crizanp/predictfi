@@ -51,12 +51,16 @@ export default function MarketCard({ market, nowInSeconds, isTrending }: Props) 
   const [imgLoading, setImgLoading] = useState(false)
   const [cardBg, setCardBg]         = useState<string | null>(null)
   const [cardText, setCardText]     = useState<string | null>(null)
+  const [yesLabel, setYesLabel]     = useState('YES')
+  const [noLabel, setNoLabel]       = useState('NO')
 
   useEffect(() => {
     getMarketMeta(market.id).then((meta) => {
       if (meta?.image_url) { setImgLoading(true); setImageUrl(meta.image_url) }
       if (meta?.card_bg)   setCardBg(meta.card_bg)
       if (meta?.card_text) setCardText(meta.card_text)
+      if (meta?.yes_label) setYesLabel(meta.yes_label)
+      if (meta?.no_label)  setNoLabel(meta.no_label)
     })
   }, [market.id])
 
@@ -116,12 +120,12 @@ export default function MarketCard({ market, nowInSeconds, isTrending }: Props) 
         <div className={styles.oddsRow}>
           <div className={styles.oddsYes}>
             <span className={styles.oddsNum} style={{ color: yesClr }}>{yesOdds}<span className={styles.oddsPct}>%</span></span>
-            <span className={styles.oddsLabel} style={hasBg ? { color: mutedText } : undefined}>YES</span>
+            <span className={styles.oddsLabel} style={hasBg ? { color: mutedText } : undefined}>{yesLabel}</span>
           </div>
           <div className={styles.oddsVs} style={hasBg ? { color: mutedText } : undefined}>vs</div>
           <div className={styles.oddsNo}>
             <span className={styles.oddsNum} style={{ color: noClr }}>{noOdds}<span className={styles.oddsPct}>%</span></span>
-            <span className={styles.oddsLabel} style={hasBg ? { color: mutedText } : undefined}>NO</span>
+            <span className={styles.oddsLabel} style={hasBg ? { color: mutedText } : undefined}>{noLabel}</span>
           </div>
         </div>
 

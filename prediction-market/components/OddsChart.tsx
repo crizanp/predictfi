@@ -43,13 +43,13 @@ function nowLabel() {
 
 // â”€â”€ Tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, yesLabel, noLabel }: any) => {
   if (!active || !payload?.length) return null
   return (
     <div className={styles.tooltip}>
       <p className={styles.tooltipTime}>{label}</p>
-      <p className={styles.tooltipYes}>YES {payload[0]?.value}%</p>
-      <p className={styles.tooltipNo}>NO {payload[1]?.value}%</p>
+      <p className={styles.tooltipYes}>{yesLabel ?? 'YES'} {payload[0]?.value}%</p>
+      <p className={styles.tooltipNo}>{noLabel ?? 'NO'} {payload[1]?.value}%</p>
     </div>
   )
 }
@@ -152,7 +152,7 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis dataKey="time" tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip yesLabel={yesLabel} noLabel={noLabel} />} />
           <Legend wrapperStyle={{ display: 'none' }} />
           <Area type="monotone" dataKey="yes" stroke="#00ff88" strokeWidth={2.5} fill="url(#gradYes)" dot={false} activeDot={{ r: 5, fill: '#00ff88', stroke: 'rgba(0,255,136,0.4)', strokeWidth: 4 }} />
           <Area type="monotone" dataKey="no" stroke="#ff3366" strokeWidth={2.5} fill="url(#gradNo)" dot={false} activeDot={{ r: 5, fill: '#ff3366', stroke: 'rgba(255,51,102,0.4)', strokeWidth: 4 }} />

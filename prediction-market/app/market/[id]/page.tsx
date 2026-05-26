@@ -320,6 +320,8 @@ export default function MarketDetailPage() {
               noPool={market.noPool}
               totalPool={market.totalPool}
               resolved={market.resolved}
+              yesLabel={yesLabel}
+              noLabel={noLabel}
             />
 
             {meta?.description && (
