@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useMarkets } from '../../../context/MarketsContext'
@@ -30,14 +30,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 /* Expand a flat comment list into threaded tree */
 interface CommentNode extends MarketComment {
   replies: CommentNode[]
-  replyOpen: boolean
-  replyInput: string
-  likedLocally: boolean
 }
 
 function buildTree(flat: MarketComment[]): CommentNode[] {
   const map = new Map<number, CommentNode>()
-  for (const c of flat) map.set(c.id, { ...c, replies: [], replyOpen: false, replyInput: '', likedLocally: false })
+  for (const c of flat) map.set(c.id, { ...c, replies: [] })
   const roots: CommentNode[] = []
   for (const node of map.values()) {
     if (node.parent_id && map.has(node.parent_id)) map.get(node.parent_id)!.replies.push(node)
@@ -75,7 +72,15 @@ export default function MarketDetailPage() {
   const [activityLoaded, setActivityLoaded] = useState(false)
   const [activityLoading, setActivityLoading] = useState(false)
 
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const mergeComments = useCallback((prev: MarketComment[], incoming: MarketComment) => {
+    if (prev.some(c => c.id === incoming.id)) return prev
+    return [...prev, incoming]
+  }, [])
+
+  const mergeActivity = useCallback((prev: MarketActivity[], incoming: MarketActivity) => {
+    if (prev.some(a => a.id === incoming.id || a.tx_hash === incoming.tx_hash)) return prev
+    return [incoming, ...prev]
+  }, [])
 
   // Initial load
   useEffect(() => {
@@ -112,7 +117,7 @@ export default function MarketDetailPage() {
         { event: 'INSERT', schema: 'public', table: 'market_comments', filter: `market_id=eq.${marketId}` },
         (payload) => {
           const incoming = payload.new as MarketComment
-          setRawComments(prev => [...prev, incoming])
+          setRawComments(prev => mergeComments(prev, incoming))
         }
       )
       .on(
@@ -125,17 +130,15 @@ export default function MarketDetailPage() {
       )
       .subscribe()
 
-    channelRef.current = ch
     return () => { void supabase.removeChannel(ch) }
-  }, [marketId])
+  }, [marketId, mergeComments])
 
-  // Load activity lazily on first tab visit
+  // Load activity immediately so holders/activity stay fresh without tab switching
   useEffect(() => {
-    if ((activeTab === 'activity' || activeTab === 'holders') && !activityLoaded && !activityLoading) {
-      setActivityLoading(true)
-      getActivity(marketId).then(data => { setActivity(data); setActivityLoaded(true); setActivityLoading(false) })
-    }
-  }, [activeTab, activityLoaded, activityLoading, marketId])
+    if (!marketId || activityLoaded || activityLoading) return
+    setActivityLoading(true)
+    getActivity(marketId).then(data => { setActivity(data); setActivityLoaded(true); setActivityLoading(false) })
+  }, [activityLoaded, activityLoading, marketId])
 
   // Subscribe for new activity rows (new bets placed by anyone)
   useEffect(() => {
@@ -147,11 +150,32 @@ export default function MarketDetailPage() {
         { event: 'INSERT', schema: 'public', table: 'market_activity', filter: `market_id=eq.${marketId}` },
         (payload) => {
           const incoming = payload.new as MarketActivity
-          setActivity(prev => [incoming, ...prev])
+          setActivity(prev => mergeActivity(prev, incoming))
         }
       )
       .subscribe()
     return () => { void supabase.removeChannel(ch) }
+  }, [marketId, mergeActivity])
+
+  // Fallback polling keeps UI live when Supabase realtime isn't available.
+  useEffect(() => {
+    if (!marketId) return
+    const tick = window.setInterval(async () => {
+      const [latestComments, latestActivity] = await Promise.all([
+        getComments(marketId),
+        getActivity(marketId),
+      ])
+      setRawComments(prev => {
+        let next = prev
+        for (const comment of latestComments) {
+          if (!next.some(c => c.id === comment.id)) next = [...next, comment]
+        }
+        return next
+      })
+      setActivity(latestActivity)
+      setActivityLoaded(true)
+    }, 5000)
+    return () => window.clearInterval(tick)
   }, [marketId])
 
   // Derived state
@@ -181,11 +205,13 @@ export default function MarketDetailPage() {
     e.preventDefault()
     if (!account || !commentInput.trim() || posting) return
     setPosting(true)
-    await postComment(marketId, account, commentInput.trim())
+    const inserted = await postComment(marketId, account, commentInput.trim())
+    if (inserted) {
+      setRawComments(prev => mergeComments(prev, inserted))
+    }
     setCommentInput('')
     setPosting(false)
-    // real-time subscription will add it to state
-  }, [account, commentInput, marketId, posting])
+  }, [account, commentInput, marketId, posting, mergeComments])
 
   const handleLike = useCallback(async (id: number) => {
     if (likedIds.has(id)) return
@@ -210,16 +236,24 @@ export default function MarketDetailPage() {
     if (!account || !text || posting) return
     setPosting(true)
     setReplyUI(prev => ({ ...prev, [parentId]: { open: false, input: '' } }))
-    await postComment(marketId, account, text, parentId)
+    const inserted = await postComment(marketId, account, text, parentId)
+    if (inserted) {
+      setRawComments(prev => mergeComments(prev, inserted))
+    }
     setPosting(false)
-  }, [account, marketId, posting, replyUI])
+  }, [account, marketId, posting, replyUI, mergeComments])
 
   if (loading) {
     return (
-      <div className={styles.loadingPage}>
-        <div className={styles.spinner} />
-        <p>Loading market…</p>
-      </div>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.detailSkeletonWrap}>
+            <div className={styles.detailSkeletonHeader} />
+            <div className={styles.detailSkeletonPanel} />
+            <div className={styles.detailSkeletonPanel} />
+          </div>
+        </div>
+      </main>
     )
   }
 
@@ -367,12 +401,13 @@ export default function MarketDetailPage() {
                           <p className={styles.commentText}>{c.content}</p>
                           <div className={styles.commentActions}>
                             <button
+                              type="button"
                               className={`${styles.actionBtn} ${likedIds.has(c.id) ? styles.likedBtn : ''}`}
                               onClick={() => { void handleLike(c.id) }}>
                               ♥ {c.likes}
                             </button>
                             {account && (
-                              <button className={styles.actionBtn} onClick={() => toggleReply(c.id)}>
+                              <button type="button" className={styles.actionBtn} onClick={() => toggleReply(c.id)}>
                                 ↩ Reply
                               </button>
                             )}
@@ -383,7 +418,7 @@ export default function MarketDetailPage() {
                                 value={replyUI[c.id]?.input ?? ''}
                                 onChange={e => updateReplyInput(c.id, e.target.value)}
                                 rows={2} />
-                              <button className={styles.replySubmit}
+                              <button type="button" className={styles.replySubmit}
                                 onClick={() => { void handlePostReply(c.id) }}
                                 disabled={!replyUI[c.id]?.input?.trim() || posting}>
                                 Reply
@@ -404,6 +439,7 @@ export default function MarketDetailPage() {
                                   </div>
                                   <p className={styles.commentText}>{r.content}</p>
                                   <button
+                                    type="button"
                                     className={`${styles.actionBtn} ${likedIds.has(r.id) ? styles.likedBtn : ''}`}
                                     onClick={() => { void handleLike(r.id) }}>
                                     ♥ {r.likes}

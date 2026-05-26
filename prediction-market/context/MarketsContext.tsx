@@ -36,6 +36,7 @@ export interface MarketsContextValue {
   userPredictions: Record<number, UserPrediction>
   totalInvested: string
   isLoadingMarkets: boolean
+  hasLoadedMarkets: boolean
   loadMarkets: () => Promise<Market[]>
   loadUserPredictions: (account: string, mList: Market[]) => Promise<void>
   placePrediction: (marketId: number, choice: number, amount: string) => Promise<void>
@@ -63,6 +64,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   const [markets, setMarkets] = useState<Market[]>([])
   const [userPredictions, setUserPredictions] = useState<Record<number, UserPrediction>>({})
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
+  const [hasLoadedMarkets, setHasLoadedMarkets] = useState(false)
 
   const totalInvested = useMemo(() =>
     Object.values(userPredictions)
@@ -76,6 +78,8 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   const loadMarkets = useCallback(async (): Promise<Market[]> => {
     if (!isContractConfigured) {
       setMarkets([])
+      setIsLoadingMarkets(false)
+      setHasLoadedMarkets(true)
       return []
     }
 
@@ -101,9 +105,11 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
       const sorted = [...marketList].reverse()
       setMarkets(sorted)
+      setHasLoadedMarkets(true)
       return sorted
     } catch (error) {
       setStatusMessage('error', `Could not load markets. ${toErrorMessage(error)}`)
+      setHasLoadedMarkets(true)
       return []
     } finally {
       setIsLoadingMarkets(false)
@@ -445,6 +451,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         userPredictions,
         totalInvested,
         isLoadingMarkets,
+        hasLoadedMarkets,
         loadMarkets,
         loadUserPredictions,
         placePrediction,

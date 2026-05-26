@@ -123,8 +123,8 @@ const DOC_LINKS = [
 ]
 
 export default function HomePage() {
-  const { markets, isLoadingMarkets } = useMarkets()
-  const [nowInSeconds, setNowInSeconds] = useState(0)
+  const { markets, isLoadingMarkets, hasLoadedMarkets } = useMarkets()
+  const [nowInSeconds, setNowInSeconds] = useState(() => Math.floor(Date.now() / 1000))
   const [activeAllocation, setActiveAllocation] = useState(tokenAllocations[0].label)
   const [isTokenomicsModalOpen, setIsTokenomicsModalOpen] = useState(false)
   const [activeUseCase, setActiveUseCase] = useState<UseCase | null>(null)
@@ -237,7 +237,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {isLoadingMarkets ? (
+        {!hasLoadedMarkets || isLoadingMarkets ? (
           <div className={styles.grid}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className={styles.skeletonCard}>

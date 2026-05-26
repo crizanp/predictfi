@@ -20,8 +20,8 @@ const SORTS = [
 type SortKey = typeof SORTS[number]['value']
 
 export default function MarketsPage() {
-  const { markets, isLoadingMarkets } = useMarkets()
-  const [nowInSeconds, setNowInSeconds] = useState(0)
+  const { markets, isLoadingMarkets, hasLoadedMarkets } = useMarkets()
+  const [nowInSeconds, setNowInSeconds] = useState(() => Math.floor(Date.now() / 1000))
   const [search, setSearch]             = useState('')
   const [category, setCategory]         = useState('All')
   const [status, setStatus]             = useState('All')
@@ -235,7 +235,7 @@ export default function MarketsPage() {
       </div>
 
       {/* ── Markets grid ─────────────────────────────── */}
-      {isLoadingMarkets ? (
+      {!hasLoadedMarkets || isLoadingMarkets ? (
         <div className={styles.grid}>
           {Array.from({ length: 9 }).map((_, i) => (
             <div key={i} className={styles.skeletonCard}>
