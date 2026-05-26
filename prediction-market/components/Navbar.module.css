@@ -247,6 +247,28 @@
 
 /* Account */
 .accountGroup { display: flex; align-items: center; gap: 8px; }
+
+.profileNamePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
+  color: #f1f1f1;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profileNamePill:hover {
+  background: rgba(255,255,255,0.12);
+}
+
 .accountPill {
   display: flex;
   align-items: center;

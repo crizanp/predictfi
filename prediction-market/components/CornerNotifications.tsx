@@ -38,7 +38,17 @@ export default function CornerNotifications() {
   useEffect(() => { marketsRef.current = markets }, [markets])
 
   const [queue, setQueue] = useState<Notif[]>([])
+  const [atTop, setAtTop] = useState(true)
   const counterRef = useRef(0)
+
+  useEffect(() => {
+    const onScroll = () => {
+      setAtTop(window.scrollY < 40)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => {
     const show = () => {
@@ -66,7 +76,11 @@ export default function CornerNotifications() {
   if (queue.length === 0) return null
 
   return (
-    <div className={styles.container} aria-live="polite" aria-label="Live activity">
+    <div
+      className={`${styles.container} ${atTop ? styles.atTop : styles.scrolled}`}
+      aria-live="polite"
+      aria-label="Live activity"
+    >
       {queue.map((n) => (
         <div
           key={n.id}

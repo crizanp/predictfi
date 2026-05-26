@@ -217,3 +217,114 @@ export async function recordActivity(
     { onConflict: 'tx_hash' }
   )
 }
+
+// ── Public profiles ───────────────────────────────────────────────────────────
+
+export interface UserProfile {
+  wallet_address: string
+  display_name: string | null
+  bio: string | null
+  updated_at?: string
+}
+
+export interface UserContributionSummary {
+  predictions: number
+  comments: number
+  markets_participated: number
+  total_staked_tbnb: number
+}
+
+export async function getUserProfile(address: string): Promise<UserProfile | null> {
+  if (!supabaseKey) return null
+  const normalized = address.toLowerCase()
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('wallet_address', normalized)
+    .maybeSingle()
+  if (error) return null
+  return data as UserProfile | null
+}
+
+export async function upsertUserProfile(
+  walletAddress: string,
+  displayName: string,
+  bio: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!supabaseKey) return { success: false, error: 'Supabase not configured' }
+  const { error } = await supabase
+    .from('user_profiles')
+    .upsert(
+      {
+        wallet_address: walletAddress.toLowerCase(),
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'wallet_address' }
+    )
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function getProfilesByAddresses(addresses: string[]): Promise<Record<string, UserProfile>> {
+  if (!supabaseKey || addresses.length === 0) return {}
+  const normalized = Array.from(new Set(addresses.map(a => a.toLowerCase())))
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .in('wallet_address', normalized)
+  if (error || !data) return {}
+  const map: Record<string, UserProfile> = {}
+  for (const row of data as UserProfile[]) {
+    map[row.wallet_address] = row
+  }
+  return map
+}
+
+export async function getUserContributionSummary(address: string): Promise<UserContributionSummary> {
+  if (!supabaseKey) {
+    return { predictions: 0, comments: 0, markets_participated: 0, total_staked_tbnb: 0 }
+  }
+  const normalized = address.toLowerCase()
+
+  const [{ data: activityData }, { count: commentsCount }] = await Promise.all([
+    supabase.from('market_activity').select('market_id, amount_eth').eq('user_address', normalized),
+    supabase.from('market_comments').select('id', { count: 'exact', head: true }).eq('author_address', normalized),
+  ])
+
+  const activity = (activityData as Array<{ market_id: number; amount_eth: string }> | null) ?? []
+  const uniqueMarkets = new Set(activity.map(a => a.market_id)).size
+  const totalStaked = activity.reduce((sum, row) => sum + (parseFloat(row.amount_eth) || 0), 0)
+
+  return {
+    predictions: activity.length,
+    comments: commentsCount ?? 0,
+    markets_participated: uniqueMarkets,
+    total_staked_tbnb: totalStaked,
+  }
+}
+
+export async function getUserRecentComments(address: string, limit = 20): Promise<MarketComment[]> {
+  if (!supabaseKey) return []
+  const { data, error } = await supabase
+    .from('market_comments')
+    .select('*')
+    .eq('author_address', address.toLowerCase())
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data as MarketComment[]) ?? []
+}
+
+export async function getUserRecentActivity(address: string, limit = 20): Promise<MarketActivity[]> {
+  if (!supabaseKey) return []
+  const { data, error } = await supabase
+    .from('market_activity')
+    .select('*')
+    .eq('user_address', address.toLowerCase())
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data as MarketActivity[]) ?? []
+}

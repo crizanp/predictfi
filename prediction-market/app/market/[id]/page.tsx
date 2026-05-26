@@ -13,9 +13,11 @@ import {
   postComment,
   incrementCommentLikes,
   getActivity,
+  getProfilesByAddresses,
   type MarketMeta,
   type MarketComment,
   type MarketActivity,
+  type UserProfile,
 } from '../../../lib/supabase'
 import TradePanel from '../../../components/TradePanel'
 import OddsChart from '../../../components/OddsChart'
@@ -71,6 +73,7 @@ export default function MarketDetailPage() {
   const [activity, setActivity]           = useState<MarketActivity[]>([])
   const [activityLoaded, setActivityLoaded] = useState(false)
   const [activityLoading, setActivityLoading] = useState(false)
+  const [addressProfiles, setAddressProfiles] = useState<Record<string, UserProfile>>({})
 
   const mergeComments = useCallback((prev: MarketComment[], incoming: MarketComment) => {
     if (prev.some(c => c.id === incoming.id)) return prev
@@ -199,6 +202,26 @@ export default function MarketDetailPage() {
       .map(([addr, v]) => ({ addr, ...v }))
       .sort((a, b) => b.totalAmount - a.totalAmount)
   }, [activity])
+
+  const labelForAddress = useCallback((addr: string) => {
+    const profile = addressProfiles[addr.toLowerCase()]
+    const custom = profile?.display_name?.trim()
+    return custom || `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  }, [addressProfiles])
+
+  useEffect(() => {
+    const allAddresses = new Set<string>()
+    if (account) allAddresses.add(account.toLowerCase())
+    for (const c of rawComments) allAddresses.add(c.author_address.toLowerCase())
+    for (const a of activity) allAddresses.add(a.user_address.toLowerCase())
+
+    if (allAddresses.size === 0) return
+
+    const timer = setTimeout(() => {
+      void getProfilesByAddresses(Array.from(allAddresses)).then(setAddressProfiles)
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [account, rawComments, activity])
 
   // Comment actions
   const handlePostComment = useCallback(async (e: React.FormEvent) => {
@@ -376,7 +399,7 @@ export default function MarketDetailPage() {
                         value={commentInput} onChange={e => setCommentInput(e.target.value)} rows={3} />
                       <div className={styles.commentFormFooter}>
                         <span className={styles.commentAs}>
-                          Posting as <strong>{account.slice(0, 6)}…{account.slice(-4)}</strong>
+                          Posting as <strong>{labelForAddress(account)}</strong>
                         </span>
                         <button type="submit" className={styles.commentSubmit}
                           disabled={!commentInput.trim() || posting}>
@@ -393,9 +416,9 @@ export default function MarketDetailPage() {
                       {commentTree.map(c => (
                         <div key={c.id} className={styles.commentCard}>
                           <div className={styles.commentHeader}>
-                            <span className={styles.commentAuthor}>
-                              {c.author_address.slice(0, 6)}…{c.author_address.slice(-4)}
-                            </span>
+                            <Link href={`/profile/${c.author_address}`} className={styles.commentAuthor}>
+                              {labelForAddress(c.author_address)}
+                            </Link>
                             <span className={styles.commentTime}>
                               {new Date(c.created_at).toLocaleDateString()}
                             </span>
@@ -432,9 +455,9 @@ export default function MarketDetailPage() {
                               {c.replies.map(r => (
                                 <div key={r.id} className={styles.replyCard}>
                                   <div className={styles.commentHeader}>
-                                    <span className={styles.commentAuthor}>
-                                      {r.author_address.slice(0, 6)}…{r.author_address.slice(-4)}
-                                    </span>
+                                    <Link href={`/profile/${r.author_address}`} className={styles.commentAuthor}>
+                                      {labelForAddress(r.author_address)}
+                                    </Link>
                                     <span className={styles.commentTime}>
                                       {new Date(r.created_at).toLocaleDateString()}
                                     </span>
@@ -474,7 +497,7 @@ export default function MarketDetailPage() {
                   {holders.map((h, i) => (
                     <div key={h.addr} className={styles.holderRow}>
                       <span className={styles.holderRank}>#{i + 1}</span>
-                      <span className={styles.holderAddr}>{h.addr.slice(0, 6)}…{h.addr.slice(-4)}</span>
+                      <Link href={`/profile/${h.addr}`} className={styles.holderAddr}>{labelForAddress(h.addr)}</Link>
                       <span className={h.choice === 1 ? styles.holderYes : styles.holderNo}>
                         {h.choice === 1 ? yesLabel : noLabel}
                       </span>
@@ -500,7 +523,7 @@ export default function MarketDetailPage() {
                       <span className={a.choice === 1 ? styles.holderYes : styles.holderNo}>
                         {a.choice === 1 ? `▲ ${yesLabel}` : `▼ ${noLabel}`}
                       </span>
-                      <span className={styles.activityAddr}>{a.user_address.slice(0, 6)}…{a.user_address.slice(-4)}</span>
+                      <Link href={`/profile/${a.user_address}`} className={styles.activityAddr}>{labelForAddress(a.user_address)}</Link>
                       <span className={styles.activityAmount}>{parseFloat(a.amount_eth).toFixed(4)} tBNB</span>
                       <span className={styles.activityTime}>
                         {new Date(a.created_at).toLocaleDateString()}

@@ -102,6 +102,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   )
   const [showWalletModal, setShowWalletModalState] = useState(false)
   const [showAdminPortal, setShowAdminPortal] = useState(false)
+  const [blockExternalSync, setBlockExternalSync] = useState(false)
 
   const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
     setStatus({ tone, text })
@@ -255,6 +256,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   )
 
   const connectInjectedWallet = useCallback(async () => {
+    setBlockExternalSync(false)
     setBusyAction('connect-injected')
     const injectedProvider = typeof window !== 'undefined' ? window.ethereum as unknown as Eip1193Provider ?? null : null
 
@@ -293,6 +295,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const connectWalletConnect = useCallback(() => {
     // Opens the Reown AppKit full connect modal; actual provider sync is done by ReownSync.
+    setBlockExternalSync(false)
     if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID === 'demo') {
       setStatusMessage('error', 'Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local to enable full Reown wallet options.')
       return
@@ -308,6 +311,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         clearWalletSession()
         return
       }
+      if (blockExternalSync && type === 'walletconnect') {
+        return
+      }
       setWalletProvider(provider)
       setConnectionType(type)
       try {
@@ -316,7 +322,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         // silent
       }
     },
-    [clearWalletSession, refreshWalletState]
+    [blockExternalSync, clearWalletSession, refreshWalletState]
   )
 
   const switchAccount = useCallback(async () => {
@@ -340,6 +346,23 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, [connectionType, refreshWalletState, requireProvider, setStatusMessage])
 
   const disconnectWallet = useCallback(async () => {
+    setBlockExternalSync(true)
+    setBusyAction('disconnect-wallet')
+    try {
+      const { appKit } = await import('../lib/appkit')
+      const runtime = appKit as {
+        disconnect?: () => Promise<void>
+        disconnectWallet?: () => Promise<void>
+      }
+      if (runtime.disconnect) {
+        await runtime.disconnect()
+      } else if (runtime.disconnectWallet) {
+        await runtime.disconnectWallet()
+      }
+    } catch {
+      // Ignore AppKit disconnect failures; fallback local clear still runs.
+    }
+
     if (connectionType === 'walletconnect' && walletProvider) {
       const runtimeProvider = walletProvider as { disconnect?: () => Promise<void> }
       if (runtimeProvider.disconnect) {
@@ -348,6 +371,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
     clearWalletSession()
     setStatusMessage('info', 'Wallet disconnected.')
+    setBusyAction(null)
   }, [clearWalletSession, connectionType, setStatusMessage, walletProvider])
 
   const switchActiveNetwork = useCallback(async () => {

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { useWallet } from '../context/WalletContext'
 import { shortenAddress } from '../lib/utils'
@@ -81,7 +82,11 @@ export default function WalletModal() {
                 {copied ? '✓ Copied' : '⧉ Copy'}
               </button>
             </div>
-            <span className={styles.fullAddress}>{account}</span>
+            <span className={styles.fullAddress}>{shortenAddress(account)}</span>
+
+            <Link href={`/profile/${account}`} className={styles.profileLink} onClick={() => setShowWalletModal(false)}>
+              View Public Profile
+            </Link>
 
             {/* Info grid */}
             <div className={styles.infoGrid}>

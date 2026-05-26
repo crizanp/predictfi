@@ -1,36 +1,14 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { RiSettings3Line, RiTwitterXLine, RiTelegramLine, RiDiscordLine } from 'react-icons/ri'
 import { useWallet } from '../context/WalletContext'
-import { useMarkets } from '../context/MarketsContext'
 import { shortenAddress } from '../lib/utils'
 import { CHAIN_ID } from '../lib/contract'
+import { getUserProfile } from '../lib/supabase'
 import styles from './Navbar.module.css'
-
-interface TickerItem { label: string; type: 'buy' | 'sell' | 'neutral' }
-
-const DUMMY_ADDRS = ['0xaBc1', '0xDef2', '0x1234', '0xFeed', '0x9aB3', '0x7c3D', '0xBee5', '0xC0de', '0xD3aD', '0xF00d', '0xA55e', '0xB0b5']
-
-function buildTickerItems(markets: { question: string; resolved: boolean }[]): TickerItem[] {
-  if (markets.length === 0) return [
-    { label: '0xaBc1 bought YES on "BTC hits $120K" +0.05 tBNB', type: 'buy' },
-    { label: '0xDef2 bought NO on "ETH flips BTC?" +0.02 tBNB', type: 'sell' },
-    { label: '0x1234 bought YES on "Next halving bull run?" +0.1 tBNB', type: 'buy' },
-  ]
-
-  return markets.slice(0, 9).map((m) => {
-    const addr = DUMMY_ADDRS[Math.floor(Math.random() * DUMMY_ADDRS.length)]
-    const side = Math.random() > 0.45 ? 'YES' : 'NO'
-    const amt  = (Math.random() * 0.19 + 0.01).toFixed(2)
-    const type: 'buy' | 'sell' | 'neutral' = m.resolved ? 'neutral' : side === 'YES' ? 'buy' : 'sell'
-    const q    = m.question.length > 38 ? m.question.slice(0, 38) + '…' : m.question
-    if (m.resolved) return { label: `RESOLVED: "${q}" — winners claimed`, type }
-    return { label: `${addr} bought ${side} on "${q}" +${amt} tBNB`, type }
-  })
-}
 
 const SOCIAL_LINKS = [
   { Icon: RiTwitterXLine,  href: 'https://x.com/predictfi',       label: 'Twitter / X' },
@@ -69,32 +47,24 @@ export default function Navbar() {
     setShowAdminPortal,
     switchActiveNetwork,
   } = useWallet()
-  const { markets } = useMarkets()
+  const [profileName, setProfileName] = useState('')
 
-  const latestMarketsRef = useRef(markets)
-  useEffect(() => { latestMarketsRef.current = markets }, [markets])
-
-  const [tickerItems, setTickerItems] = useState<TickerItem[]>(() => buildTickerItems([]))
-
-  // Generate ticker from real markets; refresh at a random interval (5–13 s)
-  const hasMarkets = markets.length > 0
   useEffect(() => {
-    if (!hasMarkets) return
-    setTickerItems(buildTickerItems(latestMarketsRef.current))
+    if (!account) return
 
-    let id: ReturnType<typeof setTimeout>
-    const schedule = () => {
-      id = setTimeout(() => {
-        setTickerItems(buildTickerItems(latestMarketsRef.current))
-        schedule()
-      }, 5000 + Math.random() * 8000)
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void getUserProfile(account).then((profile) => {
+        if (cancelled) return
+        setProfileName(profile?.display_name?.trim() || '')
+      })
+    }, 0)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
     }
-    schedule()
-    return () => clearTimeout(id)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasMarkets])
-
-  const tickerAll = useMemo(() => [...tickerItems, ...tickerItems], [tickerItems])
+  }, [account])
 
   const networkLabel =
     activeChainId === null ? 'Unknown'
@@ -155,6 +125,11 @@ export default function Navbar() {
             </button>
           ) : (
             <div className={styles.accountGroup}>
+              {profileName && (
+                <Link href={`/profile/${account}`} className={styles.profileNamePill}>
+                  {profileName}
+                </Link>
+              )}
               {isWrongNetwork ? (
                 <button
                   className={styles.switchNetBtn}

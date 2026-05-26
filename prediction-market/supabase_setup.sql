@@ -180,3 +180,27 @@ CREATE POLICY "Allow update banner_ads"
 CREATE POLICY "Allow delete banner_ads"
   ON banner_ads FOR DELETE USING (true);
 
+
+-- ============================================================
+-- 8. user_profiles table (Public profile names + bio)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_profiles (
+  wallet_address TEXT PRIMARY KEY,
+  display_name   TEXT,
+  bio            TEXT,
+  updated_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_profiles_updated_at ON user_profiles (updated_at);
+
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read user_profiles"
+  ON user_profiles FOR SELECT USING (true);
+
+CREATE POLICY "Allow upsert user_profiles"
+  ON user_profiles FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow update user_profiles"
+  ON user_profiles FOR UPDATE USING (true);
+

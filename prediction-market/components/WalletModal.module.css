@@ -164,6 +164,18 @@
   line-height: 1.5;
 }
 
+.profileLink {
+  font-size: 12px;
+  font-weight: 700;
+  color: #eaeaea;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.profileLink:hover {
+  color: #fff;
+}
+
 .infoGrid {
   width: 100%;
   display: grid;

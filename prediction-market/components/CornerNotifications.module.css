@@ -1,6 +1,6 @@
 .container {
   position: fixed;
-  top: 58px; /* just below sticky navbar */
+  top: 58px;
   right: 20px; /* just past sidebar */
   z-index: 999;
   display: flex;
@@ -8,6 +8,15 @@
   gap: 0;
   pointer-events: none;
   max-width: 320px;
+  transition: top 0.25s ease;
+}
+
+.atTop {
+  top: 112px;
+}
+
+.scrolled {
+  top: 58px;
 }
 
 .notif {
