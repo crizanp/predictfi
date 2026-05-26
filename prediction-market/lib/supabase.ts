@@ -106,3 +106,101 @@ export async function submitWhitelistApplication(app: Omit<WhitelistApplication,
   if (error) return { success: false, error: error.message }
   return { success: true }
 }
+
+// ── Discussion comments ───────────────────────────────────────────────────────
+
+export interface MarketComment {
+  id: number
+  market_id: number
+  author_address: string
+  content: string
+  parent_id: number | null
+  likes: number
+  created_at: string
+}
+
+export async function getComments(marketId: number): Promise<MarketComment[]> {
+  if (!supabaseKey) return []
+  const { data } = await supabase
+    .from('market_comments')
+    .select('*')
+    .eq('market_id', marketId)
+    .order('created_at', { ascending: true })
+  return (data as MarketComment[]) ?? []
+}
+
+export async function postComment(
+  marketId: number,
+  authorAddress: string,
+  content: string,
+  parentId?: number
+): Promise<MarketComment | null> {
+  if (!supabaseKey) return null
+  const { data } = await supabase
+    .from('market_comments')
+    .insert({
+      market_id: marketId,
+      author_address: authorAddress.toLowerCase(),
+      content,
+      parent_id: parentId ?? null,
+      likes: 0,
+    })
+    .select()
+    .single()
+  return data as MarketComment | null
+}
+
+export async function incrementCommentLikes(commentId: number): Promise<void> {
+  if (!supabaseKey) return
+  // Uses a DB function to avoid read-modify-write race
+  const { error } = await supabase.rpc('increment_comment_likes', { cid: commentId })
+  if (error) {
+    // Fallback: optimistic local update only (no DB update)
+    console.warn('increment_comment_likes RPC not available:', error.message)
+  }
+}
+
+// ── Market activity (on-chain predictions mirrored to Supabase) ───────────────
+
+export interface MarketActivity {
+  id: number
+  market_id: number
+  user_address: string
+  choice: number          // 1 = YES, 2 = NO
+  amount_eth: string
+  tx_hash: string
+  block_number: number | null
+  created_at: string
+}
+
+export async function getActivity(marketId: number): Promise<MarketActivity[]> {
+  if (!supabaseKey) return []
+  const { data } = await supabase
+    .from('market_activity')
+    .select('*')
+    .eq('market_id', marketId)
+    .order('created_at', { ascending: false })
+  return (data as MarketActivity[]) ?? []
+}
+
+export async function recordActivity(
+  marketId: number,
+  userAddress: string,
+  choice: number,
+  amountEth: string,
+  txHash: string,
+  blockNumber?: number
+): Promise<void> {
+  if (!supabaseKey) return
+  await supabase.from('market_activity').upsert(
+    {
+      market_id: marketId,
+      user_address: userAddress.toLowerCase(),
+      choice,
+      amount_eth: amountEth,
+      tx_hash: txHash,
+      block_number: blockNumber ?? null,
+    },
+    { onConflict: 'tx_hash' }
+  )
+}

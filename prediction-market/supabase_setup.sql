@@ -85,3 +85,57 @@ CREATE POLICY "Allow insert whitelist application"
 CREATE POLICY "Allow update whitelist application"
   ON whitelist_applications FOR UPDATE USING (true);
 
+
+-- ============================================================
+-- 5. market_comments table (Discussion tab)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS market_comments (
+  id             BIGSERIAL PRIMARY KEY,
+  market_id      INTEGER       NOT NULL,
+  author_address TEXT          NOT NULL,
+  content        TEXT          NOT NULL,
+  parent_id      BIGINT        REFERENCES market_comments(id) ON DELETE CASCADE,
+  likes          INTEGER       DEFAULT 0,
+  created_at     TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_comments_market_id ON market_comments (market_id);
+
+ALTER TABLE market_comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read comments"         ON market_comments FOR SELECT USING (true);
+CREATE POLICY "Allow insert comments"        ON market_comments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update comment likes"   ON market_comments FOR UPDATE USING (true);
+
+-- Helper function to atomically increment likes
+CREATE OR REPLACE FUNCTION increment_comment_likes(cid BIGINT)
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE market_comments SET likes = likes + 1 WHERE id = cid;
+END;
+$$;
+
+
+-- ============================================================
+-- 6. market_activity table (Activity / Holders tabs)
+--    Mirrors on-chain PredictionPlaced events to Supabase
+-- ============================================================
+CREATE TABLE IF NOT EXISTS market_activity (
+  id           BIGSERIAL PRIMARY KEY,
+  market_id    INTEGER       NOT NULL,
+  user_address TEXT          NOT NULL,
+  choice       SMALLINT      NOT NULL,   -- 1 = YES, 2 = NO
+  amount_eth   TEXT          NOT NULL,
+  tx_hash      TEXT          UNIQUE NOT NULL,
+  block_number BIGINT,
+  created_at   TIMESTAMPTZ   DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_market_id  ON market_activity (market_id);
+CREATE INDEX IF NOT EXISTS idx_activity_user_addr  ON market_activity (user_address);
+
+ALTER TABLE market_activity ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read activity"  ON market_activity FOR SELECT USING (true);
+CREATE POLICY "Allow insert activity" ON market_activity FOR INSERT WITH CHECK (true);
+

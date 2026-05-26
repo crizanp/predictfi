@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { ethers } from 'ethers'
 import { useWallet } from './WalletContext'
 import { toErrorMessage } from '../lib/utils'
+import { recordActivity } from '../lib/supabase'
 
 export interface Market {
   id: number
@@ -188,7 +189,17 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       try {
         const contract = await getPreparedWriteContract()
         const tx = await contract.predict(marketId, choice, { value: parsedAmount })
-        await tx.wait()
+        const receipt = await tx.wait()
+
+        // Mirror to Supabase for Discussion/Activity/Holders tabs
+        void recordActivity(
+          marketId,
+          account,
+          choice,
+          amount,
+          tx.hash as string,
+          receipt?.blockNumber as number | undefined
+        )
 
         const loadedMarkets = await loadMarkets()
         if (account) await loadUserPredictions(account, loadedMarkets)

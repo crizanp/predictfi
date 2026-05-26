@@ -231,7 +231,6 @@ export default function HomePage() {
         <div className={styles.sectionHeader}>
           <div>
             <h2 className={styles.sectionTitle}><RiFireLine style={{verticalAlign:'middle', marginRight:6}} />Trending Markets</h2>
-            <p className={styles.sectionSub}>Highest volume markets right now</p>
           </div>
           <Link href="/markets" className={styles.viewAllBtn}>
             View All Markets →

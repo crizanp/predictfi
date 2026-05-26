@@ -100,8 +100,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           text: 'Contract address is missing. Add NEXT_PUBLIC_CONTRACT_ADDRESS to .env.local, then restart.',
         }
   )
-  const [showWalletModal, setShowWalletModal] = useState(false)
+  const [showWalletModal] = useState(false)           // kept for API compat; AppKit owns the modal
   const [showAdminPortal, setShowAdminPortal] = useState(false)
+
+  // Opens Reown AppKit modal — used everywhere instead of custom WalletModal
+  const setShowWalletModal = useCallback(
+    (show: boolean) => {
+      if (!show) return
+      import('../lib/appkit')
+        .then(({ appKit }) => {
+          void appKit.open(account ? { view: 'Account' } : undefined)
+        })
+        .catch(() => setStatusMessage('error', 'Could not open wallet modal.'))
+    },
+    [account]  // eslint-disable-line react-hooks/exhaustive-deps
+  )
 
   const isBusy = busyAction !== null
   const isWrongNetwork = account !== '' && activeChainId !== null && activeChainId !== CHAIN_ID
