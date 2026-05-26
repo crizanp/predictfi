@@ -564,3 +564,111 @@
   .discussionTab { padding: 14px 16px; }
 }
 
+/* --- Monochrome Pro Overrides for Discussion --- */
+.discussionSection {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.42);
+}
+
+.tabsRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+}
+
+.tabBtn {
+  color: #9d9d9d;
+  font-weight: 800;
+}
+
+.tabBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tabBtnActive {
+  color: #ffffff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.discussionTab {
+  background: #0a0a0a;
+}
+
+.connectToComment {
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4f4f4;
+}
+
+.connectToComment:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.commentInput,
+.replyInput {
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f3f3f3;
+}
+
+.commentInput:focus,
+.replyInput:focus {
+  border-color: rgba(255, 255, 255, 0.48);
+}
+
+.commentAs,
+.emptyState {
+  color: #9a9a9a;
+}
+
+.commentSubmit,
+.replySubmit {
+  background: #efefef;
+  color: #111;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-weight: 800;
+}
+
+.commentSubmit:not(:disabled):hover,
+.replySubmit:not(:disabled):hover {
+  opacity: 1;
+  background: #ffffff;
+}
+
+.commentCard {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.commentAuthor {
+  color: #f0f0f0;
+}
+
+.commentText {
+  color: #d6d6d6;
+}
+
+.actionBtn {
+  color: #a4a4a4;
+}
+
+.actionBtn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.replyBox {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.repliesList {
+  border-left: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.replyCard {
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+

@@ -101,15 +101,17 @@ export default function WalletModal() {
 
             {/* Action buttons */}
             <div className={styles.actions}>
-              {isWrongNetwork && (
-                <button
-                  className={styles.switchNetBtn}
-                  onClick={() => { void switchActiveNetwork() }}
-                  disabled={isBusy}
-                >
-                  {busyAction === 'switch-network' ? 'Switching...' : '⚡ Switch to BSC Testnet'}
-                </button>
-              )}
+              <button
+                className={styles.switchNetBtn}
+                onClick={() => { if (isWrongNetwork) void switchActiveNetwork() }}
+                disabled={isBusy || !isWrongNetwork}
+              >
+                {busyAction === 'switch-network'
+                  ? 'Switching...'
+                  : isWrongNetwork
+                    ? 'Switch to BSC Testnet'
+                    : 'On BSC Testnet'}
+              </button>
 
               {canSwitchAccount && (
                 <button

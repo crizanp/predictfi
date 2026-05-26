@@ -389,4 +389,147 @@
   text-align: center;
 }
 
+/* --- Monochrome Pro Theme Overrides --- */
+.backdrop {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  max-width: 430px;
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0));
+}
+
+.title {
+  color: #f7f7f7;
+  letter-spacing: 0.01em;
+}
+
+.closeBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #cfcfcf;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
+}
+
+.avatar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  color: #fff;
+}
+
+.avatarBadge {
+  background: #22c55e;
+  border-color: #0a0a0a;
+}
+
+.address,
+.fullAddress {
+  color: #f0f0f0;
+}
+
+.copyBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #f3f3f3;
+}
+
+.copyBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.infoItem {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.infoLabel {
+  color: #9d9d9d;
+}
+
+.infoValue {
+  color: #f5f5f5;
+}
+
+.switchNetBtn,
+.switchAccBtn,
+.disconnectBtn,
+.optionBtn {
+  border-radius: 12px;
+}
+
+.switchNetBtn {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #f5f5f5;
+}
+
+.switchNetBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.switchNetBtn:disabled {
+  opacity: 0.85;
+  color: #a4a4a4;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.switchAccBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f1f1f1;
+}
+
+.switchAccBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.36);
+}
+
+.disconnectBtn {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #dcdcdc;
+}
+
+.disconnectBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: #fff;
+}
+
+.subtitle,
+.footer,
+.optionInfo span,
+.optionChevron {
+  color: #aaaaaa;
+}
+
+.optionBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.optionBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.34);
+}
+
+.optionBadge {
+  color: #f2f2f2;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
 

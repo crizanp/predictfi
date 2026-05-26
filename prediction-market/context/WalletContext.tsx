@@ -100,28 +100,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           text: 'Contract address is missing. Add NEXT_PUBLIC_CONTRACT_ADDRESS to .env.local, then restart.',
         }
   )
-  const [showWalletModal] = useState(false)           // kept for API compat; AppKit owns the modal
+  const [showWalletModal, setShowWalletModalState] = useState(false)
   const [showAdminPortal, setShowAdminPortal] = useState(false)
 
   const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
     setStatus({ tone, text })
   }, [])
 
-  // Opens Reown AppKit full connect view so users can always switch wallet provider.
   const setShowWalletModal = useCallback(
     (show: boolean) => {
-      if (!show) return
-      if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID === 'demo') {
-        setStatusMessage('error', 'Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local to enable full Reown wallet options.')
-        return
-      }
-      import('../lib/appkit')
-        .then(({ appKit }) => {
-          void appKit.open({ view: 'Connect' })
-        })
-        .catch(() => setStatusMessage('error', 'Could not open wallet modal.'))
+      setShowWalletModalState(show)
     },
-    [setStatusMessage]
+    []
   )
 
   const isBusy = busyAction !== null

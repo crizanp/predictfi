@@ -111,7 +111,10 @@ export default function AdsPage() {
     setLoading(false)
   }, [flash])
 
-  useEffect(() => { fetchAds() }, [fetchAds])
+  useEffect(() => {
+    const timer = setTimeout(() => { void fetchAds() }, 0)
+    return () => clearTimeout(timer)
+  }, [fetchAds])
 
   // ── Duration preset ────────────────────────────────────────────────────────
   const applyDuration = (days: number) => {
