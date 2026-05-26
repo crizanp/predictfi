@@ -22,20 +22,221 @@ import { useMarkets } from '../context/MarketsContext'
 import MarketCard from '../components/MarketCard'
 import styles from './page.module.css'
 
+const tokenUseCases = [
+  {
+    Icon: RiPercentLine,
+    color: '#c084fc',
+    title: 'Fee Discounts',
+    desc: 'Pay platform fees in PRFI and unlock up to 50% discount on trading costs.',
+  },
+  {
+    Icon: RiStackLine,
+    color: '#a855f7',
+    title: 'Staking Rewards',
+    desc: 'Stake PRFI to earn a portion of protocol fees and long-term yield incentives.',
+  },
+  {
+    Icon: RiGovernmentLine,
+    color: '#3b82f6',
+    title: 'Governance',
+    desc: 'Vote on proposals, market listings, and key protocol upgrade decisions.',
+  },
+  {
+    Icon: RiVipCrownLine,
+    color: '#f59e0b',
+    title: 'Priority Access',
+    desc: 'PRFI holders get early entry into high-volume markets and new launches.',
+  },
+  {
+    Icon: RiGiftLine,
+    color: '#06b6d4',
+    title: 'Airdrop Rewards',
+    desc: 'Top predictors receive campaign airdrops based on performance and activity.',
+  },
+  {
+    Icon: RiDiamondLine,
+    color: '#ff3366',
+    title: 'Premium Markets',
+    desc: 'Unlock exclusive high-stakes market rooms available to PRFI participants.',
+  },
+]
+
+const tokenAllocations = [
+  {
+    label: 'Public Sale',
+    pct: 40,
+    color: '#c084fc',
+    desc: 'Community distribution',
+    why: 'A large public allocation creates broad ownership from day one and builds trust through transparent access.',
+    plan: 'Release across presale and listing phases, with strict caps per wallet to reduce concentration risk.',
+  },
+  {
+    label: 'Ecosystem & Rewards',
+    pct: 20,
+    color: '#3b82f6',
+    desc: 'Liquidity and incentives',
+    why: 'Protocol growth requires active market makers, referral incentives, and liquidity support for new markets.',
+    plan: 'Stream rewards by season, tied to measurable activity like volume, retention, and market quality.',
+  },
+  {
+    label: 'Team (3yr vesting)',
+    pct: 15,
+    color: '#a855f7',
+    desc: 'Long-term alignment',
+    why: 'Team allocation is designed to align contributors with long-term execution instead of short-term price moves.',
+    plan: 'Use a cliff plus linear vesting schedule, with milestone-linked unlock policies and full wallet transparency.',
+  },
+  {
+    label: 'Reserve',
+    pct: 10,
+    color: '#f59e0b',
+    desc: 'Strategic treasury',
+    why: 'A reserve fund gives the protocol flexibility to respond to market volatility, security events, and partnerships.',
+    plan: 'Deploy only through governance-approved proposals with published rationale and post-execution reporting.',
+  },
+  {
+    label: 'Advisors',
+    pct: 10,
+    color: '#06b6d4',
+    desc: 'Expert execution support',
+    why: 'Specialist advisors help on token design, legal frameworks, security review, and go-to-market quality.',
+    plan: 'Unlock in milestone buckets tied to delivered outcomes such as audits, listings, and ecosystem integrations.',
+  },
+  {
+    label: 'Airdrop',
+    pct: 5,
+    color: '#ff3366',
+    desc: 'User growth engine',
+    why: 'Airdrops attract early users, reward accurate predictors, and strengthen social distribution before mainnet scale.',
+    plan: 'Distribute in campaign waves with anti-sybil filtering and public eligibility criteria.',
+  },
+]
+
+const whitepaperChapters = [
+  {
+    num: '01',
+    title: 'Protocol Overview',
+    desc: 'Architecture and smart contract design',
+    why: 'This chapter defines why PredictFi exists, what problems it solves, and how trust is enforced on-chain.',
+    plan: 'Document system architecture, core contracts, and safety assumptions before scaling market volume.',
+    milestones: ['Market factory + settlement flow', 'Oracle integrity and fallback design', 'Risk controls and circuit breakers'],
+  },
+  {
+    num: '02',
+    title: 'Market Mechanics',
+    desc: 'AMM model, liquidity, and price discovery',
+    why: 'Clear market mechanics help users understand how odds move, where liquidity comes from, and how outcomes are priced.',
+    plan: 'Roll out liquidity tooling, dynamic fee curves, and transparent settlement logic in phased releases.',
+    milestones: ['Dynamic odds model', 'LP incentive framework', 'Settlement and dispute finalization'],
+  },
+  {
+    num: '03',
+    title: 'PRFI Token',
+    desc: 'Utility, tokenomics, and distribution',
+    why: 'The token chapter explains utility first so value is tied to platform activity instead of pure speculation.',
+    plan: 'Sequence token utility launches: fee discounts, staking rewards, and governance rights with usage metrics.',
+    milestones: ['Fee utility activation', 'Staking rewards module', 'In-protocol governance voting'],
+  },
+  {
+    num: '04',
+    title: 'Governance',
+    desc: 'On-chain voting and protocol upgrades',
+    why: 'Governance gives the community control over emissions, listings, and treasury decisions as the protocol matures.',
+    plan: 'Start with guarded governance, then transition to community-led execution with timelocks and transparent voting.',
+    milestones: ['Proposal framework launch', 'Treasury voting permissions', 'Full community upgrade lifecycle'],
+  },
+]
+
 export default function HomePage() {
   const { markets, isLoadingMarkets } = useMarkets()
   const [nowInSeconds, setNowInSeconds] = useState(0)
+  const [activeAllocation, setActiveAllocation] = useState(tokenAllocations[0].label)
+  const [activeChapter, setActiveChapter] = useState(whitepaperChapters[0].num)
+  const [isTokenomicsModalOpen, setIsTokenomicsModalOpen] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => setNowInSeconds(Math.floor(Date.now() / 1000)), 1000)
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    if (!isTokenomicsModalOpen) {
+      return
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsTokenomicsModalOpen(false)
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isTokenomicsModalOpen])
+
   // Top 6 by volume for homepage
   const top6 = useMemo(() =>
     [...markets].sort((a, b) => (parseFloat(b.totalPool) || 0) - (parseFloat(a.totalPool) || 0)).slice(0, 6),
     [markets]
   )
+
+  const selectedAllocation = useMemo(() =>
+    tokenAllocations.find((allocation) => allocation.label === activeAllocation) ?? tokenAllocations[0],
+    [activeAllocation]
+  )
+
+  const selectedChapter = useMemo(() =>
+    whitepaperChapters.find((chapter) => chapter.num === activeChapter) ?? whitepaperChapters[0],
+    [activeChapter]
+  )
+
+  const donutSlices = useMemo(() => {
+    const cx = 80
+    const cy = 80
+    const outerRadius = 62
+    const innerRadius = 40
+    const format = (value: number) => value.toFixed(4)
+
+    return tokenAllocations.map((slice, index) => {
+      const angle = (slice.pct / 100) * 2 * Math.PI
+      const startAngle = tokenAllocations
+        .slice(0, index)
+        .reduce((accumulator, allocation) => accumulator + (allocation.pct / 100) * 2 * Math.PI, -Math.PI / 2)
+      const endAngle = startAngle + angle
+
+      const x1 = cx + outerRadius * Math.cos(startAngle)
+      const y1 = cy + outerRadius * Math.sin(startAngle)
+      const ix1 = cx + innerRadius * Math.cos(startAngle)
+      const iy1 = cy + innerRadius * Math.sin(startAngle)
+
+      const x2 = cx + outerRadius * Math.cos(endAngle)
+      const y2 = cy + outerRadius * Math.sin(endAngle)
+      const ix2 = cx + innerRadius * Math.cos(endAngle)
+      const iy2 = cy + innerRadius * Math.sin(endAngle)
+
+      const largeArcFlag = angle > Math.PI ? 1 : 0
+      const d =
+        `M ${format(x1)} ${format(y1)} ` +
+        `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${format(x2)} ${format(y2)} ` +
+        `L ${format(ix2)} ${format(iy2)} ` +
+        `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${format(ix1)} ${format(iy1)} Z`
+
+      return {
+        ...slice,
+        d,
+      }
+    })
+  }, [])
+
+  const openTokenomicsModal = (label: string) => {
+    setActiveAllocation(label)
+    setIsTokenomicsModalOpen(true)
+  }
 
   return (
     <main className={styles.main}>
@@ -103,26 +304,33 @@ export default function HomePage() {
 
         {/* Header */}
         <div className={styles.prfiHeader}>
-          <div className={styles.prfiBadge}>TOKEN</div>
           <h2 className={styles.prfiTitle}>
             <span className={styles.prfiGreen}>PRFI</span> Token
           </h2>
           <p className={styles.prfiTagline}>
             The utility token powering the PredictFi ecosystem
           </p>
+          <div className={styles.prfiTrustRow}>
+            <div className={styles.prfiTrustItem}>
+              <RiShieldCheckLine />
+              <span>Transparent Emissions</span>
+            </div>
+            <div className={styles.prfiTrustItem}>
+              <RiTrophyLine />
+              <span>Incentives For Accuracy</span>
+            </div>
+            <div className={styles.prfiTrustItem}>
+              <RiGovernmentLine />
+              <span>Community Governance Path</span>
+            </div>
+          </div>
         </div>
 
         {/* Use Cases Grid */}
         <div className={styles.useCasesGrid}>
-          {[
-            { Icon: RiPercentLine,   color: '#c084fc', title: 'Fee Discounts',    desc: 'Pay platform fees in PRFI and get up to 50% discount on trading fees' },
-            { Icon: RiStackLine,     color: '#a855f7', title: 'Staking Rewards',  desc: 'Stake PRFI to earn a share of platform revenue and yield' },
-            { Icon: RiGovernmentLine,color: '#3b82f6', title: 'Governance',       desc: 'Vote on new market proposals, fee structures, and protocol upgrades' },
-            { Icon: RiVipCrownLine,  color: '#f59e0b', title: 'Priority Access',  desc: 'PRFI holders get early access to high-volume markets and new features' },
-            { Icon: RiGiftLine,      color: '#06b6d4', title: 'Airdrop Rewards',  desc: 'Active predictors earn PRFI airdrops based on accuracy and volume' },
-            { Icon: RiDiamondLine,   color: '#ff3366', title: 'Premium Markets',  desc: 'Unlock exclusive high-stakes markets only accessible with PRFI' },
-          ].map((item) => (
+          {tokenUseCases.map((item, index) => (
             <div key={item.title} className={styles.useCase}>
+              <div className={styles.useCaseIndex}>{String(index + 1).padStart(2, '0')}</div>
               <item.Icon className={styles.useCaseIcon} style={{ color: item.color }} />
               <div className={styles.useCaseTitle}>{item.title}</div>
               <div className={styles.useCaseDesc}>{item.desc}</div>
@@ -142,56 +350,53 @@ export default function HomePage() {
             {/* SVG Donut chart */}
             <div className={styles.donutWrap}>
               <svg viewBox="0 0 160 160" className={styles.donut}>
-                {(() => {
-                  const slices = [
-                    { label: 'Public Sale', pct: 40, color: '#c084fc' },
-                    { label: 'Ecosystem', pct: 20, color: '#3b82f6' },
-                    { label: 'Team', pct: 15, color: '#a855f7' },
-                    { label: 'Reserve', pct: 10, color: '#f59e0b' },
-                    { label: 'Advisors', pct: 10, color: '#06b6d4' },
-                    { label: 'Airdrop', pct: 5, color: '#ff3366' },
-                  ]
-                  const cx = 80, cy = 80, r = 62, inner = 40
-                  let cumAngle = -Math.PI / 2
-                  return slices.map((s) => {
-                    const angle = (s.pct / 100) * 2 * Math.PI
-                    const x1 = cx + r * Math.cos(cumAngle)
-                    const y1 = cy + r * Math.sin(cumAngle)
-                    const ix1 = cx + inner * Math.cos(cumAngle)
-                    const iy1 = cy + inner * Math.sin(cumAngle)
-                    cumAngle += angle
-                    const x2 = cx + r * Math.cos(cumAngle)
-                    const y2 = cy + r * Math.sin(cumAngle)
-                    const ix2 = cx + inner * Math.cos(cumAngle)
-                    const iy2 = cy + inner * Math.sin(cumAngle)
-                    const large = angle > Math.PI ? 1 : 0
-                    const d = `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${inner} ${inner} 0 ${large} 0 ${ix1} ${iy1} Z`
-                    return <path key={s.label} d={d} fill={s.color} opacity="0.85" stroke="#0a0d14" strokeWidth="1.5" />
-                  })
-                })()}
+                {donutSlices.map((slice) => (
+                  <g
+                    key={slice.label}
+                    className={`${styles.donutSlice} ${activeAllocation === slice.label ? styles.donutSliceActive : ''}`}
+                    onClick={() => openTokenomicsModal(slice.label)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        openTokenomicsModal(slice.label)
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Select ${slice.label} allocation`}
+                    aria-pressed={activeAllocation === slice.label}
+                  >
+                    <path d={slice.d} fill={slice.color} opacity="0.9" stroke="#05060e" strokeWidth="1.5" />
+                  </g>
+                ))}
                 <text x="80" y="76" textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="700">TOTAL</text>
                 <text x="80" y="90" textAnchor="middle" fontSize="8" fill="#9ca3af" fontWeight="600">1B PRFI</text>
               </svg>
             </div>
 
             <div className={styles.allocationList}>
-              {[
-                { label: 'Public Sale', pct: 40, color: '#c084fc' },
-                { label: 'Ecosystem & Rewards', pct: 20, color: '#3b82f6' },
-                { label: 'Team (3yr vesting)', pct: 15, color: '#a855f7' },
-                { label: 'Reserve', pct: 10, color: '#f59e0b' },
-                { label: 'Advisors', pct: 10, color: '#06b6d4' },
-                { label: 'Airdrop', pct: 5, color: '#ff3366' },
-              ].map((row) => (
-                <div key={row.label} className={styles.allocRow}>
+              {tokenAllocations.map((row) => (
+                <button
+                  type="button"
+                  key={row.label}
+                  className={`${styles.allocRow} ${activeAllocation === row.label ? styles.allocRowActive : ''}`}
+                  onClick={() => openTokenomicsModal(row.label)}
+                >
                   <div className={styles.allocDot} style={{ background: row.color }} />
-                  <span className={styles.allocLabel}>{row.label}</span>
+                  <div className={styles.allocLabelWrap}>
+                    <span className={styles.allocLabel}>{row.label}</span>
+                    <span className={styles.allocHint}>{row.desc}</span>
+                  </div>
                   <div className={styles.allocBarWrap}>
                     <div className={styles.allocBar} style={{ width: `${row.pct}%`, background: row.color }} />
                   </div>
                   <span className={styles.allocPct}>{row.pct}%</span>
-                </div>
+                </button>
               ))}
+            </div>
+
+            <div className={styles.tokenModalHint}>
+              Click any donut segment or allocation row to open the full tokenomics plan.
             </div>
           </div>
 
@@ -225,6 +430,27 @@ export default function HomePage() {
               </div>
             </div>
 
+            <div className={styles.presalePurpose}>
+              <div className={styles.presalePurposeLabel}>Why this presale exists</div>
+              <p>
+                The presale is designed to bootstrap fair liquidity, fund launch operations, and ensure long-term runway
+                before full governance decentralization.
+              </p>
+            </div>
+
+            <div className={styles.presaleRoadmap}>
+              {[
+                'Phase 1: Community onboarding and whitelist validation',
+                'Phase 2: Liquidity deployment and token claim opening',
+                'Phase 3: Governance activation and rewards kickoff',
+              ].map((step) => (
+                <div key={step} className={styles.presaleRoadmapItem}>
+                  <span className={styles.presaleRoadmapDot} />
+                  <span>{step}</span>
+                </div>
+              ))}
+            </div>
+
             {/* Fundraising progress */}
             <div className={styles.presaleProgressWrap}>
               <div className={styles.presaleProgressLabel}>
@@ -249,8 +475,49 @@ export default function HomePage() {
         </div>
       </div>
 
+      {isTokenomicsModalOpen && (
+        <div className={styles.tokenomicsModalOverlay} onClick={() => setIsTokenomicsModalOpen(false)}>
+          <div
+            className={styles.tokenomicsModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tokenomics-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.tokenomicsModalClose}
+              onClick={() => setIsTokenomicsModalOpen(false)}
+              aria-label="Close tokenomics modal"
+            >
+              Close
+            </button>
+
+            <div className={styles.tokenomicsModalHead}>
+              <div className={styles.tokenomicsModalBadge}>TOKENOMICS DETAIL</div>
+              <h3 id="tokenomics-modal-title" className={styles.tokenomicsModalTitle}>
+                {selectedAllocation.label} <span>{selectedAllocation.pct}%</span>
+              </h3>
+              <p className={styles.tokenomicsModalSubtitle}>{selectedAllocation.desc}</p>
+            </div>
+
+            <div className={styles.tokenomicsModalGrid}>
+              <div className={styles.tokenomicsModalCard}>
+                <div className={styles.tokenomicsModalCardLabel}>Why it exists</div>
+                <p>{selectedAllocation.why}</p>
+              </div>
+              <div className={styles.tokenomicsModalCard}>
+                <div className={styles.tokenomicsModalCardLabel}>Execution plan</div>
+                <p>{selectedAllocation.plan}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Whitepaper Section ──────────────────────────── */}
       <div id="whitepaper" className={styles.whitepaperSection}>
+        <div className={styles.whitepaperAura} />
         <div className={styles.whitepaperLeft}>
           <div className={styles.whitepaperBadge}>WHITEPAPER</div>
           <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
@@ -259,26 +526,51 @@ export default function HomePage() {
             PRFI tokenomics, and governance mechanisms. Everything you need to know about how the 
             decentralized prediction market engine works.
           </p>
+          <div className={styles.whitepaperMeta}>
+            <div className={styles.whitepaperMetaItem}>4 Strategic Chapters</div>
+            <div className={styles.whitepaperMetaItem}>Execution-first Roadmap</div>
+            <div className={styles.whitepaperMetaItem}>Transparent Governance Model</div>
+          </div>
           <div className={styles.whitepaperActions}>
-            <a href="#whitepaper" className={styles.readBtn}><RiFlashlightLine style={{verticalAlign:'middle',marginRight:6}} />Read Whitepaper</a>
-            <a href="#whitepaper" className={styles.downloadBtn}>Download PDF</a>
+            <a href="#whitepaper-details" className={styles.readBtn}><RiFlashlightLine style={{verticalAlign:'middle',marginRight:6}} />Read Whitepaper</a>
+            <a href="#whitepaper-details" className={styles.downloadBtn}>Download PDF Outline</a>
           </div>
         </div>
         <div className={styles.whitepaperRight}>
-          {[
-            { num: '01', title: 'Protocol Overview',    desc: 'Architecture and smart contract design' },
-            { num: '02', title: 'Market Mechanics',     desc: 'AMM model, liquidity, and price discovery' },
-            { num: '03', title: 'PRFI Token',           desc: 'Utility, tokenomics, and distribution' },
-            { num: '04', title: 'Governance',           desc: 'On-chain voting and protocol upgrades' },
-          ].map((ch) => (
-            <div key={ch.num} className={styles.chapterCard}>
-              <div className={styles.chapterNum}>{ch.num}</div>
-              <div>
-                <div className={styles.chapterTitle}>{ch.title}</div>
-                <div className={styles.chapterDesc}>{ch.desc}</div>
-              </div>
+          <div className={styles.chapterGrid}>
+            {whitepaperChapters.map((ch) => (
+              <button
+                type="button"
+                key={ch.num}
+                className={`${styles.chapterCard} ${activeChapter === ch.num ? styles.chapterCardActive : ''}`}
+                onClick={() => setActiveChapter(ch.num)}
+              >
+                <div className={styles.chapterNum}>{ch.num}</div>
+                <div>
+                  <div className={styles.chapterTitle}>{ch.title}</div>
+                  <div className={styles.chapterDesc}>{ch.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div id="whitepaper-details" className={styles.chapterDetailCard}>
+            <div className={styles.chapterDetailLabel}>Why this chapter exists</div>
+            <h3 className={styles.chapterDetailTitle}>{selectedChapter.num} · {selectedChapter.title}</h3>
+            <p className={styles.chapterDetailText}>{selectedChapter.why}</p>
+            <div className={styles.chapterDetailPlan}>
+              <div className={styles.chapterDetailLabel}>Execution Plan</div>
+              <p>{selectedChapter.plan}</p>
             </div>
-          ))}
+            <div className={styles.chapterMilestones}>
+              {selectedChapter.milestones.map((item) => (
+                <div key={item} className={styles.chapterMilestone}>
+                  <span className={styles.chapterMilestoneDot} />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -290,7 +582,7 @@ export default function HomePage() {
         </div>
         <div className={styles.socialGrid}>
           {[
-            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',     color: '#e8eaf0', bg: '#111111', href: 'https://x.com/PredictFi' },
+            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',     color: '#0f172a', bg: '#111111', href: 'https://x.com/PredictFi' },
             { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictfi', color: '#229ED9', bg: '#0a1828', href: 'https://t.me/predictfi' },
             { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/predictfi', color: '#5865F2', bg: '#0a0c1e', href: 'https://discord.gg/predictfi' },
           ].map((s) => (

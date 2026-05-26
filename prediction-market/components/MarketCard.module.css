@@ -4,7 +4,7 @@
   flex-direction: row;
   align-items: stretch;
   background: #0d1014;
-  border: 1px solid rgba(255,255,255,0.055);
+  border: 0.5px solid rgba(255, 255, 255, 0.421);
   border-radius: 12px;
   overflow: hidden;
   text-decoration: none;

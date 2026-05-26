@@ -61,7 +61,7 @@
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  color: #5a6478;
+  color: #d9d7d7;
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
@@ -70,13 +70,13 @@
 }
 
 .navItem:hover {
-  background: rgba(192,132,252,0.07);
-  color: #d8b4fe;
+  background: rgb(255, 255, 255);
+  color: #040008;
 }
 
 .navItem.active {
-  background: rgba(192,132,252,0.1);
-  color: #e8eaf0;
+  background: rgb(255, 255, 255);
+  color: #01040a;
 }
 
 .navItem.active .icon {

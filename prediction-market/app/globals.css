@@ -49,16 +49,16 @@ body {
   position: sticky;
   top: 0;
   z-index: 800;
-  background: linear-gradient(90deg, #3b0764 0%, #581c87 50%, #3b0764 100%);
-  color: #e9d5ff;
+  background:  #ffffff;
+  color: #111112;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   text-align: center;
   padding: 7px 16px;
   letter-spacing: 0.02em;
   border-bottom: 1px solid rgba(192,132,252,0.25);
 }
-.mainnetBanner strong { color: #fff; }
+.mainnetBanner strong { color: #111010; }
 .mainnetBanner a { color: #c084fc; text-decoration: underline; }
 .mainnetBanner a:hover { color: #fff; }
 
