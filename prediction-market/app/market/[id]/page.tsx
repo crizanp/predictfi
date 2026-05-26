@@ -57,6 +57,7 @@ export default function MarketDetailPage() {
   const [loading, setLoading]           = useState(true)
   const [nowInSeconds, setNowInSeconds] = useState(Math.floor(Date.now() / 1000))
   const [meta, setMeta]                 = useState<MarketMeta | null>(null)
+  const [selectedEventKey, setSelectedEventKey] = useState('1')
 
   const [activeTab, setActiveTab] = useState<'discussion' | 'holders' | 'activity'>('discussion')
 
@@ -266,6 +267,68 @@ export default function MarketDetailPage() {
     setPosting(false)
   }, [account, marketId, posting, replyUI, mergeComments])
 
+  const yesLabel = meta?.yes_label ?? 'YES'
+  const noLabel  = meta?.no_label  ?? 'NO'
+
+  const marketEvents = useMemo(() => {
+    if (!market) return []
+
+    let eventLabelOverrides: Array<{ yesLabel?: string; noLabel?: string }> = []
+    const raw = meta?.events_json?.trim()
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as unknown
+        if (Array.isArray(parsed)) {
+          eventLabelOverrides = parsed.map((row) => {
+            const obj = row as Record<string, unknown>
+            return {
+              yesLabel: String(obj.yesLabel ?? '').trim() || undefined,
+              noLabel: String(obj.noLabel ?? '').trim() || undefined,
+            }
+          })
+        }
+      } catch {
+        eventLabelOverrides = []
+      }
+    }
+
+    return market.events.map((event, index) => ({
+      key: String(event.id),
+      eventId: event.id,
+      name: event.name,
+      yesLabel: eventLabelOverrides[index]?.yesLabel || yesLabel,
+      noLabel: eventLabelOverrides[index]?.noLabel || noLabel,
+      yesPool: event.yesPool,
+      noPool: event.noPool,
+      totalPool: event.totalPool,
+      resolved: event.resolved,
+      result: event.result,
+    }))
+  }, [market, meta?.events_json, noLabel, yesLabel])
+
+  useEffect(() => {
+    if (marketEvents.length === 0) return
+    if (!marketEvents.some((event) => event.key === selectedEventKey)) {
+      setSelectedEventKey(marketEvents[0].key)
+    }
+  }, [marketEvents, selectedEventKey])
+
+  const selectedEvent = useMemo(
+    () => marketEvents.find((event) => event.key === selectedEventKey) ?? marketEvents[0],
+    [marketEvents, selectedEventKey]
+  )
+  const selectedYesLabel = selectedEvent?.yesLabel ?? yesLabel
+  const selectedNoLabel = selectedEvent?.noLabel ?? noLabel
+
+  const marketOdds = useMemo(() => {
+    const yesPool = parseFloat(selectedEvent?.yesPool ?? '0') || 0
+    const noPool = parseFloat(selectedEvent?.noPool ?? '0') || 0
+    const total = yesPool + noPool
+    const yesOdds = total > 0 ? Math.round((yesPool / total) * 100) : 50
+    const noOdds = 100 - yesOdds
+    return { yesOdds, noOdds }
+  }, [selectedEvent])
+
   if (loading) {
     return (
       <main className={styles.main}>
@@ -291,8 +354,7 @@ export default function MarketDetailPage() {
     )
   }
 
-  const yesLabel = meta?.yes_label ?? 'YES'
-  const noLabel  = meta?.no_label  ?? 'NO'
+  const headerTitle = market.eventName?.trim() || market.question
 
   return (
     <main className={styles.main}>
@@ -319,7 +381,8 @@ export default function MarketDetailPage() {
                     <span className={styles.badgeLive}><span className={styles.liveDot} />Live</span>
                   )}
                 </div>
-                <h1 className={styles.question}>{market.question}</h1>
+                <h1 className={styles.question}>{headerTitle}</h1>
+                {market.question !== headerTitle && <p className={styles.headerSubtitle}>{market.question}</p>}
                 <div className={styles.meta}>
                   <div className={styles.metaItem}>
                     <span className={styles.metaLabel}>Market ID</span>
@@ -339,12 +402,14 @@ export default function MarketDetailPage() {
 
             <OddsChart
               marketId={market.id}
-              yesPool={market.yesPool}
-              noPool={market.noPool}
-              totalPool={market.totalPool}
-              resolved={market.resolved}
-              yesLabel={yesLabel}
-              noLabel={noLabel}
+              eventId={selectedEvent?.eventId}
+              chartKey={`${market.id}:${selectedEvent?.eventId ?? 1}`}
+              yesPool={selectedEvent?.yesPool ?? '0'}
+              noPool={selectedEvent?.noPool ?? '0'}
+              totalPool={selectedEvent?.totalPool ?? '0'}
+              resolved={selectedEvent?.resolved ?? false}
+              yesLabel={selectedYesLabel}
+              noLabel={selectedNoLabel}
             />
 
             {meta?.description && (
@@ -353,6 +418,35 @@ export default function MarketDetailPage() {
                 <p className={styles.infoText}>{meta.description}</p>
               </div>
             )}
+            <div className={styles.eventsSection}>
+              <div className={styles.eventsSectionHeader}>
+                <h3 className={styles.infoTitle}>Events</h3>
+                <span className={styles.eventsHint}>{marketEvents.length} outcomes</span>
+              </div>
+              <div className={styles.eventsList}>
+                {marketEvents.map((event) => (
+                  <button
+                    key={event.key}
+                    type="button"
+                    className={`${styles.eventRow} ${selectedEventKey === event.key ? styles.eventRowActive : ''}`}
+                    onClick={() => setSelectedEventKey(event.key)}
+                  >
+                    <span className={styles.eventLeft}>
+                      <span className={styles.eventName}>{event.name}</span>
+                      <span className={styles.eventSub}>{selectedEventKey === event.key ? 'Selected for trading' : 'Tap to select'}</span>
+                    </span>
+                    <span className={styles.eventChanceBlock}>
+                      <span className={styles.eventChance}>{selectedEventKey === event.key ? marketOdds.yesOdds : Math.round(((parseFloat(event.yesPool) || 0) / Math.max((parseFloat(event.totalPool) || 0), 1e-9)) * 100)}%</span>
+                      <span className={styles.eventChanceLabel}>Chance</span>
+                    </span>
+                    <span className={styles.eventActions} aria-hidden>
+                      <span className={styles.eventYes}>{event.yesLabel}</span>
+                      <span className={styles.eventNo}>{event.noLabel}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
             {meta?.rules && (
               <div className={styles.infoSection}>
                 <h3 className={styles.infoTitle}>Resolution Rules</h3>
@@ -363,7 +457,13 @@ export default function MarketDetailPage() {
 
           <div className={styles.rightCol}>
             <div className={styles.sidebarSticky}>
-              <TradePanel market={market} nowInSeconds={nowInSeconds} meta={meta ?? undefined} />
+              <TradePanel
+                market={market}
+                nowInSeconds={nowInSeconds}
+                meta={meta ?? undefined}
+                selectedEventKey={selectedEventKey}
+                onSelectedEventKeyChange={setSelectedEventKey}
+              />
             </div>
           </div>
         </div>

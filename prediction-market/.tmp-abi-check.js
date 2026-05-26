@@ -1,4 +1,5 @@
-export const CONTRACT_ABI = [
+const { ethers } = require('ethers')
+const abi = [
   "function createMarket(string memory _question, string[] memory _eventNames, uint256 _durationInMinutes) external",
   "function predict(uint256 _marketId, uint256 _eventId, uint8 _choice) external payable",
   "function resolveEvent(uint256 _marketId, uint256 _eventId, uint8 _result) external",
@@ -13,11 +14,10 @@ export const CONTRACT_ABI = [
   "event PredictionPlaced(uint256 indexed marketId, uint256 indexed eventId, address indexed user, uint8 choice, uint256 amount)",
   "event EventResolved(uint256 indexed marketId, uint256 indexed eventId, uint8 result)",
   "event WinningsClaimed(uint256 indexed marketId, uint256 indexed eventId, address indexed user, uint256 amount)"
-];
-
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
-export const CONTRACT_OWNER = (
-  process.env.NEXT_PUBLIC_CONTRACT_OWNER ||
-  '0x8fb5B5608daf460602ddcEb3Abca40f4B67D271e'
-).toLowerCase();
-export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 97) // BSC Testnet
+]
+try {
+  const iface = new ethers.Interface(abi)
+  console.log('ok fragments', iface.fragments.length)
+} catch (e) {
+  console.error('parse-failed', e)
+}

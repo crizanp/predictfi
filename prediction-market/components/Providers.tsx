@@ -15,17 +15,17 @@ import WalletModal from './WalletModal'
  * Works for ALL wallet types: MetaMask, Phantom, Coinbase, WalletConnect, etc.
  */
 function ReownSync() {
-  const { setExternalProvider } = useWallet()
+  const { setExternalProvider, connectionType } = useWallet()
   const { walletProvider } = useAppKitProvider('eip155')
   const { address, isConnected } = useAppKitAccount()
 
   useEffect(() => {
     if (isConnected && walletProvider && address) {
       void setExternalProvider(walletProvider as unknown as Eip1193Provider, 'walletconnect')
-    } else if (!isConnected) {
+    } else if (!isConnected && connectionType === 'walletconnect') {
       void setExternalProvider(null, null)
     }
-  }, [isConnected, walletProvider, address, setExternalProvider])
+  }, [connectionType, isConnected, walletProvider, address, setExternalProvider])
 
   return null
 }

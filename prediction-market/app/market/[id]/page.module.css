@@ -156,6 +156,13 @@
   margin: 0;
 }
 
+.headerSubtitle {
+  margin: -2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
 .meta { display: flex; gap: 24px; flex-wrap: wrap; }
 
 .metaItem { display: flex; flex-direction: column; gap: 2px; }
@@ -205,6 +212,137 @@
   line-height: 1.7;
   margin: 0;
   white-space: pre-wrap;
+}
+
+.eventsSection {
+  background: var(--card);
+  border: 1px solid rgba(192,132,252,0.1);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+}
+
+.eventsSectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.eventsHint {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.eventsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eventRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) 72px auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 20px;
+  background: rgba(192,132,252,0.05);
+  border: 1px solid rgba(192,132,252,0.16);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.eventRow:hover {
+  transform: translateY(-1px);
+  border-color: rgba(192,132,252,0.3);
+  background: rgba(192,132,252,0.08);
+}
+
+.eventRowActive {
+  background: rgba(192,132,252,0.11);
+  border-color: rgba(192,132,252,0.38);
+  box-shadow: 0 0 0 1px rgba(192,132,252,0.08) inset;
+}
+
+.eventLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.eventName {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eventSub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.eventChanceBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.eventChance {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text-main);
+}
+
+.eventChanceLabel {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.eventActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-self: end;
+}
+
+.eventYes,
+.eventNo {
+  min-width: 104px;
+  text-align: center;
+  padding: 10px 18px;
+  border-radius: 18px;
+  border: 2px solid;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.eventYes {
+  color: #4c8df6;
+  background: rgba(76,141,246,0.11);
+  border-color: rgba(76,141,246,0.25);
+}
+
+.eventNo {
+  color: #ff6b73;
+  background: rgba(255,107,115,0.12);
+  border-color: rgba(255,107,115,0.22);
 }
 
 /* ── Discussion section ── */

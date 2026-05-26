@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import { Market, UserPrediction } from '../context/MarketsContext'
@@ -11,37 +11,130 @@ import styles from './TradePanel.module.css'
 
 interface FloatLabel { id: number; text: string; isYes: boolean }
 
+interface MarketEventOption {
+  key: string
+  eventId: number
+  name: string
+  yesLabel?: string
+  noLabel?: string
+}
+
 interface Props {
   market: Market
   nowInSeconds: number
   meta?: MarketMeta | null
+  selectedEventKey?: string
+  onSelectedEventKeyChange?: (eventKey: string) => void
 }
 
-export default function TradePanel({ market, nowInSeconds, meta }: Props) {
+export default function TradePanel({ market, nowInSeconds, meta, selectedEventKey: selectedEventKeyProp, onSelectedEventKeyChange }: Props) {
   const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured } = useWallet()
-  const { userPredictions, placePrediction, resolveMarket, claimWinnings } = useMarkets()
+  const { getEventUserPrediction, placePrediction, resolveMarket, claimWinnings } = useMarkets()
   const { addToast } = useToast()
 
-  const yesLabel = meta?.yes_label || 'YES'
-  const noLabel  = meta?.no_label  || 'NO'
+  const eventOptions = useMemo<MarketEventOption[]>(() => {
+    const baseYesLabel = meta?.yes_label || 'YES'
+    const baseNoLabel = meta?.no_label || 'NO'
 
-  const userPrediction: UserPrediction | undefined = account ? userPredictions[market.id] : undefined
+    let eventLabelOverrides: Array<{ yesLabel?: string; noLabel?: string }> = []
+    const raw = meta?.events_json?.trim()
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as unknown
+        if (Array.isArray(parsed)) {
+          eventLabelOverrides = parsed.map((row) => {
+            const obj = row as Record<string, unknown>
+            return {
+              yesLabel: String(obj.yesLabel ?? '').trim() || undefined,
+              noLabel: String(obj.noLabel ?? '').trim() || undefined,
+            }
+          })
+        }
+      } catch {
+        eventLabelOverrides = []
+      }
+    }
+
+    const fromChain = market.events.map((event, index) => ({
+      key: String(event.id),
+      eventId: event.id,
+      name: event.name,
+      yesLabel: eventLabelOverrides[index]?.yesLabel || baseYesLabel,
+      noLabel: eventLabelOverrides[index]?.noLabel || baseNoLabel,
+    }))
+
+    if (fromChain.length > 0) return fromChain
+
+    return [{
+      key: '1',
+      eventId: 1,
+      name: market.eventName || 'Main Event',
+      yesLabel: baseYesLabel,
+      noLabel: baseNoLabel,
+    }]
+  }, [market.eventName, market.events, meta])
+
+  const [selectedEventKeyState, setSelectedEventKeyState] = useState('1')
+  const selectedEventKey = selectedEventKeyProp ?? selectedEventKeyState
+
+  useEffect(() => {
+    if (selectedEventKeyProp !== undefined) {
+      return
+    }
+    if (!eventOptions.some((event) => event.key === selectedEventKeyState) && eventOptions[0]) {
+      setSelectedEventKeyState(eventOptions[0].key)
+    }
+  }, [eventOptions, selectedEventKeyProp, selectedEventKeyState])
+
+  const setSelectedEventKey = useCallback((eventKey: string) => {
+    if (onSelectedEventKeyChange) {
+      onSelectedEventKeyChange(eventKey)
+      return
+    }
+    setSelectedEventKeyState(eventKey)
+  }, [onSelectedEventKeyChange])
+
+  const effectiveEventKey = eventOptions.some((e) => e.key === selectedEventKey)
+    ? selectedEventKey
+    : (eventOptions[0]?.key ?? '1')
+
+  const selectedEvent = useMemo(
+    () => eventOptions.find((e) => e.key === effectiveEventKey) ?? eventOptions[0],
+    [eventOptions, effectiveEventKey]
+  )
+  const selectedEventId = Number.parseInt(selectedEvent?.key ?? '1', 10)
+  const selectedEventState = useMemo(
+    () => market.events.find((event) => event.id === selectedEventId) ?? market.events[0],
+    [market.events, selectedEventId]
+  )
+
+  const yesLabel = selectedEvent?.yesLabel || meta?.yes_label || 'YES'
+  const noLabel  = selectedEvent?.noLabel  || meta?.no_label  || 'NO'
+
+  const userPrediction: UserPrediction | undefined = account ? getEventUserPrediction(market.id, selectedEventId) : undefined
 
   const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
-  const lockedOutcome = userPrediction ? (userPrediction.choice as 1 | 2) : null
-  const activeOutcome = lockedOutcome ?? selectedOutcome
+  const activeOutcome = selectedOutcome
 
   const [amount, setAmount] = useState('0.01')
   const [flashBtn, setFlashBtn] = useState<'yes' | 'no' | null>(null)
   const [floats, setFloats] = useState<FloatLabel[]>([])
   const floatIdRef = useRef(0)
 
-  const metrics = useMemo(() => computePoolMetrics(market.yesPool, market.noPool, market.totalPool), [market])
+  const metrics = useMemo(
+    () => computePoolMetrics(
+      selectedEventState?.yesPool ?? '0',
+      selectedEventState?.noPool ?? '0',
+      selectedEventState?.totalPool ?? '0'
+    ),
+    [selectedEventState]
+  )
   const isEnded = nowInSeconds > 0 && market.endTime <= nowInSeconds
-  const isMarketClosed = market.resolved || isEnded
-  const isBuyingThis = busyAction === `predict-${market.id}`
-  const isResolving  = busyAction?.startsWith('resolve-')
-  const isClaiming   = busyAction === `claim-${market.id}`
+  const isEventResolved = selectedEventState?.resolved ?? false
+  const isMarketClosed = isEventResolved || isEnded
+  const isBuyingThis = busyAction === `predict-${market.id}-${selectedEventId}-${activeOutcome}`
+  const isResolving  = busyAction?.startsWith(`resolve-${market.id}-${selectedEventId}-`)
+  const isClaiming   = busyAction === `claim-${market.id}-${selectedEventId}`
 
   const canBuy = isContractConfigured && account !== null && !isMarketClosed && !isBusy
 
@@ -55,13 +148,13 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
 
   const potentialReward = useMemo(() => {
     if (!userPrediction) return 0
-    const total = Number.parseFloat(market.totalPool)
+    const total = Number.parseFloat(selectedEventState?.totalPool ?? '0')
     const winPool = userPrediction.choice === 1
-      ? Number.parseFloat(market.yesPool)
-      : Number.parseFloat(market.noPool)
+      ? Number.parseFloat(selectedEventState?.yesPool ?? '0')
+      : Number.parseFloat(selectedEventState?.noPool ?? '0')
     if (winPool <= 0) return 0
     return (Number.parseFloat(userPrediction.amount) * total) / winPool
-  }, [market, userPrediction])
+  }, [selectedEventState, userPrediction])
 
   const handleBuy = useCallback(async () => {
     if (!account) { setShowWalletModal(true); return }
@@ -70,26 +163,26 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
     setFloats((prev) => [...prev, { id, text: `+${amount} tBNB`, isYes }])
     setTimeout(() => setFloats((prev) => prev.filter((f) => f.id !== id)), 1500)
     try {
-      await placePrediction(market.id, activeOutcome, amount)
+      await placePrediction(market.id, selectedEventId, activeOutcome, amount)
       setFlashBtn(isYes ? 'yes' : 'no')
       setTimeout(() => setFlashBtn(null), 700)
       addToast(
-        `Bought ${isYes ? yesLabel : noLabel} — +${amount} tBNB on market #${market.id}`,
+        `Bought ${isYes ? yesLabel : noLabel} — +${amount} tBNB on ${selectedEvent?.name ?? 'Main Event'} (market #${market.id})`,
         isYes ? 'buy-yes' : 'buy-no'
       )
     } catch {
       addToast('Trade failed. Check your wallet and try again.', 'error')
     }
-  }, [account, amount, market.id, placePrediction, activeOutcome, setShowWalletModal, addToast, yesLabel, noLabel])
+  }, [account, amount, market.id, placePrediction, selectedEventId, activeOutcome, setShowWalletModal, addToast, yesLabel, noLabel, selectedEvent])
 
   const canClaimWinnings =
-    market.resolved &&
-    market.result !== 0 &&
+    isEventResolved &&
+    (selectedEventState?.result ?? 0) !== 0 &&
     userPrediction &&
-    userPrediction.choice === market.result &&
+    userPrediction.choice === (selectedEventState?.result ?? 0) &&
     !userPrediction.claimed
 
-  const canResolve = isOwner && !market.resolved && isEnded
+  const canResolve = isOwner && !isEventResolved && isEnded
   const currentLabel = activeOutcome === 1 ? yesLabel : noLabel
   const currentPrice = activeOutcome === 1 ? metrics.yesPrice : metrics.noPrice
 
@@ -111,6 +204,24 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
         <span className={styles.orderType}>Market Order</span>
       </div>
 
+      {eventOptions.length > 1 ? (
+        <div className={styles.eventSelectWrap}>
+          <label className={styles.eventLabel} htmlFor={`event-select-${market.id}`}>Event</label>
+          <select
+            id={`event-select-${market.id}`}
+            className={styles.eventSelect}
+            value={effectiveEventKey}
+            onChange={(e) => setSelectedEventKey(e.target.value)}
+          >
+            {eventOptions.map((event) => (
+              <option key={event.key} value={event.key}>{event.name}</option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className={styles.singleEventTag}>{selectedEvent?.name ?? 'Main Event'}</div>
+      )}
+
       {/* -- Outcome selector + trade form ------------ */}
       <>
           {/* Outcome selector */}
@@ -118,16 +229,14 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
             <div className={styles.outcomeSelect}>
               <button
                 className={`${styles.outcomeBtn} ${activeOutcome === 1 ? styles.outcomeBtnYesActive : ''}`}
-                onClick={() => { if (!lockedOutcome) setSelectedOutcome(1) }}
-                disabled={Boolean(lockedOutcome && lockedOutcome !== 1)}
+                onClick={() => setSelectedOutcome(1)}
               >
                 <span className={styles.outcomeLabelText}>{yesLabel}</span>
                 <span className={styles.outcomePct}>{metrics.yesPrice}¢</span>
               </button>
               <button
                 className={`${styles.outcomeBtn} ${activeOutcome === 2 ? styles.outcomeBtnNoActive : ''}`}
-                onClick={() => { if (!lockedOutcome) setSelectedOutcome(2) }}
-                disabled={Boolean(lockedOutcome && lockedOutcome !== 2)}
+                onClick={() => setSelectedOutcome(2)}
               >
                 <span className={styles.outcomeLabelText}>{noLabel}</span>
                 <span className={styles.outcomePct}>{metrics.noPrice}¢</span>
@@ -136,9 +245,9 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
           )}
 
           {/* Resolved banner */}
-          {market.resolved && (
-            <div className={`${styles.resolvedBanner} ${market.result === 1 ? styles.resolvedYes : styles.resolvedNo}`}>
-              &#10003; Resolved: <strong>{resultLabel(market.result)}</strong>
+          {isEventResolved && (
+            <div className={`${styles.resolvedBanner} ${(selectedEventState?.result ?? 0) === 1 ? styles.resolvedYes : styles.resolvedNo}`}>
+              &#10003; Resolved: <strong>{resultLabel(selectedEventState?.result ?? 0)}</strong>
             </div>
           )}
 
@@ -204,13 +313,13 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
                 <span className={styles.positionLabel}>Staked</span>
                 <span className={styles.positionAmount}>{formatToken(userPrediction.amount)} tBNB</span>
               </div>
-              {market.resolved && (
+              {isEventResolved && (
                 <div className={styles.positionRow}>
                   <span className={styles.positionLabel}>
-                    {userPrediction.choice === market.result ? 'Est. Reward' : 'Result'}
+                    {userPrediction.choice === (selectedEventState?.result ?? 0) ? 'Est. Reward' : 'Result'}
                   </span>
-                  <span className={userPrediction.choice === market.result ? styles.win : styles.lose}>
-                    {userPrediction.choice === market.result
+                  <span className={userPrediction.choice === (selectedEventState?.result ?? 0) ? styles.win : styles.lose}>
+                    {userPrediction.choice === (selectedEventState?.result ?? 0)
                       ? `${potentialReward.toFixed(4)} tBNB`
                       : 'LOST'}
                   </span>
@@ -230,7 +339,7 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
             {!account
               ? 'Connect Wallet'
               : isMarketClosed
-                ? (market.resolved ? 'Market Resolved' : 'Market Ended')
+                ? (isEventResolved ? 'Event Resolved' : 'Market Ended')
                 : `Buy ${currentLabel}`}
           </button>
 
@@ -250,7 +359,7 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
       {canClaimWinnings && (
         <button
           className={styles.claimBtn}
-          onClick={() => { void claimWinnings(market.id) }}
+          onClick={() => { void claimWinnings(market.id, selectedEventId) }}
           disabled={isClaiming || isBusy}
         >
           {isClaiming ? 'Claiming...' : '?? Claim Winnings'}
@@ -264,14 +373,14 @@ export default function TradePanel({ market, nowInSeconds, meta }: Props) {
           <div className={styles.resolveBtns}>
             <button
               className={styles.resolveYesBtn}
-              onClick={() => { void resolveMarket(market.id, 1) }}
+              onClick={() => { void resolveMarket(market.id, 1, selectedEventId) }}
               disabled={isResolving || isBusy}
             >
               {isResolving ? 'Resolving...' : `${yesLabel} Wins`}
             </button>
             <button
               className={styles.resolveNoBtn}
-              onClick={() => { void resolveMarket(market.id, 2) }}
+              onClick={() => { void resolveMarket(market.id, 2, selectedEventId) }}
               disabled={isResolving || isBusy}
             >
               {isResolving ? 'Resolving...' : `${noLabel} Wins`}

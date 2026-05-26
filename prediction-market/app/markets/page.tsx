@@ -250,7 +250,8 @@ export default function MarketsPage() {
         <div className={styles.emptyState}>
           <div className={styles.emptyIcon}>🔍</div>
           <h2>No Markets Match</h2>
-          <p>Try adjusting your filters or search query</p>
+          <p>If you just changed the contract address, this can mean the new contract is empty and needs fresh markets created on-chain.</p>
+          <p>Otherwise, try adjusting your filters or search query.</p>
         </div>
       ) : (
         <>

@@ -318,7 +318,8 @@ export default function HomePage() {
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🔮</div>
             <h2>No Markets Yet</h2>
-            <p>Connect as the owner to create prediction markets via the Admin Portal.</p>
+            <p>This usually means the current contract address points to a fresh deployment with no on-chain markets yet.</p>
+            <p>Open the Admin Portal and create the first market on this contract.</p>
           </div>
         ) : (
           <div className={styles.grid}>

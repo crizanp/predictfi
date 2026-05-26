@@ -9,6 +9,8 @@ import styles from './OddsChart.module.css'
 
 interface Props {
   marketId: number
+  eventId?: number
+  chartKey?: string
   yesPool: string
   noPool: string
   totalPool: string
@@ -24,17 +26,17 @@ interface ChartPoint {
 }
 
 // â”€â”€ localStorage helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const LS_KEY = (id: number) => `pf_odds_${id}`
+const LS_KEY = (id: number, chartKey?: string) => `pf_odds_${id}_${chartKey ?? 'default'}`
 const MAX_PTS = 120
 
-function loadLocal(id: number): ChartPoint[] {
+function loadLocal(id: number, chartKey?: string): ChartPoint[] {
   if (typeof window === 'undefined') return []
-  try { return JSON.parse(localStorage.getItem(LS_KEY(id)) ?? '[]') } catch { return [] }
+  try { return JSON.parse(localStorage.getItem(LS_KEY(id, chartKey)) ?? '[]') } catch { return [] }
 }
 
-function saveLocal(id: number, pts: ChartPoint[]) {
+function saveLocal(id: number, pts: ChartPoint[], chartKey?: string) {
   if (typeof window === 'undefined') return
-  try { localStorage.setItem(LS_KEY(id), JSON.stringify(pts.slice(-MAX_PTS))) } catch {}
+  try { localStorage.setItem(LS_KEY(id, chartKey), JSON.stringify(pts.slice(-MAX_PTS))) } catch {}
 }
 
 function nowLabel() {
@@ -55,16 +57,22 @@ const CustomTooltip = ({ active, payload, label, yesLabel, noLabel }: any) => {
 }
 
 // â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolved, yesLabel = 'YES', noLabel = 'NO' }: Props) {
-  const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal(marketId))
+export default function OddsChart({ marketId, eventId, chartKey, yesPool, noPool, totalPool, resolved, yesLabel = 'YES', noLabel = 'NO' }: Props) {
+  const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal(marketId, chartKey))
   const supabaseSynced = useRef(false)
   const snapshotSent = useRef(false)
+
+  useEffect(() => {
+    setHistory(loadLocal(marketId, chartKey))
+    supabaseSynced.current = false
+    snapshotSent.current = false
+  }, [marketId, chartKey])
 
   // Merge Supabase history once on mount
   useEffect(() => {
     if (supabaseSynced.current) return
     supabaseSynced.current = true
-    void getOddsHistory(marketId).then((snaps) => {
+    void getOddsHistory(marketId, eventId).then((snaps) => {
       if (!snaps.length) return
       const pts: ChartPoint[] = snaps.map((s) => {
         const total = parseFloat(s.total_pool)
@@ -82,11 +90,11 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
           seen.add(p.time)
           return true
         })
-        saveLocal(marketId, merged)
+        saveLocal(marketId, merged, chartKey)
         return merged
       })
     })
-  }, [marketId])
+  }, [marketId, eventId, chartKey])
 
   // Record a snapshot whenever pool values change
   useEffect(() => {
@@ -100,15 +108,15 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
       const last = prev[prev.length - 1]
       if (last && last.time === now && last.yes === yesPct) return prev
       const updated = [...prev, pt].slice(-MAX_PTS)
-      saveLocal(marketId, updated)
+      saveLocal(marketId, updated, chartKey)
       return updated
     })
 
     if (!snapshotSent.current && !resolved) {
       snapshotSent.current = true
-      void recordOddsSnapshot({ market_id: marketId, yes_pool: yesPool, no_pool: noPool, total_pool: totalPool })
+      void recordOddsSnapshot({ market_id: marketId, event_id: eventId, yes_pool: yesPool, no_pool: noPool, total_pool: totalPool })
     }
-  }, [marketId, yesPool, noPool, totalPool, resolved])
+  }, [marketId, eventId, chartKey, yesPool, noPool, totalPool, resolved])
 
   // Build chart data â€” always at least 2 points so chart renders
   const chartData = useMemo(() => {

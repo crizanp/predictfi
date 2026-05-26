@@ -58,6 +58,7 @@ CREATE POLICY "Allow insert odds history"
 -- ============================================================
 ALTER TABLE market_metadata ADD COLUMN IF NOT EXISTS card_bg   TEXT;
 ALTER TABLE market_metadata ADD COLUMN IF NOT EXISTS card_text TEXT;
+ALTER TABLE market_metadata ADD COLUMN IF NOT EXISTS events_json TEXT;
 
 -- ============================================================
 -- 4. whitelist_applications table

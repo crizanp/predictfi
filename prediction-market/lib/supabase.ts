@@ -14,6 +14,7 @@ export interface MarketMeta {
   rules: string | null
   card_bg: string | null
   card_text: string | null
+  events_json?: string | null
   yes_label?: string | null
   no_label?: string | null
   updated_at?: string
@@ -21,6 +22,7 @@ export interface MarketMeta {
 
 export interface OddsSnapshot {
   market_id: number
+  event_id?: number | null
   yes_pool: string
   no_pool: string
   total_pool: string
@@ -58,14 +60,18 @@ export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_
   })
 }
 
-export async function getOddsHistory(marketId: number): Promise<OddsSnapshot[]> {
+export async function getOddsHistory(marketId: number, eventId?: number): Promise<OddsSnapshot[]> {
   if (!supabaseKey) return []
-  const { data, error } = await supabase
+  let query = supabase
     .from('market_odds_history')
     .select('*')
     .eq('market_id', marketId)
     .order('recorded_at', { ascending: true })
     .limit(200)
+  if (eventId !== undefined) {
+    query = query.eq('event_id', eventId)
+  }
+  const { data, error } = await query
   if (error) return []
   return (data as OddsSnapshot[]) ?? []
 }
@@ -165,6 +171,7 @@ export async function incrementCommentLikes(commentId: number): Promise<void> {
 export interface MarketActivity {
   id: number
   market_id: number
+  event_id?: number | null
   user_address: string
   choice: number          // 1 = YES, 2 = NO
   amount_eth: string
@@ -202,12 +209,14 @@ export async function recordActivity(
   choice: number,
   amountEth: string,
   txHash: string,
-  blockNumber?: number
+  blockNumber?: number,
+  eventId?: number
 ): Promise<void> {
   if (!supabaseKey) return
   await supabase.from('market_activity').upsert(
     {
       market_id: marketId,
+      event_id: eventId ?? null,
       user_address: userAddress.toLowerCase(),
       choice,
       amount_eth: amountEth,

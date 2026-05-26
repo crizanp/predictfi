@@ -6,10 +6,23 @@ import { useWallet } from './WalletContext'
 import { toErrorMessage } from '../lib/utils'
 import { recordActivity } from '../lib/supabase'
 
+export interface MarketEventSummary {
+  id: number
+  name: string
+  resolved: boolean
+  result: number
+  yesPool: string
+  noPool: string
+  totalPool: string
+}
+
 export interface Market {
   id: number
+  eventName: string
   question: string
   endTime: number
+  eventCount: number
+  events: MarketEventSummary[]
   resolved: boolean
   result: number
   yesPool: string
@@ -25,6 +38,7 @@ export interface UserPrediction {
 
 export interface PredictionEvent {
   address: string
+  eventId: number
   choice: number
   amount: string
   txHash: string
@@ -34,20 +48,64 @@ export interface PredictionEvent {
 export interface MarketsContextValue {
   markets: Market[]
   userPredictions: Record<number, UserPrediction>
+  eventPredictions: Record<string, UserPrediction>
   totalInvested: string
   isLoadingMarkets: boolean
   hasLoadedMarkets: boolean
   loadMarkets: () => Promise<Market[]>
   loadUserPredictions: (account: string, mList: Market[]) => Promise<void>
-  placePrediction: (marketId: number, choice: number, amount: string) => Promise<void>
-  resolveMarket: (marketId: number, result: number) => Promise<void>
-  claimWinnings: (marketId: number) => Promise<void>
-  createMarket: (question: string, durationMinutes: number) => Promise<void>
+  getEventUserPrediction: (marketId: number, eventId: number) => UserPrediction | undefined
+  placePrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<void>
+  resolveMarket: (marketId: number, result: number, eventId?: number) => Promise<void>
+  claimWinnings: (marketId: number, eventId?: number) => Promise<void>
+  createMarket: (question: string, durationMinutes: number, eventNames: string[]) => Promise<void>
   fetchMarket: (id: number) => Promise<Market | null>
-  getMarketPredictions: (marketId: number) => Promise<PredictionEvent[]>
+  getMarketPredictions: (marketId: number, eventId?: number) => Promise<PredictionEvent[]>
 }
 
 const MarketsContext = createContext<MarketsContextValue | null>(null)
+
+function eventPredictionKey(marketId: number, eventId: number): string {
+  return `${marketId}:${eventId}`
+}
+
+async function hydrateMarket(contract: ethers.Contract, marketId: number): Promise<Market> {
+  const market = await contract.getMarket(marketId)
+  const eventCount = Number(market.eventCount)
+  const events: MarketEventSummary[] = []
+
+  for (let eventId = 1; eventId <= eventCount; eventId += 1) {
+    const eventMarket = await contract['getEvent(uint256,uint256)'](marketId, eventId)
+    events.push({
+      id: Number(eventMarket.id),
+      name: String(eventMarket.name),
+      resolved: Boolean(eventMarket.resolved),
+      result: Number(eventMarket.result),
+      yesPool: ethers.formatEther(eventMarket.yesPool),
+      noPool: ethers.formatEther(eventMarket.noPool),
+      totalPool: ethers.formatEther(eventMarket.totalPool),
+    })
+  }
+
+  const firstEvent = events[0]
+  const aggregateYes = events.reduce((sum, e) => sum + parseFloat(e.yesPool), 0)
+  const aggregateNo = events.reduce((sum, e) => sum + parseFloat(e.noPool), 0)
+  const aggregateTotal = events.reduce((sum, e) => sum + parseFloat(e.totalPool), 0)
+
+  return {
+    id: Number(market.id),
+    eventName: firstEvent?.name ?? 'Event 1',
+    question: String(market.question),
+    endTime: Number(market.endTime),
+    eventCount,
+    events,
+    resolved: events.length > 0 ? events.every((event) => event.resolved) : false,
+    result: firstEvent?.result ?? 0,
+    yesPool: aggregateYes.toFixed(18),
+    noPool: aggregateNo.toFixed(18),
+    totalPool: aggregateTotal.toFixed(18),
+  }
+}
 
 export function MarketsProvider({ children }: { children: React.ReactNode }) {
   const {
@@ -63,6 +121,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
   const [markets, setMarkets] = useState<Market[]>([])
   const [userPredictions, setUserPredictions] = useState<Record<number, UserPrediction>>({})
+  const [eventPredictions, setEventPredictions] = useState<Record<string, UserPrediction>>({})
   const [isLoadingMarkets, setIsLoadingMarkets] = useState(false)
   const [hasLoadedMarkets, setHasLoadedMarkets] = useState(false)
 
@@ -72,7 +131,6 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       .toFixed(4)
   , [userPredictions])
 
-  // Ref to always hold latest silent-refresh logic without recreating intervals
   const silentRefreshRef = useRef<() => Promise<void>>(async () => {})
 
   const loadMarkets = useCallback(async (): Promise<Market[]> => {
@@ -90,17 +148,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       const marketList: Market[] = []
 
       for (let index = 1; index <= count; index += 1) {
-        const market = await contract.getMarket(index)
-        marketList.push({
-          id: Number(market.id),
-          question: market.question,
-          endTime: Number(market.endTime),
-          resolved: market.resolved,
-          result: Number(market.result),
-          yesPool: ethers.formatEther(market.yesPool),
-          noPool: ethers.formatEther(market.noPool),
-          totalPool: ethers.formatEther(market.totalPool),
-        })
+        marketList.push(await hydrateMarket(contract, index))
       }
 
       const sorted = [...marketList].reverse()
@@ -108,8 +156,6 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       setHasLoadedMarkets(true)
       return sorted
     } catch (error) {
-      // Keep the home/markets UI public without surfacing technical RPC/ABI errors.
-      // Trading actions still show explicit wallet/tx errors when needed.
       console.warn('loadMarkets failed:', toErrorMessage(error))
       setHasLoadedMarkets(true)
       return []
@@ -123,17 +169,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       if (!isContractConfigured) return null
       try {
         const contract = getReadContract()
-        const market = await contract.getMarket(id)
-        return {
-          id: Number(market.id),
-          question: market.question,
-          endTime: Number(market.endTime),
-          resolved: market.resolved,
-          result: Number(market.result),
-          yesPool: ethers.formatEther(market.yesPool),
-          noPool: ethers.formatEther(market.noPool),
-          totalPool: ethers.formatEther(market.totalPool),
-        }
+        return await hydrateMarket(contract, id)
       } catch {
         return null
       }
@@ -145,25 +181,48 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     async (currentAccount: string, mList: Market[]) => {
       if (!currentAccount || mList.length === 0 || !isContractConfigured) {
         setUserPredictions({})
+        setEventPredictions({})
         return
       }
 
       try {
         const contract = getReadContract()
-        const predictionMap: Record<number, UserPrediction> = {}
+        const marketPredictionMap: Record<number, UserPrediction> = {}
+        const eventPredictionMap: Record<string, UserPrediction> = {}
 
         for (const market of mList) {
-          const prediction = await contract.getUserPrediction(market.id, currentAccount)
-          if (Number(prediction.amount) > 0) {
-            predictionMap[market.id] = {
-              choice: Number(prediction.choice),
-              amount: ethers.formatEther(prediction.amount),
-              claimed: prediction.claimed,
+          let aggregateAmount = 0
+          let latestChoice = 0
+          let allClaimed = true
+
+          for (const event of market.events) {
+            const prediction = await contract.getUserPrediction(market.id, event.id, currentAccount)
+            const amount = Number(prediction.amount)
+            if (amount > 0) {
+              const mapped: UserPrediction = {
+                choice: Number(prediction.choice),
+                amount: ethers.formatEther(prediction.amount),
+                claimed: Boolean(prediction.claimed),
+              }
+              eventPredictionMap[eventPredictionKey(market.id, event.id)] = mapped
+
+              aggregateAmount += Number(mapped.amount)
+              latestChoice = mapped.choice
+              allClaimed = allClaimed && mapped.claimed
+            }
+          }
+
+          if (aggregateAmount > 0) {
+            marketPredictionMap[market.id] = {
+              choice: latestChoice,
+              amount: aggregateAmount.toString(),
+              claimed: allClaimed,
             }
           }
         }
 
-        setUserPredictions(predictionMap)
+        setUserPredictions(marketPredictionMap)
+        setEventPredictions(eventPredictionMap)
       } catch (error) {
         setStatusMessage('error', `Could not load your predictions. ${toErrorMessage(error)}`)
       }
@@ -171,8 +230,13 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     [getReadContract, isContractConfigured, setStatusMessage]
   )
 
+  const getEventUserPrediction = useCallback(
+    (marketId: number, eventId: number): UserPrediction | undefined => eventPredictions[eventPredictionKey(marketId, eventId)],
+    [eventPredictions]
+  )
+
   const placePrediction = useCallback(
-    async (marketId: number, choice: number, amountInput: string) => {
+    async (marketId: number, eventId: number, choice: number, amountInput: string) => {
       const amount = amountInput.trim()
       if (!amount) {
         setStatusMessage('error', 'Enter an amount before placing a prediction.')
@@ -192,21 +256,21 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      setBusyAction(`predict-${marketId}-${choice}`)
+      setBusyAction(`predict-${marketId}-${eventId}-${choice}`)
 
       try {
         const contract = await getPreparedWriteContract()
-        const tx = await contract.predict(marketId, choice, { value: parsedAmount })
+        const tx = await contract.predict(marketId, eventId, choice, { value: parsedAmount })
         const receipt = await tx.wait()
 
-        // Mirror to Supabase for Discussion/Activity/Holders tabs
         void recordActivity(
           marketId,
           account,
           choice,
           amount,
           tx.hash as string,
-          receipt?.blockNumber as number | undefined
+          receipt?.blockNumber as number | undefined,
+          eventId
         )
 
         const loadedMarkets = await loadMarkets()
@@ -222,22 +286,22 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const resolveMarket = useCallback(
-    async (marketId: number, result: number) => {
+    async (marketId: number, result: number, eventId = 1) => {
       if (!isOwner) {
-        setStatusMessage('error', 'Only the market owner can resolve markets.')
+        setStatusMessage('error', 'Only the market owner can resolve events.')
         return
       }
 
-      setBusyAction(`resolve-${marketId}-${result}`)
+      setBusyAction(`resolve-${marketId}-${eventId}-${result}`)
 
       try {
         const contract = await getPreparedWriteContract()
-        const tx = await contract.resolveMarket(marketId, result)
+        const tx = await contract.resolveEvent(marketId, eventId, result)
         await tx.wait()
 
         const loadedMarkets = await loadMarkets()
         if (account) await loadUserPredictions(account, loadedMarkets)
-        setStatusMessage('success', `Market #${marketId} resolved.`)
+        setStatusMessage('success', `Event #${eventId} in market #${marketId} resolved.`)
       } catch (error) {
         setStatusMessage('error', `Resolve failed. ${toErrorMessage(error)}`)
       } finally {
@@ -248,29 +312,28 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const claimWinnings = useCallback(
-    async (marketId: number) => {
-      setBusyAction(`claim-${marketId}`)
+    async (marketId: number, eventId = 1) => {
+      setBusyAction(`claim-${marketId}-${eventId}`)
 
       try {
-        // Re-fetch on-chain state before submitting to avoid stale-data reverts
         const readContract = getReadContract()
-        const [freshMarket, freshPrediction] = await Promise.all([
-          readContract.getMarket(marketId),
-          account ? readContract.getUserPrediction(marketId, account) : null,
+        const [freshEvent, freshPrediction] = await Promise.all([
+          readContract['getEvent(uint256,uint256)'](marketId, eventId),
+          account ? readContract.getUserPrediction(marketId, eventId, account) : null,
         ])
 
-        const resolved = Boolean(freshMarket.resolved)
-        const result = Number(freshMarket.result)
+        const resolved = Boolean(freshEvent.resolved)
+        const result = Number(freshEvent.result)
         const choice = freshPrediction ? Number(freshPrediction.choice) : 0
         const claimed = freshPrediction ? Boolean(freshPrediction.claimed) : true
         const amount = freshPrediction ? Number(freshPrediction.amount) : 0
 
         if (!resolved || result === 0) {
-          setStatusMessage('error', 'Market is not yet resolved. Cannot claim.')
+          setStatusMessage('error', 'Event is not yet resolved. Cannot claim.')
           return
         }
         if (amount === 0) {
-          setStatusMessage('error', 'No prediction found for this market.')
+          setStatusMessage('error', 'No prediction found for this event.')
           return
         }
         if (choice !== result) {
@@ -283,7 +346,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         }
 
         const contract = await getPreparedWriteContract()
-        const tx = await contract.claimWinnings(marketId)
+        const tx = await contract.claimWinnings(marketId, eventId)
         await tx.wait()
 
         const loadedMarkets = await loadMarkets()
@@ -299,14 +362,22 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const createMarket = useCallback(
-    async (question: string, durationMinutes: number) => {
+    async (question: string, durationMinutes: number, eventNames: string[]) => {
       const trimmedQuestion = question.trim()
+      const normalizedEvents = eventNames
+        .map((eventName) => eventName.trim())
+        .filter((eventName) => eventName.length > 0)
+
       if (!trimmedQuestion || trimmedQuestion.length < 6) {
         setStatusMessage('error', 'Question must be at least 6 characters.')
         return
       }
       if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
         setStatusMessage('error', 'Enter a valid duration in minutes.')
+        return
+      }
+      if (normalizedEvents.length === 0) {
+        setStatusMessage('error', 'Add at least one event name.')
         return
       }
       if (!isContractConfigured) {
@@ -330,8 +401,8 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const contract = await getPreparedWriteContract()
-        await contract.createMarket.staticCall(trimmedQuestion, durationMinutes)
-        const tx = await contract.createMarket(trimmedQuestion, durationMinutes)
+        await contract.createMarket.staticCall(trimmedQuestion, normalizedEvents, durationMinutes)
+        const tx = await contract.createMarket(trimmedQuestion, normalizedEvents, durationMinutes)
         await tx.wait()
 
         const loadedMarkets = await loadMarkets()
@@ -347,64 +418,49 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
   )
 
   const getMarketPredictions = useCallback(
-    async (marketId: number): Promise<PredictionEvent[]> => {
+    async (marketId: number, eventId?: number): Promise<PredictionEvent[]> => {
       if (!isContractConfigured) return []
       try {
         const contract = getReadContract()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const filter = (contract.filters as any).PredictionPlaced(marketId)
+        const filter = (contract.filters as any).PredictionPlaced(marketId, eventId ?? null)
         const events = await contract.queryFilter(filter)
         return events.map((e) => {
           const args = (e as { args?: unknown[] }).args ?? []
           return {
-            address: (args[1] as string) ?? '0x???',
-            choice: Number(args[2] ?? 0),
-            amount: ethers.formatEther((args[3] as bigint) ?? 0n),
+            eventId: Number(args[1] ?? 0),
+            address: (args[2] as string) ?? '0x???',
+            choice: Number(args[3] ?? 0),
+            amount: ethers.formatEther((args[4] as bigint) ?? 0n),
             txHash: e.transactionHash,
             blockNumber: e.blockNumber,
           }
-        }).reverse() // newest first
-      } catch { return [] }
+        }).reverse()
+      } catch {
+        return []
+      }
     },
     [getReadContract, isContractConfigured]
   )
 
-  // Keep silentRefreshRef pointing to the latest fetch logic
   useEffect(() => {
     silentRefreshRef.current = async () => {
       if (!isContractConfigured) return
       try {
-        const contract = getReadContract()
-        const count = Number(await contract.marketCount())
-        const list: Market[] = []
-        for (let i = 1; i <= count; i++) {
-          const m = await contract.getMarket(i)
-          list.push({
-            id: Number(m.id),
-            question: m.question,
-            endTime: Number(m.endTime),
-            resolved: m.resolved,
-            result: Number(m.result),
-            yesPool: ethers.formatEther(m.yesPool),
-            noPool: ethers.formatEther(m.noPool),
-            totalPool: ethers.formatEther(m.totalPool),
-          })
-        }
-        const sorted = [...list].reverse()
-        setMarkets(sorted)
+        const sorted = await loadMarkets()
         if (account) await loadUserPredictions(account, sorted)
-      } catch { /* silent — don't surface polling errors */ }
+      } catch {
+        // silent fallback
+      }
     }
-  }, [isContractConfigured, getReadContract, account, loadUserPredictions])
+  }, [account, isContractConfigured, loadMarkets, loadUserPredictions])
 
-  // Polling: refresh every 20 s without a loading spinner
   useEffect(() => {
     if (!isContractConfigured) return
     const id = setInterval(() => { void silentRefreshRef.current() }, 20_000)
     return () => clearInterval(id)
   }, [isContractConfigured])
 
-  // WebSocket: push updates on contract events
   useEffect(() => {
     if (!isContractConfigured) return
     let destroyed = false
@@ -417,11 +473,11 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         const wsContract = new ethers.Contract(ADDR, ABI, wsProvider)
         const refresh = () => { if (!destroyed) void silentRefreshRef.current() }
         wsContract.on('PredictionPlaced', refresh)
-        wsContract.on('MarketResolved', refresh)
+        wsContract.on('EventResolved', refresh)
         wsContract.on('WinningsClaimed', refresh)
         wsContract.on('MarketCreated', refresh)
       } catch {
-        // WSS endpoint unavailable — polling is the fallback
+        // fallback to polling
       }
     }
 
@@ -432,19 +488,21 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isContractConfigured])
 
-  // Load markets on mount and when contract becomes available
   useEffect(() => {
     const timer = setTimeout(() => { void loadMarkets() }, 0)
     return () => clearTimeout(timer)
   }, [loadMarkets])
 
-  // Load user predictions when account or markets change
   useEffect(() => {
     if (account && markets.length > 0) {
       const timer = setTimeout(() => { void loadUserPredictions(account, markets) }, 0)
       return () => clearTimeout(timer)
-    } else if (!account) {
-      const timer = setTimeout(() => { setUserPredictions({}) }, 0)
+    }
+    if (!account) {
+      const timer = setTimeout(() => {
+        setUserPredictions({})
+        setEventPredictions({})
+      }, 0)
       return () => clearTimeout(timer)
     }
   }, [account, markets, loadUserPredictions])
@@ -454,11 +512,13 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       value={{
         markets,
         userPredictions,
+        eventPredictions,
         totalInvested,
         isLoadingMarkets,
         hasLoadedMarkets,
         loadMarkets,
         loadUserPredictions,
+        getEventUserPrediction,
         placePrediction,
         resolveMarket,
         claimWinnings,
@@ -477,5 +537,3 @@ export function useMarkets(): MarketsContextValue {
   if (!context) throw new Error('useMarkets must be used within MarketsProvider')
   return context
 }
-
-

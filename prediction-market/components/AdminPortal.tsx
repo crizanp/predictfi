@@ -19,6 +19,7 @@ export default function AdminPortal() {
   const { markets, isLoadingMarkets, loadMarkets, createMarket, resolveMarket } = useMarkets()
 
   const [nowInSeconds, setNowInSeconds] = useState(0)
+  const [eventNamesText, setEventNamesText] = useState('')
   const [question, setQuestion] = useState('')
   const [duration, setDuration] = useState('')
   const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'markets'>('overview')
@@ -37,7 +38,8 @@ export default function AdminPortal() {
 
   useEffect(() => {
     if (showAdminPortal) {
-      setStoredCategoriesState(getStoredCategories())
+      const timer = setTimeout(() => setStoredCategoriesState(getStoredCategories()), 0)
+      return () => clearTimeout(timer)
     }
   }, [showAdminPortal])
 
@@ -48,10 +50,16 @@ export default function AdminPortal() {
 
   const handleCreate = useCallback(async () => {
     const durationNum = Number.parseInt(duration, 10)
-    await createMarket(question, durationNum)
+    const eventNames = eventNamesText
+      .split(/\r?\n|,|;|\|/)
+      .map((row) => row.trim())
+      .filter((row) => row.length > 0)
+
+    await createMarket(question, durationNum, eventNames)
+    setEventNamesText('')
     setQuestion('')
     setDuration('')
-  }, [createMarket, duration, question])
+  }, [createMarket, duration, eventNamesText, question])
 
   const loadMeta = useCallback(async (marketId: number) => {
     setMetaLoading((prev) => ({ ...prev, [marketId]: true }))
@@ -64,6 +72,7 @@ export default function AdminPortal() {
         rules: meta?.rules ?? '',
         card_bg: meta?.card_bg ?? '',
         card_text: meta?.card_text ?? '',
+        events_json: meta?.events_json ?? '',
         yes_label: meta?.yes_label ?? '',
         no_label: meta?.no_label ?? '',
       },
@@ -81,6 +90,7 @@ export default function AdminPortal() {
       rules: current.rules ?? null,
       card_bg: (current.card_bg as string | undefined) || null,
       card_text: (current.card_text as string | undefined) || null,
+      events_json: (current.events_json as string | undefined) || null,
       yes_label: (current.yes_label as string | undefined) || null,
       no_label: (current.no_label as string | undefined) || null,
     })
@@ -184,6 +194,21 @@ export default function AdminPortal() {
 
               <div className={styles.form}>
                 <div className={styles.field}>
+                  <label className={styles.fieldLabel} htmlFor="admin-event-list">
+                    Events (one per line or comma separated)
+                  </label>
+                  <textarea
+                    id="admin-event-list"
+                    className={styles.input}
+                    value={eventNamesText}
+                    onChange={(e) => setEventNamesText(e.target.value)}
+                    placeholder={'Match Winner, Total Goals Over 2.5, Both Teams to Score'}
+                    disabled={isBusy || !isContractConfigured}
+                    rows={4}
+                  />
+                </div>
+
+                <div className={styles.field}>
                   <label className={styles.fieldLabel} htmlFor="admin-question">
                     Market Question
                   </label>
@@ -225,7 +250,7 @@ export default function AdminPortal() {
                 <button
                   className={styles.createBtn}
                   onClick={() => { void handleCreate() }}
-                  disabled={isBusy || !question.trim() || !duration || !isContractConfigured}
+                  disabled={isBusy || !eventNamesText.trim() || !question.trim() || !duration || !isContractConfigured}
                 >
                   {busyAction === 'create-market' ? 'Creating...' : 'Create Market on BSC Testnet'}
                 </button>
@@ -245,7 +270,7 @@ export default function AdminPortal() {
                 <div className={styles.marketList}>
                   {markets.map((market) => {
                     const isEnded = nowInSeconds > 0 && market.endTime <= nowInSeconds
-                    const canResolve = !market.resolved && isEnded
+                    const canResolveAny = isEnded
                     const currentCat = storedCategories[String(market.id)] || getMarketCategory(market.id, market.question)
 
                     const editing = metaEditing[market.id]
@@ -265,6 +290,13 @@ export default function AdminPortal() {
                           </span>
                         </div>
                         <p className={styles.marketQuestion}>{market.question}</p>
+                        {market.events.length > 0 && (
+                          <div className={styles.marketMeta}>
+                            <span className={styles.metaItem}>
+                              Events: {market.events.map((event) => event.name).join(' | ')}
+                            </span>
+                          </div>
+                        )}
                         <div className={styles.marketMeta}>
                           <span className={styles.metaItem}>Pool: {formatToken(market.totalPool)} tBNB</span>
                           <span className={styles.metaItem}>{formatTimeLeft(market.endTime, nowInSeconds)}</span>
@@ -284,22 +316,29 @@ export default function AdminPortal() {
                             </select>
                           </div>
 
-                          {canResolve && (
+                          {canResolveAny && (
                             <div className={styles.resolveBtns}>
-                              <button
-                                className={styles.resolveYes}
-                                onClick={() => { void resolveMarket(market.id, 1) }}
-                                disabled={isBusy}
-                              >
-                                Resolve YES
-                              </button>
-                              <button
-                                className={styles.resolveNo}
-                                onClick={() => { void resolveMarket(market.id, 2) }}
-                                disabled={isBusy}
-                              >
-                                Resolve NO
-                              </button>
+                              {market.events.map((event) => (
+                                <div key={event.id} className={styles.categoryField}>
+                                  <label className={styles.catLabel}>{event.name}</label>
+                                  <div className={styles.resolveBtns}>
+                                    <button
+                                      className={styles.resolveYes}
+                                      onClick={() => { void resolveMarket(market.id, 1, event.id) }}
+                                      disabled={isBusy || event.resolved}
+                                    >
+                                      {event.resolved ? 'Resolved' : 'Resolve YES'}
+                                    </button>
+                                    <button
+                                      className={styles.resolveNo}
+                                      onClick={() => { void resolveMarket(market.id, 2, event.id) }}
+                                      disabled={isBusy || event.resolved}
+                                    >
+                                      {event.resolved ? 'Resolved' : 'Resolve NO'}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -401,6 +440,50 @@ export default function AdminPortal() {
                                   onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], card_text: e.target.value } }))}
                                   placeholder="e.g. #ffffff or #f0f0f5"
                                 />
+                              </div>
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>Events (JSON array for single or multiple events)</label>
+                              <textarea
+                                className={styles.metaTextarea}
+                                rows={6}
+                                value={(editing as Record<string, unknown>).events_json as string || ''}
+                                onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], events_json: e.target.value } }))}
+                                placeholder={'[{"key":"default","name":"Main Event","yesLabel":"YES","noLabel":"NO"}]'}
+                              />
+                              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  className={styles.preset}
+                                  onClick={() => setMetaEditing((prev) => ({
+                                    ...prev,
+                                    [market.id]: {
+                                      ...prev[market.id],
+                                      events_json: JSON.stringify([
+                                        { key: 'default', name: 'Main Event', yesLabel: 'YES', noLabel: 'NO' },
+                                      ], null, 2),
+                                    },
+                                  }))}
+                                >
+                                  Single Event Template
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.preset}
+                                  onClick={() => setMetaEditing((prev) => ({
+                                    ...prev,
+                                    [market.id]: {
+                                      ...prev[market.id],
+                                      events_json: JSON.stringify([
+                                        { key: 'e1', name: 'Event 1', yesLabel: 'Up', noLabel: 'Down' },
+                                        { key: 'e2', name: 'Event 2', yesLabel: 'Yes', noLabel: 'No' },
+                                      ], null, 2),
+                                    },
+                                  }))}
+                                >
+                                  Multi Event Template
+                                </button>
                               </div>
                             </div>
 
