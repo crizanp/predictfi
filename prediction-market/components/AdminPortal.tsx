@@ -64,6 +64,8 @@ export default function AdminPortal() {
         rules: meta?.rules ?? '',
         card_bg: meta?.card_bg ?? '',
         card_text: meta?.card_text ?? '',
+        yes_label: meta?.yes_label ?? '',
+        no_label: meta?.no_label ?? '',
       },
     }))
     setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
@@ -79,6 +81,8 @@ export default function AdminPortal() {
       rules: current.rules ?? null,
       card_bg: (current.card_bg as string | undefined) || null,
       card_text: (current.card_text as string | undefined) || null,
+      yes_label: (current.yes_label as string | undefined) || null,
+      no_label: (current.no_label as string | undefined) || null,
     })
     setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
   }, [metaEditing])
@@ -398,6 +402,28 @@ export default function AdminPortal() {
                                   placeholder="e.g. #ffffff or #f0f0f5"
                                 />
                               </div>
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>YES Outcome Label (e.g. Trump, Team A)</label>
+                              <input
+                                className={styles.metaInput}
+                                type="text"
+                                value={(editing as Record<string, unknown>).yes_label as string || ''}
+                                onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], yes_label: e.target.value } }))}
+                                placeholder="Leave blank for default YES"
+                              />
+                            </div>
+
+                            <div className={styles.metaField}>
+                              <label className={styles.metaLabel}>NO Outcome Label (e.g. Biden, Team B)</label>
+                              <input
+                                className={styles.metaInput}
+                                type="text"
+                                value={(editing as Record<string, unknown>).no_label as string || ''}
+                                onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], no_label: e.target.value } }))}
+                                placeholder="Leave blank for default NO"
+                              />
                             </div>
 
                             <div className={styles.metaSaveBtns}>

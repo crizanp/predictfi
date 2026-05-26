@@ -14,6 +14,8 @@ export interface MarketMeta {
   rules: string | null
   card_bg: string | null
   card_text: string | null
+  yes_label?: string | null
+  no_label?: string | null
   updated_at?: string
 }
 

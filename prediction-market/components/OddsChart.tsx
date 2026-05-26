@@ -13,6 +13,8 @@ interface Props {
   noPool: string
   totalPool: string
   resolved: boolean
+  yesLabel?: string
+  noLabel?: string
 }
 
 interface ChartPoint {
@@ -53,7 +55,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 // â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolved }: Props) {
+export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolved, yesLabel = 'YES', noLabel = 'NO' }: Props) {
   const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal(marketId))
   const supabaseSynced = useRef(false)
   const snapshotSent = useRef(false)
@@ -126,11 +128,12 @@ export default function OddsChart({ marketId, yesPool, noPool, totalPool, resolv
 
   return (
     <div className={styles.wrapper}>
+      <div className={styles.watermark} aria-hidden>predictfi.fun</div>
       <div className={styles.header}>
         <h3 className={styles.title}>Odds History</h3>
         <div className={styles.legend}>
-          <span className={styles.legendYes}><span className={styles.dot} style={{ background: '#00ff88' }} />YES</span>
-          <span className={styles.legendNo}><span className={styles.dot} style={{ background: '#ff3366' }} />NO</span>
+          <span className={styles.legendYes}><span className={styles.dot} style={{ background: '#c084fc' }} />{yesLabel}</span>
+          <span className={styles.legendNo}><span className={styles.dot} style={{ background: '#ff3366' }} />{noLabel}</span>
         </div>
       </div>
 
