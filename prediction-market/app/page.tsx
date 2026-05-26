@@ -284,8 +284,8 @@ export default function HomePage() {
           </div>
         ) : (
           <div className={styles.grid}>
-            {top6.map((market) => (
-              <MarketCard key={market.id} market={market} nowInSeconds={nowInSeconds} />
+            {top6.map((market, index) => (
+              <MarketCard key={market.id} market={market} nowInSeconds={nowInSeconds} isTrending={index < 3} />
             ))}
           </div>
         )}
@@ -337,8 +337,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-
-        {/* Tokenomics + Presale row */}
+        </div>  {/* Tokenomics + Presale row */}
         <div className={styles.prfiRow}>
 
           {/* Tokenomics */}
@@ -393,10 +392,6 @@ export default function HomePage() {
                   <span className={styles.allocPct}>{row.pct}%</span>
                 </button>
               ))}
-            </div>
-
-            <div className={styles.tokenModalHint}>
-              Click any donut segment or allocation row to open the full tokenomics plan.
             </div>
           </div>
 
@@ -473,7 +468,6 @@ export default function HomePage() {
           </div>
 
         </div>
-      </div>
 
       {isTokenomicsModalOpen && (
         <div className={styles.tokenomicsModalOverlay} onClick={() => setIsTokenomicsModalOpen(false)}>
@@ -514,6 +508,9 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+
+      
 
       {/* ── Whitepaper Section ──────────────────────────── */}
       <div id="whitepaper" className={styles.whitepaperSection}>

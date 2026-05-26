@@ -352,36 +352,8 @@
   border: 1px solid rgba(17,24,39,0.08);
   border-radius: 20px;
   background: #ffffff;
-  overflow: hidden;
   position: relative;
-  isolation: isolate;
-  box-shadow:
-    0 14px 34px rgba(15,23,42,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.95);
-}
-
-.prfiSection::before,
-.prfiSection::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.prfiSection::before {
-  width: 320px;
-  height: 320px;
-  top: -190px;
-  left: -140px;
-  background: radial-gradient(circle, rgba(192,132,252,0.1) 0%, transparent 70%);
-}
-
-.prfiSection::after {
-  width: 360px;
-  height: 360px;
-  bottom: -220px;
-  right: -180px;
-  background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 74%);
+  box-shadow: 0 14px 34px rgba(15,23,42,0.08);
 }
 
 .prfiHeader {
@@ -471,31 +443,12 @@
   transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
 
-.useCase::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.28;
-}
-
-.useCase:nth-child(1) { background: linear-gradient(150deg, #ffffff 0%, #f6f0ff 100%); }
-.useCase:nth-child(1)::before { background: radial-gradient(circle at 88% 12%, rgba(192,132,252,0.24), transparent 55%); }
-
-.useCase:nth-child(2) { background: linear-gradient(150deg, #ffffff 0%, #f4edff 100%); }
-.useCase:nth-child(2)::before { background: radial-gradient(circle at 88% 12%, rgba(168,85,247,0.22), transparent 55%); }
-
-.useCase:nth-child(3) { background: linear-gradient(150deg, #ffffff 0%, #eef5ff 100%); }
-.useCase:nth-child(3)::before { background: radial-gradient(circle at 88% 12%, rgba(59,130,246,0.2), transparent 55%); }
-
-.useCase:nth-child(4) { background: linear-gradient(150deg, #ffffff 0%, #fff7ea 100%); }
-.useCase:nth-child(4)::before { background: radial-gradient(circle at 88% 12%, rgba(245,158,11,0.2), transparent 55%); }
-
-.useCase:nth-child(5) { background: linear-gradient(150deg, #ffffff 0%, #ecfbff 100%); }
-.useCase:nth-child(5)::before { background: radial-gradient(circle at 88% 12%, rgba(6,182,212,0.2), transparent 55%); }
-
-.useCase:nth-child(6) { background: linear-gradient(150deg, #ffffff 0%, #fff0f4 100%); }
-.useCase:nth-child(6)::before { background: radial-gradient(circle at 88% 12%, rgba(255,51,102,0.2), transparent 55%); }
+.useCase:nth-child(1) { background: #faf5ff; }
+.useCase:nth-child(2) { background: #f8f0ff; }
+.useCase:nth-child(3) { background: #eff5ff; }
+.useCase:nth-child(4) { background: #fffbf0; }
+.useCase:nth-child(5) { background: #f0fbff; }
+.useCase:nth-child(6) { background: #fff4f7; }
 
 .useCase:hover {
   transform: translateY(-4px);
@@ -532,7 +485,7 @@
 }
 
 .useCaseDesc {
-  font-size: 12px;
+  font-size: 13px;
   color: #475569;
   line-height: 1.6;
   position: relative;
@@ -549,40 +502,18 @@
 
 .tokenomicsCard {
   padding: 34px 30px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  background: #ffffff;
   border: 1px solid rgba(17,24,39,0.08);
   border-radius: 16px;
   position: relative;
-  overflow: hidden;
-}
-.tokenomicsCard::before {
-  content: '';
-  position: absolute;
-  top: -60px;
-  left: -60px;
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%);
-  pointer-events: none;
 }
 
 .presaleCard {
   padding: 34px 30px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  background: #ffffff;
   border: 1px solid rgba(17,24,39,0.08);
   border-radius: 16px;
   position: relative;
-  overflow: hidden;
-}
-.presaleCard::before {
-  content: '';
-  position: absolute;
-  bottom: -40px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
-  pointer-events: none;
 }
 
 .cardLabel {
@@ -754,7 +685,7 @@
   border: 1px solid rgba(192,132,252,0.24);
   border-radius: 14px;
   padding: 16px;
-  background: linear-gradient(145deg, rgba(30,16,45,0.56) 0%, rgba(10,12,22,0.86) 100%);
+  background: rgba(12,14,24,0.9);
 }
 
 .allocInsightBadge {
@@ -903,7 +834,7 @@
 }
 
 .presalePurpose p {
-  font-size: 12px;
+  font-size: 13px;
   color: #334155;
   line-height: 1.6;
 }
@@ -919,7 +850,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 11px;
+  font-size: 13px;
   color: #475569;
   line-height: 1.45;
 }
@@ -928,7 +859,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #c084fc 0%, #3b82f6 100%);
+  background: #7c3aed;
   flex-shrink: 0;
   margin-top: 5px;
 }
@@ -949,15 +880,16 @@
 .presaleProgressLabel span:last-child  { color: #4b5563; }
 
 .presaleProgressBar {
-  height: 8px;
-  background: rgba(255,255,255,0.08);
+  height: 10px;
+  background: #fef08a;
+  border: 1px solid rgba(202,138,4,0.3);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .presaleProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, #a855f7 0%, #c084fc 58%, #3b82f6 100%);
+  background: #7c3aed;
   border-radius: 999px;
   transition: width 0.8s ease;
   min-width: 3px;
@@ -977,7 +909,7 @@
   justify-content: center;
   width: 100%;
   padding: 13px 0;
-  background: linear-gradient(90deg, #a855f7 0%, #7c3aed 100%);
+  background: #7c3aed;
   color: #fff;
   font-size: 14px;
   font-weight: 800;
@@ -990,9 +922,9 @@
   text-decoration: none;
 }
 .waitlistBtn:hover {
-  background: linear-gradient(90deg, #9333ea 0%, #6d28d9 100%);
+  background: #6d28d9;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(168,85,247,0.35);
+  box-shadow: 0 6px 20px rgba(124,58,237,0.35);
 }
 
 .waitlistSub {
@@ -1058,23 +990,13 @@
   gap: 32px;
   align-items: flex-start;
   padding: 56px 40px;
-  background:
-    radial-gradient(circle at 14% 14%, rgba(192,132,252,0.12) 0%, transparent 45%),
-    radial-gradient(circle at 90% 86%, rgba(59,130,246,0.12) 0%, transparent 44%),
-    linear-gradient(140deg, #05060b 0%, #0a0d18 52%, #070811 100%);
+  background: #03040a;
   border-top: 1px solid rgba(255,255,255,0.08);
   overflow: hidden;
 }
 
 .whitepaperAura {
-  position: absolute;
-  width: 360px;
-  height: 360px;
-  top: -220px;
-  right: -160px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(192,132,252,0.2) 0%, transparent 72%);
-  pointer-events: none;
+  display: none;
 }
 
 .whitepaperLeft {
@@ -1143,7 +1065,7 @@
   display: inline-flex;
   align-items: center;
   padding: 12px 24px;
-  background: linear-gradient(90deg, #a855f7 0%, #7c3aed 100%);
+  background: #7c3aed;
   border-radius: 10px;
   color: #ffffff;
   font-size: 13px;
@@ -1241,7 +1163,7 @@
 .chapterDetailCard {
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 14px;
-  background: linear-gradient(150deg, rgba(14,18,34,0.9), rgba(9,11,22,0.84));
+  background: rgba(12, 16, 30, 0.9);
   padding: 18px;
 }
 
@@ -1281,7 +1203,7 @@
 
 .chapterDetailPlan p {
   margin-top: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: #9ea7be;
   line-height: 1.6;
 }
@@ -1297,7 +1219,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: #d7dced;
 }
 
@@ -1305,7 +1227,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #c084fc, #3b82f6);
+  background: #7c3aed;
   margin-top: 5px;
   flex-shrink: 0;
 }
@@ -1415,8 +1337,8 @@
 /* ── Social Section ───────────────────────────────────────── */
 .socialSection {
   padding: 52px 40px;
-  background: #08070f;
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: #ffffff;
+  border-top: 1px solid rgba(17,24,39,0.08);
   text-align: center;
 }
 
@@ -1427,14 +1349,14 @@
 .socialTitle {
   font-size: 28px;
   font-weight: 900;
-  color: #e8eaf0;
+  color: #111827;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
 }
 
 .socialSub {
   font-size: 14px;
-  color: #4b5563;
+  color: #475569;
 }
 
 .socialGrid {
@@ -1450,8 +1372,8 @@
   align-items: center;
   gap: 8px;
   padding: 24px 32px;
-  background: #0d1014;
-  border: 1px solid rgba(255,255,255,0.055);
+  background: #f8fafc;
+  border: 1px solid rgba(17,24,39,0.1);
   border-radius: 14px;
   text-decoration: none;
   min-width: 160px;
@@ -1460,7 +1382,8 @@
 
 .socialCard:hover {
   transform: translateY(-3px);
-  border-color: rgba(255,255,255,0.12);
+  border-color: rgba(124,58,237,0.3);
+  box-shadow: 0 6px 20px rgba(15,23,42,0.08);
 }
 
 .socialIcon {
@@ -1470,7 +1393,7 @@
 .socialLabel {
   font-size: 12px;
   font-weight: 700;
-  color: #6b7280;
+  color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -1478,4 +1401,134 @@
 .socialHandle {
   font-size: 12px;
   font-weight: 600;
+}
+
+/* ── Tokenomics Modal ──────────────────────────────────────── */
+@keyframes tokenomics-modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes tokenomics-modal-pop {
+  from { opacity: 0; transform: scale(0.93) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+.tokenomicsModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(2, 6, 23, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: tokenomics-modal-fade 0.18s ease both;
+}
+
+.tokenomicsModal {
+  width: min(700px, 100%);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 32px 64px rgba(15, 23, 42, 0.3);
+  padding: 32px;
+  position: relative;
+  animation: tokenomics-modal-pop 0.22s cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.tokenomicsModalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tokenomicsModalClose:hover { background: rgba(15, 23, 42, 0.1); }
+
+.tokenomicsModalHead {
+  margin-bottom: 22px;
+  padding-right: 60px;
+}
+
+.tokenomicsModalBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.22);
+  color: #7c3aed;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.tokenomicsModalTitle {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+.tokenomicsModalTitle span {
+  color: #7c3aed;
+  font-size: 18px;
+  margin-left: 8px;
+}
+
+.tokenomicsModalSubtitle {
+  font-size: 14px;
+  color: #475569;
+}
+
+.tokenomicsModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tokenomicsModalCard {
+  padding: 18px;
+  background: #f8fafc;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+}
+
+.tokenomicsModalCardLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7c3aed;
+  margin-bottom: 8px;
+}
+
+.tokenomicsModalCard p {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .tokenomicsModalGrid {
+    grid-template-columns: 1fr;
+  }
+  .tokenomicsModal {
+    padding: 22px 18px;
+  }
+  .tokenomicsModalTitle {
+    font-size: 22px;
+  }
 }

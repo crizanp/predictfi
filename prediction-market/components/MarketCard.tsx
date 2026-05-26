@@ -11,6 +11,7 @@ import styles from './MarketCard.module.css'
 interface Props {
   market: Market
   nowInSeconds: number
+  isTrending?: boolean
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -33,7 +34,7 @@ function formatTimeLeft(endTime: number, nowInSeconds: number): string {
   return `${Math.floor(secs / 86400)}d left`
 }
 
-export default function MarketCard({ market, nowInSeconds }: Props) {
+export default function MarketCard({ market, nowInSeconds, isTrending }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [cardBg, setCardBg] = useState<string | null>(null)
   const [cardText, setCardText] = useState<string | null>(null)
@@ -70,6 +71,8 @@ export default function MarketCard({ market, nowInSeconds }: Props) {
       }}
     >      {/* ── Resolved overlay ──────────────────────────── */}
       {market.resolved && <div className={styles.resolvedOverlay} aria-hidden />}
+      {/* ── Trending fire badge ───────────────────────── */}
+      {isTrending && <span className={styles.fireBadge} aria-label="Trending">🔥</span>}
       {/* ── Content (left) ──────────────────────── */}
       <div className={styles.content}>
 

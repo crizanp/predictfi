@@ -15,32 +15,7 @@
   position: relative;
 }
 
-/* Purple animated texture overlay */
-.card::before {
-  content: '';
-  position: absolute;
-  top: -100%;
-  left: -100%;
-  width: 300%;
-  height: 300%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(139,92,246,0.05) 60deg,
-    transparent 120deg,
-    rgba(168,85,247,0.03) 200deg,
-    transparent 260deg,
-    rgba(109,40,217,0.05) 320deg,
-    transparent 360deg
-  );
-  animation: cardPurpleRotate 18s linear infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.card:hover::before {
-  animation-duration: 9s;
-}
+/* Purple animated texture overlay - removed */
 
 .card:hover {
   border-color: rgba(192,132,252,0.3);
@@ -284,11 +259,33 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, rgba(255,255,255,0.03) 0%, transparent 70%);
+  background: #080b10;
 }
 
 .thumbEmoji {
   font-size: 52px;
   filter: drop-shadow(0 0 20px rgba(255,255,255,0.08));
+}
+
+/* -- Fire badge (trending) ---------------------------------- */
+@keyframes fire-flicker {
+  0%   { transform: scale(1)    rotate(-4deg); filter: brightness(1); }
+  25%  { transform: scale(1.18) rotate(2deg);  filter: brightness(1.25); }
+  50%  { transform: scale(1.22) rotate(-2deg); filter: brightness(1.45); }
+  75%  { transform: scale(1.12) rotate(3deg);  filter: brightness(1.15); }
+  100% { transform: scale(1)    rotate(-4deg); filter: brightness(1); }
+}
+
+.fireBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 20px;
+  line-height: 1;
+  z-index: 4;
+  animation: fire-flicker 0.75s ease-in-out infinite;
+  transform-origin: center bottom;
+  pointer-events: none;
+  user-select: none;
 }
 
