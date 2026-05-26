@@ -2,7 +2,15 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  RiBarChartBoxLine,
+  RiCalendarEventLine,
+  RiChat3Line,
+  RiGroupLine,
+  RiPulseLine,
+  RiStackLine,
+} from 'react-icons/ri'
 import { computePoolMetrics } from '../lib/utils'
 import { getMarketMeta } from '../lib/supabase'
 import type { Market } from '../context/MarketsContext'
@@ -16,12 +24,16 @@ interface Props {
 
 interface EventRowOption {
   key: string
+  eventId?: number
   name: string
   yesLabel: string
   noLabel: string
   chance?: number
   yesPrice?: number
   noPrice?: number
+  yesPool?: string
+  noPool?: string
+  totalPool?: string
 }
 
 function formatTimeLeft(endTime: number, nowInSeconds: number): string {
@@ -58,10 +70,14 @@ function parseEventRows(
     const yesChance = total > 0 ? Math.round((yes / total) * 100) : 50
     return {
       key: String(event.id),
+      eventId: event.id,
       name: event.name,
       yesLabel: fallbackYesLabel,
       noLabel: fallbackNoLabel,
       chance: yesChance,
+      yesPool: event.yesPool,
+      noPool: event.noPool,
+      totalPool: event.totalPool,
     }
   })
 
@@ -75,26 +91,52 @@ function parseEventRows(
     const parsed = JSON.parse(raw) as unknown
     if (!Array.isArray(parsed)) return fallback
 
-    const normalized: EventRowOption[] = []
-    for (let index = 0; index < parsed.length; index += 1) {
-      const row = parsed[index] as Record<string, unknown>
-      const name = String(row.name ?? '').trim()
-      if (!name) continue
-
+    const overrides: Array<Partial<EventRowOption>> = parsed.map((item, index) => {
+      const row = item as Record<string, unknown>
       const chanceRaw = Number(row.chance)
       const yesPriceRaw = Number(row.yesPrice)
       const noPriceRaw = Number(row.noPrice)
-
-      normalized.push({
+      const name = String(row.name ?? '').trim()
+      const yesLabel = String(row.yesLabel ?? '').trim()
+      const noLabel = String(row.noLabel ?? '').trim()
+      return {
         key: String(row.key ?? `event-${index + 1}`),
-        name,
-        yesLabel: String(row.yesLabel ?? fallbackYesLabel).trim() || fallbackYesLabel,
-        noLabel: String(row.noLabel ?? fallbackNoLabel).trim() || fallbackNoLabel,
+        name: name || undefined,
+        yesLabel: yesLabel || undefined,
+        noLabel: noLabel || undefined,
         chance: Number.isFinite(chanceRaw) ? chanceRaw : undefined,
         yesPrice: Number.isFinite(yesPriceRaw) ? yesPriceRaw : undefined,
         noPrice: Number.isFinite(noPriceRaw) ? noPriceRaw : undefined,
+      }
+    })
+
+    if (onChainRows.length > 0) {
+      return onChainRows.map((baseRow, index) => {
+        const override = overrides[index]
+        return {
+          ...baseRow,
+          key: baseRow.key,
+          name: override?.name || baseRow.name,
+          yesLabel: override?.yesLabel || baseRow.yesLabel,
+          noLabel: override?.noLabel || baseRow.noLabel,
+          chance: override?.chance ?? baseRow.chance,
+          yesPrice: override?.yesPrice,
+          noPrice: override?.noPrice,
+        }
       })
     }
+
+    const normalized = overrides
+      .map((override, index) => ({
+        key: String(override.key ?? `event-${index + 1}`),
+        name: override.name || fallbackName,
+        yesLabel: override.yesLabel || fallbackYesLabel,
+        noLabel: override.noLabel || fallbackNoLabel,
+        chance: override.chance,
+        yesPrice: override.yesPrice,
+        noPrice: override.noPrice,
+      }))
+      .filter((row) => row.name.trim().length > 0)
 
     return normalized.length > 0 ? normalized : fallback
   } catch {
@@ -128,11 +170,10 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   const yesPool = parseFloat(market.yesPool) || 0
   const noPool  = parseFloat(market.noPool)  || 0
   const total   = yesPool + noPool
-  const yesOdds = total > 0 ? Math.round((yesPool / total) * 100) : 50
-  const metrics = useMemo(() => computePoolMetrics(market.yesPool, market.noPool, market.totalPool), [market])
 
   const timeLeft = formatTimeLeft(market.endTime, nowInSeconds)
   const closeDate = new Date(market.endTime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  const statusLabel = market.resolved ? 'Resolved' : timeLeft === 'Ended' ? 'Ended' : 'Live'
 
   /* ── Dynamic color system ─────────────────────────────── */
   const hasBg     = Boolean(cardBg)
@@ -143,7 +184,9 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   const noClr = hasBg ? (darkBg ? '#ff666f' : '#dc2626') : '#ff666f'
 
   const volumeLabel = `${total.toFixed(2)} tBNB`
-  const rowsToShow = eventRows.length > 0 ? eventRows.slice(0, 3) : [{ key: 'default', name: market.eventName || 'Main Event', yesLabel, noLabel }]
+  const rowsToShow = eventRows.length > 0
+    ? eventRows
+    : [{ key: 'default', name: market.eventName || 'Main Event', yesLabel, noLabel }]
 
   return (
     <Link
@@ -178,9 +221,10 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
 
       <div className={styles.rowsWrap}>
         {rowsToShow.map((row) => {
-          const chance = Number.isFinite(row.chance) ? Math.max(0, Math.min(100, Math.round(row.chance as number))) : yesOdds
-          const rowYesPrice = Number.isFinite(row.yesPrice) ? Math.max(0, Math.round(row.yesPrice as number)) : metrics.yesPrice
-          const rowNoPrice = Number.isFinite(row.noPrice) ? Math.max(0, Math.round(row.noPrice as number)) : metrics.noPrice
+          const rowMetrics = computePoolMetrics(row.yesPool ?? '0', row.noPool ?? '0', row.totalPool ?? '0')
+          const chance = Number.isFinite(row.chance) ? Math.max(0, Math.min(100, Math.round(row.chance as number))) : rowMetrics.yesPrice
+          const rowYesPrice = Number.isFinite(row.yesPrice) ? Math.max(0, Math.round(row.yesPrice as number)) : rowMetrics.yesPrice
+          const rowNoPrice = Number.isFinite(row.noPrice) ? Math.max(0, Math.round(row.noPrice as number)) : rowMetrics.noPrice
 
           return (
             <div key={row.key} className={styles.eventRow}>
@@ -193,10 +237,29 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
         })}
       </div>
 
-      <div className={styles.footer} style={hasBg ? { color: mutedText } : undefined}>
-        <span className={styles.footerItem}>Pool {volumeLabel}</span>
-        <span className={styles.footerItem}>{closeDate}</span>
-        <span className={styles.footerItem}>{timeLeft}</span>
+      <div className={styles.iconBar} style={hasBg ? { color: mutedText } : undefined}>
+        <span className={styles.iconItem} title={`Volume ${volumeLabel}`} aria-label={`Volume ${volumeLabel}`}>
+          <RiStackLine />
+        </span>
+        <span className={styles.iconItem} title={`Date ${closeDate}`} aria-label={`Date ${closeDate}`}>
+          <RiCalendarEventLine />
+        </span>
+        <span
+          className={`${styles.iconItem} ${statusLabel === 'Live' ? styles.iconLive : statusLabel === 'Resolved' ? styles.iconResolved : styles.iconEnded}`}
+          title={`Status ${statusLabel}`}
+          aria-label={`Status ${statusLabel}`}
+        >
+          <RiPulseLine />
+        </span>
+        <span className={styles.iconItem} title="Discussion" aria-label="Discussion">
+          <RiChat3Line />
+        </span>
+        <span className={styles.iconItem} title="Activity" aria-label="Activity">
+          <RiBarChartBoxLine />
+        </span>
+        <span className={styles.iconItem} title="Holders" aria-label="Holders">
+          <RiGroupLine />
+        </span>
       </div>
     </Link>
   )

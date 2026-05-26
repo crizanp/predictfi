@@ -457,12 +457,6 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isContractConfigured) return
-    const id = setInterval(() => { void silentRefreshRef.current() }, 20_000)
-    return () => clearInterval(id)
-  }, [isContractConfigured])
-
-  useEffect(() => {
-    if (!isContractConfigured) return
     let destroyed = false
     let wsProvider: ethers.WebSocketProvider | null = null
 

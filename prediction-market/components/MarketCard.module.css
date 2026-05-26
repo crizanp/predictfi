@@ -2,9 +2,9 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid rgba(126, 108, 255, 0.45);
   background: linear-gradient(180deg, #0e1421 0%, #0b1020 100%);
@@ -77,9 +77,9 @@
 
 .question {
   margin: 0;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 900;
-  line-height: 1.18;
+  line-height: 1.25;
   letter-spacing: -0.01em;
   color: #e5e7eb;
   overflow: hidden;
@@ -91,22 +91,39 @@
 .rowsWrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.rowsWrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rowsWrap::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.rowsWrap::-webkit-scrollbar-thumb {
+  background: rgba(147, 132, 255, 0.48);
+  border-radius: 999px;
 }
 
 .eventRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 54px auto auto;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  padding: 8px 10px;
-  border-radius: 14px;
+  padding: 7px 9px;
+  border-radius: 12px;
   border: 1px solid rgba(129, 108, 255, 0.45);
   background: rgba(13, 18, 34, 0.86);
 }
 
 .rowName {
-  font-size: 24px;
+  font-size: 13px;
   font-weight: 900;
   color: #e4e8ff;
   letter-spacing: -0.01em;
@@ -116,7 +133,7 @@
 }
 
 .rowChance {
-  font-size: 22px;
+  font-size: 12px;
   font-weight: 900;
   color: #9ca3af;
   text-align: right;
@@ -127,14 +144,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
+  padding: 3px 8px;
   border-radius: 999px;
   border: 1.5px solid;
   background: rgba(255, 255, 255, 0.04);
-  font-size: 14px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.02em;
-  min-width: 84px;
+  min-width: 64px;
   text-transform: uppercase;
 }
 
@@ -146,18 +163,44 @@
   background: rgba(255, 102, 111, 0.16);
 }
 
-.footer {
+.iconBar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 8px;
   color: #9ca3af;
-  font-size: 14px;
-  font-weight: 800;
   opacity: 0.95;
 }
 
-.footerItem {
-  white-space: nowrap;
+.iconItem {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: inherit;
+}
+
+.iconLive {
+  color: #6ee7b7;
+  border-color: rgba(110, 231, 183, 0.45);
+  background: rgba(110, 231, 183, 0.12);
+}
+
+.iconResolved {
+  color: #c4b5fd;
+  border-color: rgba(196, 181, 253, 0.45);
+  background: rgba(196, 181, 253, 0.12);
+}
+
+.iconEnded {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.45);
+  background: rgba(252, 165, 165, 0.12);
 }
 
 .thumbSkeleton {
@@ -183,31 +226,38 @@
 
 @media (max-width: 900px) {
   .question {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .rowName {
-    font-size: 16px;
+    font-size: 12px;
   }
 
   .rowChance {
-    font-size: 18px;
+    font-size: 11px;
   }
 
   .rowYes,
   .rowNo {
-    font-size: 12px;
-    min-width: 72px;
-    padding: 6px 10px;
+    font-size: 10px;
+    min-width: 62px;
+    padding: 4px 8px;
   }
 
   .eventRow {
     grid-template-columns: minmax(0, 1fr) 48px auto auto;
   }
 
-  .footer {
-    font-size: 12px;
+  .iconBar {
+    justify-content: flex-start;
     flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .iconItem {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
   }
 }
 

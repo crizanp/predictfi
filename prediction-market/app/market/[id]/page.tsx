@@ -58,6 +58,7 @@ export default function MarketDetailPage() {
   const [nowInSeconds, setNowInSeconds] = useState(Math.floor(Date.now() / 1000))
   const [meta, setMeta]                 = useState<MarketMeta | null>(null)
   const [selectedEventKey, setSelectedEventKey] = useState('1')
+  const [shareCopied, setShareCopied] = useState(false)
 
   const [activeTab, setActiveTab] = useState<'discussion' | 'holders' | 'activity'>('discussion')
 
@@ -267,6 +268,23 @@ export default function MarketDetailPage() {
     setPosting(false)
   }, [account, marketId, posting, replyUI, mergeComments])
 
+  const handleShare = useCallback(async () => {
+    try {
+      const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+      if (navigator.share) {
+        await navigator.share({ title: market?.eventName || market?.question || 'PredictFi Market', url: shareUrl })
+        return
+      }
+      if (navigator.clipboard && shareUrl) {
+        await navigator.clipboard.writeText(shareUrl)
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 1200)
+      }
+    } catch {
+      // Ignore canceled share interactions.
+    }
+  }, [market?.eventName, market?.question])
+
   const yesLabel = meta?.yes_label ?? 'YES'
   const noLabel  = meta?.no_label  ?? 'NO'
 
@@ -354,7 +372,7 @@ export default function MarketDetailPage() {
     )
   }
 
-  const headerTitle = market.eventName?.trim() || market.question
+  const headerTitle = market.question?.trim() || market.eventName?.trim() || `Market #${market.id}`
 
   return (
     <main className={styles.main}>
@@ -371,6 +389,15 @@ export default function MarketDetailPage() {
                 </div>
               )}
               <div className={styles.headerContent}>
+                <div className={styles.heroTop}>
+                  <div className={styles.heroStats}>
+                    <span className={styles.heroStat}>Total Vol <strong>{parseFloat(market.totalPool).toFixed(3)} tBNB</strong></span>
+                    <span className={styles.heroStat}>Ends {new Date(market.endTime * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} @ {new Date(market.endTime * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                  </div>
+                  <button type="button" className={`${styles.shareBtn} ${shareCopied ? styles.shareBtnCopied : ''}`} onClick={() => { void handleShare() }}>
+                    {shareCopied ? 'Copied' : 'Share'} <span className={styles.shareIcon} aria-hidden>↗</span>
+                  </button>
+                </div>
                 <div className={styles.badges}>
                   <span className={styles.catBadge} style={{ color: catColor, borderColor: `${catColor}44`, background: `${catColor}18` }}>{category}</span>
                   {market.resolved ? (
@@ -392,10 +419,6 @@ export default function MarketDetailPage() {
                     <span className={styles.metaLabel}>{isEnded ? 'Ended' : 'Closes in'}</span>
                     <span className={`${styles.metaValue} ${styles.closesIn}`}>{timeLeft}</span>
                   </div>
-                  <div className={styles.metaItem}>
-                    <span className={styles.metaLabel}>Pool</span>
-                    <span className={styles.metaValue}>{parseFloat(market.totalPool).toFixed(3)} tBNB</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -403,21 +426,22 @@ export default function MarketDetailPage() {
             <OddsChart
               marketId={market.id}
               eventId={selectedEvent?.eventId}
-              chartKey={`${market.id}:${selectedEvent?.eventId ?? 1}`}
+              chartKey={`${market.id}:all-events`}
               yesPool={selectedEvent?.yesPool ?? '0'}
               noPool={selectedEvent?.noPool ?? '0'}
               totalPool={selectedEvent?.totalPool ?? '0'}
               resolved={selectedEvent?.resolved ?? false}
               yesLabel={selectedYesLabel}
               noLabel={selectedNoLabel}
+              seriesEvents={marketEvents.map((event) => ({
+                id: event.eventId,
+                name: event.name,
+                yesPool: event.yesPool,
+                totalPool: event.totalPool,
+              }))}
             />
 
-            {meta?.description && (
-              <div className={styles.infoSection}>
-                <h3 className={styles.infoTitle}>About this Market</h3>
-                <p className={styles.infoText}>{meta.description}</p>
-              </div>
-            )}
+         
             <div className={styles.eventsSection}>
               <div className={styles.eventsSectionHeader}>
                 <h3 className={styles.infoTitle}>Events</h3>
@@ -436,7 +460,17 @@ export default function MarketDetailPage() {
                       <span className={styles.eventSub}>{selectedEventKey === event.key ? 'Selected for trading' : 'Tap to select'}</span>
                     </span>
                     <span className={styles.eventChanceBlock}>
-                      <span className={styles.eventChance}>{selectedEventKey === event.key ? marketOdds.yesOdds : Math.round(((parseFloat(event.yesPool) || 0) / Math.max((parseFloat(event.totalPool) || 0), 1e-9)) * 100)}%</span>
+                      <span className={styles.eventChance}>
+                        {selectedEventKey === event.key
+                          ? marketOdds.yesOdds
+                          : (() => {
+                              const total = parseFloat(event.totalPool) || 0
+                              if (total <= 0) return 50
+                              const yesPool = parseFloat(event.yesPool) || 0
+                              return Math.round((yesPool / total) * 100)
+                            })()}
+                        %
+                      </span>
                       <span className={styles.eventChanceLabel}>Chance</span>
                     </span>
                     <span className={styles.eventActions} aria-hidden>
@@ -446,7 +480,12 @@ export default function MarketDetailPage() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>   {meta?.description && (
+              <div className={styles.infoSection}>
+                <h3 className={styles.infoTitle}>About this Market</h3>
+                <p className={styles.infoText}>{meta.description}</p>
+              </div>
+            )}
             {meta?.rules && (
               <div className={styles.infoSection}>
                 <h3 className={styles.infoTitle}>Resolution Rules</h3>

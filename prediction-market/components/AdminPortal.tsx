@@ -64,6 +64,47 @@ export default function AdminPortal() {
   const loadMeta = useCallback(async (marketId: number) => {
     setMetaLoading((prev) => ({ ...prev, [marketId]: true }))
     const meta = await getMarketMeta(marketId)
+    const market = markets.find((entry) => entry.id === marketId)
+    const derivedEventsJson = market && market.events.length > 0
+      ? JSON.stringify(
+          market.events.map((event, index) => ({
+            key: String(event.id),
+            name: event.name,
+            yesLabel: index === 0 ? 'Up' : 'Yes',
+            noLabel: index === 0 ? 'Down' : 'No',
+          })),
+          null,
+          2
+        )
+      : ''
+
+    const isDummyEventsJson = (value: string | null | undefined): boolean => {
+      const raw = value?.trim()
+      if (!raw) return false
+      try {
+        const parsed = JSON.parse(raw) as unknown
+        if (!Array.isArray(parsed) || parsed.length === 0) return false
+        return parsed.every((row, index) => {
+          const item = row as Record<string, unknown>
+          const key = String(item.key ?? '').toLowerCase()
+          const name = String(item.name ?? '').toLowerCase()
+          return (
+            key === `e${index + 1}` ||
+            key === `event-${index + 1}` ||
+            key === String(index + 1) ||
+            name === `event ${index + 1}` ||
+            name === 'main event'
+          )
+        })
+      } catch {
+        return false
+      }
+    }
+
+    const normalizedEventsJson = isDummyEventsJson(meta?.events_json)
+      ? derivedEventsJson
+      : (meta?.events_json ?? derivedEventsJson)
+
     setMetaEditing((prev) => ({
       ...prev,
       [marketId]: {
@@ -72,13 +113,13 @@ export default function AdminPortal() {
         rules: meta?.rules ?? '',
         card_bg: meta?.card_bg ?? '',
         card_text: meta?.card_text ?? '',
-        events_json: meta?.events_json ?? '',
+        events_json: normalizedEventsJson,
         yes_label: meta?.yes_label ?? '',
         no_label: meta?.no_label ?? '',
       },
     }))
     setMetaLoading((prev) => ({ ...prev, [marketId]: false }))
-  }, [])
+  }, [markets])
 
   const saveMeta = useCallback(async (marketId: number) => {
     const current = metaEditing[marketId] ?? {}
@@ -450,7 +491,7 @@ export default function AdminPortal() {
                                 rows={6}
                                 value={(editing as Record<string, unknown>).events_json as string || ''}
                                 onChange={(e) => setMetaEditing((prev) => ({ ...prev, [market.id]: { ...prev[market.id], events_json: e.target.value } }))}
-                                placeholder={'[{"key":"default","name":"Main Event","yesLabel":"YES","noLabel":"NO"}]'}
+                                placeholder={'[{"key":"1","name":"X Man","yesLabel":"Up","noLabel":"Down"}]'}
                               />
                               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 <button
@@ -460,9 +501,16 @@ export default function AdminPortal() {
                                     ...prev,
                                     [market.id]: {
                                       ...prev[market.id],
-                                      events_json: JSON.stringify([
-                                        { key: 'default', name: 'Main Event', yesLabel: 'YES', noLabel: 'NO' },
-                                      ], null, 2),
+                                      events_json: JSON.stringify(
+                                        market.events.slice(0, 1).map((event) => ({
+                                          key: String(event.id),
+                                          name: event.name,
+                                          yesLabel: 'Up',
+                                          noLabel: 'Down',
+                                        })),
+                                        null,
+                                        2
+                                      ),
                                     },
                                   }))}
                                 >
@@ -475,14 +523,20 @@ export default function AdminPortal() {
                                     ...prev,
                                     [market.id]: {
                                       ...prev[market.id],
-                                      events_json: JSON.stringify([
-                                        { key: 'e1', name: 'Event 1', yesLabel: 'Up', noLabel: 'Down' },
-                                        { key: 'e2', name: 'Event 2', yesLabel: 'Yes', noLabel: 'No' },
-                                      ], null, 2),
+                                      events_json: JSON.stringify(
+                                        market.events.map((event, index) => ({
+                                          key: String(event.id),
+                                          name: event.name,
+                                          yesLabel: index === 0 ? 'Up' : 'Yes',
+                                          noLabel: index === 0 ? 'Down' : 'No',
+                                        })),
+                                        null,
+                                        2
+                                      ),
                                     },
                                   }))}
                                 >
-                                  Multi Event Template
+                                  Load On-Chain Events
                                 </button>
                               </div>
                             </div>
