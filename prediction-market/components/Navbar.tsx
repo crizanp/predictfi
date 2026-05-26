@@ -129,6 +129,9 @@ export default function Navbar() {
           </div>
         )}
         <div className={styles.right}>
+          <a href="#" className={styles.adsPill} aria-label="Top right ad slot">
+            Ads
+          </a>
           <div className={styles.socialLinks}>
             {SOCIAL_LINKS.map(({ Icon, href, label }) => (
               <a key={label} href={href} target="_blank" rel="noopener noreferrer"

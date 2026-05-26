@@ -205,26 +205,88 @@ export default function HomePage() {
     setIsTokenomicsModalOpen(true)
   }
 
+  const handleDownloadTokenomics = () => {
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+
+    const svgRows = tokenAllocations
+      .map((row, index) => {
+        const y = 84 + index * 28
+        return `
+          <circle cx="300" cy="${y}" r="6" fill="${row.color}" />
+          <text x="316" y="${y + 5}" fill="#111827" font-size="13" font-family="Arial">${escapeXml(row.label)} (${row.pct}%)</text>
+        `
+      })
+      .join('')
+
+    const detailRows = tokenAllocations
+      .map((row, index) => {
+        const y = 280 + index * 44
+        return `
+          <text x="24" y="${y}" fill="#111827" font-size="12" font-family="Arial" font-weight="700">${escapeXml(row.label)} (${row.pct}%)</text>
+          <text x="24" y="${y + 16}" fill="#334155" font-size="11" font-family="Arial">${escapeXml(row.desc)}</text>
+        `
+      })
+      .join('')
+
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560">
+  <rect width="760" height="560" fill="#fff4e2" />
+  <text x="24" y="42" fill="#111827" font-size="26" font-family="Arial" font-weight="700">PredictFi Tokenomics</text>
+  <text x="24" y="66" fill="#475569" font-size="13" font-family="Arial">Total Supply: 1,000,000,000 PRFI</text>
+  <g transform="translate(20,40)">
+    <rect x="0" y="0" width="250" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" />
+    <g transform="translate(45,45)">
+      ${donutSlices.map((slice) => `<path d="${slice.d}" fill="${slice.color}" stroke="#05060e" stroke-width="1.5" opacity="0.9" />`).join('')}
+      <text x="80" y="76" text-anchor="middle" font-size="9" fill="#6b7280" font-family="Arial" font-weight="700">TOTAL</text>
+      <text x="80" y="90" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="Arial" font-weight="600">1B PRFI</text>
+    </g>
+  </g>
+  <g>
+    <rect x="280" y="40" width="456" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" />
+    <text x="300" y="66" fill="#111827" font-size="16" font-family="Arial" font-weight="700">Allocation Breakdown</text>
+    ${svgRows}
+  </g>
+  <g>
+    <rect x="20" y="300" width="716" height="240" rx="16" fill="#ffffff" stroke="#e2e8f0" />
+    <text x="24" y="326" fill="#111827" font-size="16" font-family="Arial" font-weight="700">Tokenomics Details</text>
+    ${detailRows}
+  </g>
+</svg>`.trim()
+
+    const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
+    const svgUrl = URL.createObjectURL(svgBlob)
+    const svgLink = document.createElement('a')
+    svgLink.href = svgUrl
+    svgLink.download = 'predictfi-tokenomics.svg'
+    svgLink.click()
+    URL.revokeObjectURL(svgUrl)
+
+    const detailsText = tokenAllocations
+      .map((row) => `${row.label} (${row.pct}%)\n- ${row.desc}\n- Why: ${row.why}\n- Plan: ${row.plan}`)
+      .join('\n\n')
+
+    const txtBlob = new Blob([
+      `PredictFi Tokenomics\nTotal Supply: 1,000,000,000 PRFI\n\n${detailsText}`,
+    ], { type: 'text/plain;charset=utf-8' })
+    const txtUrl = URL.createObjectURL(txtBlob)
+    const txtLink = document.createElement('a')
+    txtLink.href = txtUrl
+    txtLink.download = 'predictfi-tokenomics-details.txt'
+    txtLink.click()
+    URL.revokeObjectURL(txtUrl)
+  }
+
   return (
     <main className={styles.main}>
 
       {/* ── Hero ────────────────────────────────────────── */}
      
-
-      {/* ── Homepage Banner (1680 × 238) ────────────────── */}
-      <div className={styles.heroBannerWrap}>
-        <div className={styles.heroBanner}>
-          {/* Drop your 1680×238 image into /public/banner.png to replace this placeholder */}
-          <img
-            src="/banner-placeholder.png"
-            alt="PredictFi Banner"
-            className={styles.heroBannerImg}
-            onError={(e) => {
-              ;(e.currentTarget as HTMLImageElement).src = '/banner-placeholder.svg'
-            }}
-          />
-        </div>
-      </div>
 
       {/* ── Trending Markets (top 6) ─────────────────────── */}
       <div className={styles.content}>
@@ -286,7 +348,7 @@ export default function HomePage() {
           <p className={styles.prfiTagline}>
             The utility token powering the PredictFi ecosystem
           </p>
-          <div className={styles.prfiTrustRow}>
+          {/* <div className={styles.prfiTrustRow}>
             <div className={styles.prfiTrustItem}>
               <RiShieldCheckLine />
               <span>Transparent Emissions</span>
@@ -299,7 +361,7 @@ export default function HomePage() {
               <RiGovernmentLine />
               <span>Community Governance Path</span>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Use Cases Grid */}
@@ -311,7 +373,6 @@ export default function HomePage() {
               className={styles.useCase}
               onClick={() => setActiveUseCase(item)}
             >
-              <item.Icon className={styles.useCaseIcon} style={{ color: item.color }} />
               <div className={styles.useCaseTitle}>{item.title}</div>
               <div className={styles.useCaseDesc}>{item.desc}</div>
             </button>
@@ -322,6 +383,9 @@ export default function HomePage() {
 
           {/* Tokenomics */}
           <div className={styles.tokenomicsCard}>
+            <button type="button" className={styles.tokenomicsDownloadBtn} onClick={handleDownloadTokenomics}>
+              Download
+            </button>
             <div className={styles.cardLabel}>TOKENOMICS</div>
             <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
 
@@ -363,7 +427,6 @@ export default function HomePage() {
                   <div className={styles.allocDot} style={{ background: row.color }} />
                   <div className={styles.allocLabelWrap}>
                     <span className={styles.allocLabel}>{row.label}</span>
-                    <span className={styles.allocHint}>{row.desc}</span>
                   </div>
                   <div className={styles.allocBarWrap}>
                     <div className={styles.allocBar} style={{ width: `${row.pct}%`, background: row.color }} />
@@ -376,9 +439,7 @@ export default function HomePage() {
 
           {/* Presale */}
           <div className={styles.presaleCard}>
-            <div className={styles.cardLabel}>PRESALE</div>
             <div className={styles.presalePlatform}>
-              <div className={styles.moonIcon}>🌙</div>
               <div>
                 <div className={styles.presalePlatformName}>Launching on</div>
                 <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.presalePlatformBig}>moonsale.app</a>
@@ -405,7 +466,6 @@ export default function HomePage() {
             </div>
 
             <div className={styles.presalePurpose}>
-              <div className={styles.presalePurposeLabel}>Why this presale exists</div>
               <p>
                 The presale is designed to bootstrap fair liquidity, fund launch operations, and ensure long-term runway
                 before full governance decentralization.
@@ -443,7 +503,6 @@ export default function HomePage() {
             <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.waitlistBtn}>
               <RiMailLine style={{verticalAlign:'middle',marginRight:6}} />Join the Waitlist
             </a>
-            <p className={styles.waitlistSub}>Get notified when the sale goes live</p>
           </div>
 
         </div>
@@ -467,7 +526,6 @@ export default function HomePage() {
             </button>
 
             <div className={styles.tokenomicsModalHead}>
-              <div className={styles.tokenomicsModalBadge}>TOKENOMICS DETAIL</div>
               <h3 id="tokenomics-modal-title" className={styles.tokenomicsModalTitle}>
                 {selectedAllocation.label} <span>{selectedAllocation.pct}%</span>
               </h3>
@@ -509,7 +567,6 @@ export default function HomePage() {
               ✕ Close
             </button>
             <div className={styles.tokenomicsModalHead}>
-              <div className={styles.tokenomicsModalBadge} style={{ background: `${activeUseCase.color}18`, borderColor: `${activeUseCase.color}44`, color: activeUseCase.color }}>PRFI UTILITY</div>
               <h3 id="usecase-modal-title" className={styles.tokenomicsModalTitle}>
                 {activeUseCase.title}
               </h3>
@@ -529,7 +586,7 @@ export default function HomePage() {
       <div id="whitepaper" className={styles.whitepaperSection}>
         <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
         <p className={styles.whitepaperDesc}>
-          Dive deep into the PredictFi architecture — automated market makers, oracle integrations,
+          Dive deep into the PredictFi architecture, automated market makers, oracle integrations,
           PRFI tokenomics, and governance mechanisms. Everything you need to know about how the
           decentralized prediction market engine works.
         </p>

@@ -91,6 +91,31 @@
   gap: 8px;
 }
 
+.adsPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(192,132,252,0.35);
+  background: rgba(192,132,252,0.08);
+  color: #d8b4fe;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.adsPill:hover {
+  background: rgba(192,132,252,0.14);
+  border-color: rgba(192,132,252,0.6);
+  color: #f0e6ff;
+}
+
 /* Social icon links */
 .socialLinks {
   display: flex;

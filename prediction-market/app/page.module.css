@@ -403,7 +403,7 @@
   margin: 0 28px 36px;
   border: 1px solid rgba(17,24,39,0.08);
   border-radius: 20px;
-  background: #ffffff;
+  background: #fff4e2;
   position: relative;
   box-shadow: 0 14px 34px rgba(15,23,42,0.08);
 }
@@ -488,7 +488,7 @@
 .useCase {
   position: relative;
   padding: 22px;
-  border: 1px solid rgba(17,24,39,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   overflow: hidden;
   min-height: 168px;
@@ -508,7 +508,7 @@
 
 .useCase:hover {
   transform: translateY(-4px);
-  border-color: rgba(124,58,237,0.32);
+  border-color: rgba(0, 0, 0, 0.32);
   box-shadow: 0 10px 22px rgba(15,23,42,0.1);
 }
 
@@ -523,7 +523,7 @@
 }
 
 .useCaseTitle {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 800;
   color: #111827;
   margin-bottom: 6px;
@@ -533,7 +533,7 @@
 }
 
 .useCaseDesc {
-  font-size: 13px;
+  font-size: 14px;
   color: #475569;
   line-height: 1.6;
   position: relative;
@@ -556,33 +556,44 @@
   position: relative;
 }
 
+.tokenomicsDownloadBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(17,24,39,0.18);
+  background: #ffffff;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tokenomicsDownloadBtn:hover {
+  background: #f8fafc;
+  border-color: rgba(17,24,39,0.35);
+}
+
 .presaleCard {
   padding: 34px 30px;
-  background: #f5f0ff;
+  background: #d4c0ff;
   border: 1px solid rgba(124,58,237,0.18);
   border-radius: 16px;
   position: relative;
 }
 
 .cardLabel {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  color: #c084fc;
+   font-size: 11px;
+  color: #000000;
+  font-weight: 600;
   text-transform: uppercase;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
 }
-.cardLabel::before {
-  content: '';
-  display: inline-block;
-  width: 3px;
-  height: 12px;
-  background: #c084fc;
-  border-radius: 2px;
-}
+
 
 .totalSupply {
   font-size: 30px;
@@ -817,7 +828,7 @@
 
 .presalePlatformName {
   font-size: 11px;
-  color: #6d28d9;
+  color: #000000;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -827,7 +838,7 @@
 .presalePlatformBig {
   font-size: 28px;
   font-weight: 900;
-  color: #c084fc;
+  color: #000000;
   letter-spacing: -0.02em;
   text-decoration: none;
   transition: opacity 0.15s;
@@ -836,7 +847,7 @@
 
 .presaleDivider {
   height: 1px;
-  background: rgba(124,58,237,0.15);
+  background: rgba(163, 109, 255, 0.15);
   margin: 20px 0;
 }
 
@@ -858,40 +869,38 @@
 }
 
 .detailLabel {
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  color: #7c3aed;
+  letter-spacing: 0.07em;
+  color: #000000;
   text-transform: uppercase;
 }
 
 .detailValue {
   font-size: 15px;
-  font-weight: 800;
-  color: #3b0764;
+  color: #000000;
   letter-spacing: -0.01em;
 }
 
 .presalePurpose {
-  border: 1px solid rgba(124,58,237,0.2);
   border-radius: 12px;
   padding: 12px;
-  background: rgba(124,58,237,0.08);
-  margin-bottom: 12px;
+  margin-bottom: 12px;  font-size: 12px;
+
 }
 
 .presalePurposeLabel {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #7c3aed;
+  color: #000000;
   margin-bottom: 6px;
 }
 
 .presalePurpose p {
-  font-size: 13px;
-  color: #4c1d95;
+  font-size: 14px;
+  color: #000000;
   line-height: 1.6;
 }
 
@@ -906,8 +915,8 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 13px;
-  color: #5b21b6;
+  font-size: 14px;
+  color: #000000;
   line-height: 1.45;
 }
 
@@ -933,7 +942,8 @@
   margin-bottom: 8px;
 }
 .presaleProgressLabel span:first-child { color: #c084fc; }
-.presaleProgressLabel span:last-child  { color: #4b5563; }
+.presaleProgressLabel span:first-child { color: #000000; }
+.presaleProgressLabel span:last-child  { color: #000000; }
 
 .presaleProgressBar {
   height: 10px;
@@ -965,11 +975,12 @@
   justify-content: center;
   width: 100%;
   padding: 13px 0;
-  background: #7c3aed;
-  color: #fff;
+  background: #ffffff;
+    border: 1px solid rgb(0, 0, 0);
+
+  color: #000000;
   font-size: 14px;
   font-weight: 800;
-  border: none;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
@@ -978,7 +989,7 @@
   text-decoration: none;
 }
 .waitlistBtn:hover {
-  background: #6d28d9;
+  background: #e5e5e8;
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(124,58,237,0.35);
 }

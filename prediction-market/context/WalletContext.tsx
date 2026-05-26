@@ -103,25 +103,29 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [showWalletModal] = useState(false)           // kept for API compat; AppKit owns the modal
   const [showAdminPortal, setShowAdminPortal] = useState(false)
 
-  // Opens Reown AppKit modal — used everywhere instead of custom WalletModal
+  const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
+    setStatus({ tone, text })
+  }, [])
+
+  // Opens Reown AppKit full connect view so users can always switch wallet provider.
   const setShowWalletModal = useCallback(
     (show: boolean) => {
       if (!show) return
+      if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID === 'demo') {
+        setStatusMessage('error', 'Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local to enable full Reown wallet options.')
+        return
+      }
       import('../lib/appkit')
         .then(({ appKit }) => {
-          void appKit.open(account ? { view: 'Account' } : undefined)
+          void appKit.open({ view: 'Connect' })
         })
         .catch(() => setStatusMessage('error', 'Could not open wallet modal.'))
     },
-    [account]  // eslint-disable-line react-hooks/exhaustive-deps
+    [setStatusMessage]
   )
 
   const isBusy = busyAction !== null
   const isWrongNetwork = account !== '' && activeChainId !== null && activeChainId !== CHAIN_ID
-
-  const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
-    setStatus({ tone, text })
-  }, [])
 
   const clearWalletSession = useCallback(() => {
     setAccount('')
@@ -298,8 +302,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   }, [clearWalletSession, refreshWalletState, setStatusMessage, switchToRequiredNetwork])
 
   const connectWalletConnect = useCallback(() => {
-    // Opens the Reown AppKit modal; actual connection is handled by ReownSync in Providers
-    import('../lib/appkit').then(({ appKit }) => appKit.open()).catch(() => {
+    // Opens the Reown AppKit full connect modal; actual provider sync is done by ReownSync.
+    if (!WALLETCONNECT_PROJECT_ID || WALLETCONNECT_PROJECT_ID === 'demo') {
+      setStatusMessage('error', 'Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in .env.local to enable full Reown wallet options.')
+      return
+    }
+    import('../lib/appkit').then(({ appKit }) => appKit.open({ view: 'Connect' })).catch(() => {
       setStatusMessage('error', 'Could not open wallet modal. Check your project ID in .env.local.')
     })
   }, [setStatusMessage])

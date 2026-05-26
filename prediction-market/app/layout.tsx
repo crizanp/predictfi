@@ -28,6 +28,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Sidebar />
               <div className="appMain">
                 <Navbar />
+                <div className="globalPageBannerWrap">
+                  <div className="globalPageBanner">
+                    <span className="globalPageBannerAds">Ads</span>
+                    <img
+                      src="/banner-placeholder.png"
+                      alt="PredictFi Banner"
+                      className="globalPageBannerImg"
+                    />
+                  </div>
+                </div>
                 {children}
               </div>
               <CornerNotifications />
