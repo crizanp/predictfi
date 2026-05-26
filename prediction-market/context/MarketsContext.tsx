@@ -108,13 +108,15 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       setHasLoadedMarkets(true)
       return sorted
     } catch (error) {
-      setStatusMessage('error', `Could not load markets. ${toErrorMessage(error)}`)
+      // Keep the home/markets UI public without surfacing technical RPC/ABI errors.
+      // Trading actions still show explicit wallet/tx errors when needed.
+      console.warn('loadMarkets failed:', toErrorMessage(error))
       setHasLoadedMarkets(true)
       return []
     } finally {
       setIsLoadingMarkets(false)
     }
-  }, [getReadContract, isContractConfigured, setStatusMessage])
+  }, [getReadContract, isContractConfigured])
 
   const fetchMarket = useCallback(
     async (id: number): Promise<Market | null> => {
@@ -432,15 +434,18 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
   // Load markets on mount and when contract becomes available
   useEffect(() => {
-    void loadMarkets()
+    const timer = setTimeout(() => { void loadMarkets() }, 0)
+    return () => clearTimeout(timer)
   }, [loadMarkets])
 
   // Load user predictions when account or markets change
   useEffect(() => {
     if (account && markets.length > 0) {
-      void loadUserPredictions(account, markets)
+      const timer = setTimeout(() => { void loadUserPredictions(account, markets) }, 0)
+      return () => clearTimeout(timer)
     } else if (!account) {
-      setUserPredictions({})
+      const timer = setTimeout(() => { setUserPredictions({}) }, 0)
+      return () => clearTimeout(timer)
     }
   }, [account, markets, loadUserPredictions])
 

@@ -44,6 +44,13 @@ body {
   overflow-x: hidden;
 }
 
+/* Global no-glow mode: remove all glow-like effects across the platform */
+*, *::before, *::after {
+  text-shadow: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
 /* ── App Shell Layout ─────────────────────────────────────── */
 .mainnetBanner {
   position: sticky;

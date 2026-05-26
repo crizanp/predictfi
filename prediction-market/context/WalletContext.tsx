@@ -147,12 +147,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const getReadContract = useCallback((): ethers.Contract => {
     if (!isContractConfigured) throw new Error('Contract address not configured.')
-    const providerSource = getEffectiveProvider()
-    const provider = providerSource
-      ? new ethers.BrowserProvider(providerSource)
-      : new ethers.JsonRpcProvider(READ_ONLY_RPC)
+    // Always use public RPC for reads so market data stays visible even if
+    // the connected wallet is on a wrong/unsupported network.
+    const provider = new ethers.JsonRpcProvider(READ_ONLY_RPC)
     return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
-  }, [getEffectiveProvider, isContractConfigured])
+  }, [isContractConfigured])
 
   const getWriteContract = useCallback(
     async (providerOverride?: Eip1193Provider | null): Promise<ethers.Contract> => {
