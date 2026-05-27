@@ -13,7 +13,7 @@
 }
 .header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 12px; margin-bottom: 16px; }
 .title { font-size: 11px; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin: 0; }
-.chartControls { display: flex; align-items: center; justify-content: center; }
+.chartControls { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .intervalPills {
   display: flex;
   align-items: center;
@@ -39,6 +39,34 @@
   color: #f6eefe;
 }
 .intervalBtnActive {
+  background: rgba(192,132,252,0.32);
+  color: #f8f0ff;
+}
+.viewPills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(192,132,252,0.25);
+  border-radius: 999px;
+  background: rgba(14, 14, 20, 0.55);
+}
+.viewBtn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.viewBtn:hover {
+  background: rgba(192,132,252,0.18);
+  color: #f6eefe;
+}
+.viewBtnActive {
   background: rgba(192,132,252,0.32);
   color: #f8f0ff;
 }
@@ -68,12 +96,47 @@
 .tvChartWrap {
   position: relative;
   width: 100%;
-  height: 220px;
+  height: 100%;
 }
 
 .tvChart {
   width: 100%;
-  height: 220px;
+  height: 100%;
+}
+
+.crosshairPanel {
+  position: absolute;
+  z-index: 2;
+  min-width: 150px;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(192,132,252,0.32);
+  background: rgba(13, 13, 19, 0.86);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.crosshairTime {
+  margin: 0 0 6px;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.crosshairRow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.crosshairRow:last-child {
+  margin-bottom: 0;
 }
 
 .tvEmpty {

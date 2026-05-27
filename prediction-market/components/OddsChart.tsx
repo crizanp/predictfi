@@ -4,18 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ethers } from 'ethers'
-import {
-  Brush,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-import { CandlestickSeries, ColorType, createChart, type CandlestickData, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts'
+import { ColorType, createChart, LineSeries, type CandlestickData, type IChartApi, type ISeriesApi, type LineData, type MouseEventParams, type Time, type UTCTimestamp } from 'lightweight-charts'
 import { getOddsHistory, recordOddsSnapshot } from '../lib/supabase'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../lib/contract'
 import styles from './OddsChart.module.css'
@@ -48,16 +37,20 @@ interface ChartPoint {
 }
 
 type MultiChartPoint = { ts: number; iso: string } & Record<string, number | string>
+type CrosshairRow = { key: string; name: string; color: string; value: number }
 
-type RenderPoint = { ts: number; time: string } & Record<string, number | string>
+type IntervalKey = 'all' | 'auto' | '5m' | '15m' | '1h' | '4h' | '12h' | '1d' | '7d' | '30d'
 
-type IntervalKey = 'auto' | '5m' | '30m' | '3h' | '12h' | '1d' | '7d' | '30d'
+type ChartViewMode = 'normal' | 'min' | 'max'
+type CrosshairPanelPos = { left: number; top: number }
 
 const INTERVAL_OPTIONS: Array<{ key: IntervalKey; label: string; ms: number | null }> = [
+  { key: 'all', label: 'All', ms: null },
   { key: 'auto', label: 'Auto', ms: null },
   { key: '5m', label: '5m', ms: 5 * 60 * 1000 },
-  { key: '30m', label: '30m', ms: 30 * 60 * 1000 },
-  { key: '3h', label: '3h', ms: 3 * 60 * 60 * 1000 },
+  { key: '15m', label: '15m', ms: 15 * 60 * 1000 },
+  { key: '1h', label: '1h', ms: 60 * 60 * 1000 },
+  { key: '4h', label: '4h', ms: 4 * 60 * 60 * 1000 },
   { key: '12h', label: '12h', ms: 12 * 60 * 60 * 1000 },
   { key: '1d', label: '1d', ms: 24 * 60 * 60 * 1000 },
   { key: '7d', label: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
@@ -94,18 +87,6 @@ function saveLocal<T>(id: number, pts: T[], chartKey?: string) {
   } catch {
     // ignore
   }
-}
-
-function formatTick(ts: number, spanMs: number): string {
-  if (!Number.isFinite(ts)) return ''
-  const date = new Date(ts)
-  if (spanMs > 7 * 24 * 60 * 60 * 1000) {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
-  }
-  if (spanMs > 24 * 60 * 60 * 1000) {
-    return date.toLocaleDateString([], { weekday: 'short', hour: 'numeric' })
-  }
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function coerceTs(value: string | number | Date): number {
@@ -160,6 +141,62 @@ function seriesKey(eventId: number): string {
   return `event_${eventId}`
 }
 
+function filterPointsInWindow<T extends { ts: number }>(
+  points: T[],
+  interval: IntervalKey,
+  nowTs: number
+): T[] {
+  if (interval === 'all' || interval === 'auto') return points
+  const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
+  if (!ms) return points
+  const minTs = nowTs - ms
+  const filtered = points.filter((point) => point.ts >= minTs)
+  if (filtered.length > 0) return filtered
+  return points.length > 0 ? [points[points.length - 1]] : []
+}
+
+function formatCrosshairTime(time: Time | undefined): string {
+  if (!time) return 'Latest'
+  if (typeof time === 'number') {
+    return new Date(time * 1000).toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  if ('year' in time && 'month' in time && 'day' in time) {
+    return new Date(time.year, time.month - 1, time.day).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  }
+  return 'Latest'
+}
+
+function pointFromSeriesMap(entry: unknown): number | null {
+  if (!entry || typeof entry !== 'object') return null
+  const maybePoint = entry as { value?: number; close?: number }
+  if (typeof maybePoint.value === 'number' && Number.isFinite(maybePoint.value)) return maybePoint.value
+  if (typeof maybePoint.close === 'number' && Number.isFinite(maybePoint.close)) return maybePoint.close
+  return null
+}
+
+function toStrictAscLineData(data: LineData<UTCTimestamp>[]): LineData<UTCTimestamp>[] {
+  if (data.length <= 1) return data
+  const out: LineData<UTCTimestamp>[] = []
+  for (const point of data) {
+    const prev = out[out.length - 1]
+    if (prev && prev.time === point.time) {
+      out[out.length - 1] = point
+      continue
+    }
+    out.push(point)
+  }
+  return out
+}
+
 function autoCandleBucketSec(points: ChartPoint[]): number {
   if (points.length <= 100) return 1
   if (points.length < 2) return 60
@@ -174,9 +211,11 @@ function autoCandleBucketSec(points: ChartPoint[]): number {
 
 function bucketSecFromInterval(interval: IntervalKey, points: ChartPoint[]): number {
   if (interval === 'auto') return autoCandleBucketSec(points)
+  if (interval === 'all') return 60
   if (interval === '5m') return 5
-  if (interval === '30m') return 15
-  if (interval === '3h') return 60
+  if (interval === '15m') return 15
+  if (interval === '1h') return 60
+  if (interval === '4h') return 180
   if (interval === '12h') return 300
   if (interval === '1d') return 900
   if (interval === '7d') return 3600
@@ -256,38 +295,6 @@ function buildCandles(points: ChartPoint[], bucketSec: number): CandlestickData<
   return result
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const MultiTooltip = ({ active, payload, label, series }: any) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipTime}>{label}</p>
-      {series.map((entry: { key: string; name: string; color: string }) => {
-        const match = payload.find((point: { dataKey?: string }) => point.dataKey === entry.key)
-        return (
-          <p key={entry.key} className={styles.tooltipLine} style={{ color: entry.color }}>
-            {entry.name} {typeof match?.value === 'number' ? `${match.value}%` : '50%'}
-          </p>
-        )
-      })}
-    </div>
-  )
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SingleTooltip = ({ active, payload, label, yesLabel, noLabel }: any) => {
-  if (!active || !payload?.length) return null
-  const yesValue = payload.find((point: { dataKey?: string }) => point.dataKey === 'yes')?.value
-  const noValue = payload.find((point: { dataKey?: string }) => point.dataKey === 'no')?.value
-  return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipTime}>{label}</p>
-      <p className={styles.tooltipYes}>{yesLabel} {typeof yesValue === 'number' ? `${yesValue}%` : '50%'}</p>
-      <p className={styles.tooltipNo}>{noLabel} {typeof noValue === 'number' ? `${noValue}%` : '50%'}</p>
-    </div>
-  )
-}
-
 export default function OddsChart({
   marketId,
   eventId,
@@ -304,15 +311,22 @@ export default function OddsChart({
 
   const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal<ChartPoint>(marketId, chartKey))
   const [multiHistory, setMultiHistory] = useState<MultiChartPoint[]>(() => loadLocal<MultiChartPoint>(marketId, chartKey))
-  const [interval, setInterval] = useState<IntervalKey>('auto')
-  const [windowStartIndex, setWindowStartIndex] = useState(0)
-  const [windowEndIndex, setWindowEndIndex] = useState(0)
+  const [interval, setInterval] = useState<IntervalKey>('all')
+  const [viewMode, setViewMode] = useState<ChartViewMode>('normal')
   const supabaseSynced = useRef(false)
   const lastSnapshotBucket = useRef<Record<string, number>>({})
   const tvContainerRef = useRef<HTMLDivElement | null>(null)
   const tvChartRef = useRef<IChartApi | null>(null)
-  const tvSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const tvYesSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const tvNoSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const tvMultiSeriesRef = useRef<Record<string, ISeriesApi<'Line'>>>({})
   const txHistorySyncedRef = useRef('')
+  const [crosshairTime, setCrosshairTime] = useState('Latest')
+  const [crosshairRows, setCrosshairRows] = useState<CrosshairRow[]>([])
+  const [crosshairActive, setCrosshairActive] = useState(false)
+  const [crosshairPanelPos, setCrosshairPanelPos] = useState<CrosshairPanelPos>({ left: 10, top: 10 })
+
+  const chartHeight = viewMode === 'min' ? 130 : viewMode === 'max' ? 360 : 220
 
   useEffect(() => {
     const localSingle = loadLocal<ChartPoint>(marketId, chartKey)
@@ -590,7 +604,7 @@ export default function OddsChart({
     const sourceLen = multiHistory.length
     const source = multiHistory
     const spanMs = sourceLen > 1 ? source[sourceLen - 1].ts - source[0].ts : 0
-    if (interval !== 'auto') {
+    if (interval !== 'auto' && interval !== 'all') {
       return INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms ?? 5 * 60 * 1000
     }
     return autoBucketMs(sourceLen, spanMs)
@@ -605,7 +619,7 @@ export default function OddsChart({
     })),
   [seriesEvents])
 
-  const multiChartData = useMemo<RenderPoint[]>(() => {
+  const multiChartData = useMemo<MultiChartPoint[]>(() => {
     const ts = Date.now()
     const current: MultiChartPoint = { ts, iso: safeIsoFromTs(ts) }
     for (const entry of series) current[entry.key] = entry.chance
@@ -614,33 +628,14 @@ export default function OddsChart({
       const openTs = ts - 5 * 60 * 1000
       const open: MultiChartPoint = { ts: openTs, iso: safeIsoFromTs(openTs) }
       for (const entry of series) open[entry.key] = 50
-      return [
-        { ...open, time: 'Open' },
-        { ...current, time: formatTick(current.ts, 5 * 60 * 1000) },
-      ]
+      return [open, current]
     }
 
-    const slicedByInterval = (() => {
-      if (interval === 'auto') return multiHistory
-      const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
-      if (!ms) return multiHistory
-      const minTs = ts - ms
-      return multiHistory.filter((point) => point.ts >= minTs)
-    })()
-
-    const basePoints = slicedByInterval.length ? slicedByInterval : multiHistory
+    const basePoints = filterPointsInWindow(multiHistory, interval, ts)
     const withCurrent = [...basePoints, current].sort((a, b) => a.ts - b.ts)
     const sampled = downsampleMulti(withCurrent, bucketMs)
-    const spanMs = sampled.length > 1 ? sampled[sampled.length - 1].ts - sampled[0].ts : 5 * 60 * 1000
-
-    return sampled.map((point) => ({
-      ...point,
-      ts: point.ts,
-      time: formatTick(point.ts, spanMs),
-    }))
+    return sampled
   }, [bucketMs, interval, multiHistory, series])
-
-  const renderData = multiChartData
 
   const singleTickData = useMemo<ChartPoint[]>(() => {
     if (isMultiSeries) return []
@@ -649,61 +644,55 @@ export default function OddsChart({
     const total = parseFloat(totalPool)
     const yesPct = total > 0 ? Number(((parseFloat(yesPool) / total) * 100).toFixed(4)) : 50
     const nowPt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: Number((100 - yesPct).toFixed(4)) }
-    const slicedByInterval = (() => {
-      if (interval === 'auto') return history
-      const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
-      if (!ms) return history
-      const minTs = ts - ms
-      return history.filter((point) => point.ts >= minTs)
-    })()
-
-    const source = (slicedByInterval.length ? slicedByInterval : history).slice(-MAX_PTS)
+    const source = filterPointsInWindow(history, interval, ts).slice(-MAX_PTS)
     return [...source, nowPt].sort((a, b) => a.ts - b.ts)
   }, [history, interval, isMultiSeries, totalPool, yesPool])
 
+  // Legacy candlestick pipeline is intentionally retained for future toggles.
   const candleBucketSec = useMemo(() => bucketSecFromInterval(interval, singleTickData), [interval, singleTickData])
   const singleCandleData = useMemo(() => buildCandles(singleTickData, candleBucketSec), [singleTickData, candleBucketSec])
-  const useCommonLineForSingle = !isMultiSeries && singleTickData.length > 100
-  const singleLineData = useMemo<RenderPoint[]>(() => {
+  void singleCandleData
+  const singleLineData = useMemo<ChartPoint[]>(() => {
     if (isMultiSeries) return []
-    const spanMs = singleTickData.length > 1 ? singleTickData[singleTickData.length - 1].ts - singleTickData[0].ts : 5 * 60 * 1000
-    return singleTickData.map((point) => ({
-      ...point,
-      time: formatTick(point.ts, spanMs),
-    }))
+    return singleTickData
   }, [isMultiSeries, singleTickData])
 
-  useEffect(() => {
-    if (!isMultiSeries) return
-    if (renderData.length === 0) {
-      setWindowStartIndex(0)
-      setWindowEndIndex(0)
-      return
-    }
-    const span = Math.max(10, Math.floor(renderData.length * 0.35))
-    setWindowEndIndex(renderData.length - 1)
-    setWindowStartIndex(Math.max(0, renderData.length - span))
-  }, [interval, isMultiSeries, renderData.length])
-
-  const hasBrush = isMultiSeries && renderData.length > 30
-  const safeStart = Math.min(windowStartIndex, Math.max(0, renderData.length - 1))
-  const safeEnd = Math.max(safeStart, Math.min(windowEndIndex, Math.max(0, renderData.length - 1)))
-
-  useEffect(() => {
+  const latestCrosshairRows = useMemo<CrosshairRow[]>(() => {
     if (isMultiSeries) {
-      if (tvChartRef.current) {
-        tvChartRef.current.remove()
-        tvChartRef.current = null
-        tvSeriesRef.current = null
-      }
-      return
+      return series.map((entry) => ({
+        key: entry.key,
+        name: entry.name,
+        color: entry.color,
+        value: entry.chance,
+      }))
     }
+    const latest = singleLineData[singleLineData.length - 1]
+    return [
+      { key: 'yes', name: yesLabel, color: '#c084fc', value: latest?.yes ?? 50 },
+      { key: 'no', name: noLabel, color: '#ff3366', value: latest?.no ?? 50 },
+    ]
+  }, [isMultiSeries, noLabel, series, singleLineData, yesLabel])
 
+  useEffect(() => {
+    if (crosshairActive) return
+    setCrosshairRows(latestCrosshairRows)
+    setCrosshairTime('Latest')
+  }, [crosshairActive, latestCrosshairRows])
+
+  useEffect(() => {
     const el = tvContainerRef.current
-    if (!el || tvChartRef.current) return
+    if (!el) return
+
+    if (tvChartRef.current) {
+      tvChartRef.current.remove()
+      tvChartRef.current = null
+      tvYesSeriesRef.current = null
+      tvNoSeriesRef.current = null
+      tvMultiSeriesRef.current = {}
+    }
 
     const chart = createChart(el, {
-      height: 220,
+      height: chartHeight,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#9aa8bf',
@@ -720,7 +709,7 @@ export default function OddsChart({
         borderVisible: false,
         rightOffset: 2,
         timeVisible: true,
-        secondsVisible: candleBucketSec < 60,
+        secondsVisible: interval === '5m',
       },
       crosshair: {
         vertLine: { color: 'rgba(192,132,252,0.55)' },
@@ -742,16 +731,42 @@ export default function OddsChart({
       },
     })
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#a855f7',
-      downColor: '#ff3366',
-      wickUpColor: '#c084fc',
-      wickDownColor: '#ff5a83',
-      borderVisible: false,
-    })
+    if (isMultiSeries) {
+      for (const entry of series) {
+        const seriesLine = chart.addSeries(LineSeries, {
+          color: entry.color,
+          lineWidth: 2,
+          priceLineVisible: true,
+          lastValueVisible: true,
+          crosshairMarkerVisible: true,
+          title: entry.name,
+        })
+        tvMultiSeriesRef.current[entry.key] = seriesLine
+      }
+    } else {
+      const yesSeries = chart.addSeries(LineSeries, {
+        color: '#c084fc',
+        lineWidth: 2,
+        priceLineVisible: true,
+        lastValueVisible: true,
+        crosshairMarkerVisible: true,
+        title: yesLabel,
+      })
+
+      const noSeries = chart.addSeries(LineSeries, {
+        color: '#ff3366',
+        lineWidth: 2,
+        priceLineVisible: true,
+        lastValueVisible: true,
+        crosshairMarkerVisible: true,
+        title: noLabel,
+      })
+
+      tvYesSeriesRef.current = yesSeries
+      tvNoSeriesRef.current = noSeries
+    }
 
     tvChartRef.current = chart
-    tvSeriesRef.current = candleSeries
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -765,23 +780,114 @@ export default function OddsChart({
       if (tvChartRef.current) {
         tvChartRef.current.remove()
         tvChartRef.current = null
-        tvSeriesRef.current = null
+        tvYesSeriesRef.current = null
+        tvNoSeriesRef.current = null
+        tvMultiSeriesRef.current = {}
       }
     }
-  }, [candleBucketSec, isMultiSeries])
+  }, [chartHeight, interval, isMultiSeries, noLabel, series, yesLabel])
 
   useEffect(() => {
-    if (isMultiSeries) return
     const chart = tvChartRef.current
-    const candleSeries = tvSeriesRef.current
-    if (!chart || !candleSeries) return
+    if (!chart) return
 
-    candleSeries.setData(singleCandleData)
+    if (isMultiSeries) {
+      for (const entry of series) {
+        const lineSeries = tvMultiSeriesRef.current[entry.key]
+        if (!lineSeries) continue
+        let lastValue = 50
+        const lineData: LineData<UTCTimestamp>[] = multiChartData.map((point) => {
+          const raw = Number(point[entry.key])
+          if (Number.isFinite(raw)) lastValue = raw
+          return {
+            time: Math.floor(point.ts / 1000) as UTCTimestamp,
+            value: lastValue,
+          }
+        })
+        lineSeries.setData(toStrictAscLineData(lineData))
+      }
+    } else {
+      const yesSeries = tvYesSeriesRef.current
+      const noSeries = tvNoSeriesRef.current
+      if (!yesSeries || !noSeries) return
+
+      const yesData: LineData<UTCTimestamp>[] = singleLineData.map((point) => ({
+        time: Math.floor(point.ts / 1000) as UTCTimestamp,
+        value: point.yes,
+      }))
+      const noData: LineData<UTCTimestamp>[] = singleLineData.map((point) => ({
+        time: Math.floor(point.ts / 1000) as UTCTimestamp,
+        value: point.no,
+      }))
+
+      yesSeries.setData(toStrictAscLineData(yesData))
+      noSeries.setData(toStrictAscLineData(noData))
+    }
+
     chart.applyOptions({
-      timeScale: { secondsVisible: candleBucketSec < 60 },
+      height: chartHeight,
+      timeScale: { secondsVisible: interval === '5m' },
     })
     chart.timeScale().fitContent()
-  }, [candleBucketSec, isMultiSeries, singleCandleData])
+  }, [chartHeight, interval, isMultiSeries, multiChartData, series, singleLineData])
+
+  useEffect(() => {
+    const chart = tvChartRef.current
+    if (!chart) return
+
+    const onCrosshairMove = (param: MouseEventParams<Time>) => {
+      const outside = !param.point || !param.time
+      if (outside) {
+        setCrosshairActive(false)
+        setCrosshairRows(latestCrosshairRows)
+        setCrosshairTime('Latest')
+        setCrosshairPanelPos({ left: 10, top: 10 })
+        return
+      }
+
+      const containerWidth = tvContainerRef.current?.clientWidth ?? 0
+      const panelWidth = 190
+      const spacing = 12
+      const preferredLeft = param.point.x + spacing
+      const nextLeft = preferredLeft + panelWidth > containerWidth
+        ? Math.max(10, param.point.x - panelWidth - spacing)
+        : Math.max(10, preferredLeft)
+      const nextTop = Math.max(10, Math.min(param.point.y + spacing, chartHeight - 92))
+      setCrosshairPanelPos({ left: nextLeft, top: nextTop })
+
+      if (isMultiSeries) {
+        const rows = series.map((entry) => {
+          const line = tvMultiSeriesRef.current[entry.key]
+          const raw = line ? pointFromSeriesMap(param.seriesData.get(line)) : null
+          return {
+            key: entry.key,
+            name: entry.name,
+            color: entry.color,
+            value: raw ?? entry.chance,
+          }
+        })
+        setCrosshairRows(rows)
+      } else {
+        const yesLine = tvYesSeriesRef.current
+        const noLine = tvNoSeriesRef.current
+        const yesRaw = yesLine ? pointFromSeriesMap(param.seriesData.get(yesLine)) : null
+        const noRaw = noLine ? pointFromSeriesMap(param.seriesData.get(noLine)) : null
+        const latest = singleLineData[singleLineData.length - 1]
+        setCrosshairRows([
+          { key: 'yes', name: yesLabel, color: '#c084fc', value: yesRaw ?? latest?.yes ?? 50 },
+          { key: 'no', name: noLabel, color: '#ff3366', value: noRaw ?? latest?.no ?? 50 },
+        ])
+      }
+
+      setCrosshairActive(true)
+      setCrosshairTime(formatCrosshairTime(param.time))
+    }
+
+    chart.subscribeCrosshairMove(onCrosshairMove)
+    return () => {
+      chart.unsubscribeCrosshairMove(onCrosshairMove)
+    }
+  }, [chartHeight, isMultiSeries, latestCrosshairRows, noLabel, series, singleLineData, yesLabel])
 
   return (
     <div className={styles.wrapper}>
@@ -801,12 +907,34 @@ export default function OddsChart({
               </button>
             ))}
           </div>
+          <div className={styles.viewPills}>
+            <button
+              type="button"
+              className={`${styles.viewBtn} ${viewMode === 'min' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('min')}
+              aria-label="Minimize chart"
+            >
+              Min
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewBtn} ${viewMode === 'normal' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('normal')}
+              aria-label="Normal chart size"
+            >
+              Mid
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewBtn} ${viewMode === 'max' ? styles.viewBtnActive : ''}`}
+              onClick={() => setViewMode('max')}
+              aria-label="Maximize chart"
+            >
+              Max
+            </button>
+          </div>
         </div>
-        {!isMultiSeries && (
-          <span className={styles.modeBadge}>
-            {useCommonLineForSingle ? 'Common View' : 'Candle View'}
-          </span>
-        )}
+        {!isMultiSeries && <span className={styles.modeBadge}>Line View</span>}
         <div className={styles.legend}>
           {isMultiSeries ? (
             series.map((entry) => (
@@ -824,92 +952,24 @@ export default function OddsChart({
         </div>
       </div>
 
-      {isMultiSeries ? (
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={renderData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis
-              dataKey="time"
-              tick={{ fill: '#5a7a63', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              minTickGap={20}
-            />
-            <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-            <Tooltip content={<MultiTooltip series={series} />} />
-            <Legend wrapperStyle={{ display: 'none' }} />
-            {series.map((entry) => (
-              <Line
-                key={entry.key}
-                type="monotone"
-                dataKey={entry.key}
-                stroke={entry.color}
-                strokeWidth={2.2}
-                dot={false}
-                activeDot={{ r: 4, fill: entry.color, stroke: 'rgba(255,255,255,0.2)', strokeWidth: 3 }}
-                isAnimationActive={false}
-              />
-            ))}
-            {hasBrush && (
-              <Brush
-                dataKey="time"
-                height={18}
-                stroke="rgba(192,132,252,0.6)"
-                startIndex={safeStart}
-                endIndex={safeEnd}
-                travellerWidth={10}
-                onChange={(next) => {
-                  if (typeof next?.startIndex === 'number' && typeof next?.endIndex === 'number') {
-                    setWindowStartIndex(next.startIndex)
-                    setWindowEndIndex(next.endIndex)
-                  }
-                }}
-              />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      ) : useCommonLineForSingle ? (
-        <ResponsiveContainer width="100%" height={220}>
-          <LineChart data={singleLineData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis
-              dataKey="time"
-              tick={{ fill: '#5a7a63', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              minTickGap={20}
-            />
-            <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-            <Tooltip content={<SingleTooltip yesLabel={yesLabel} noLabel={noLabel} />} />
-            <Legend wrapperStyle={{ display: 'none' }} />
-            <Line
-              type="monotone"
-              dataKey="yes"
-              stroke="#c084fc"
-              strokeWidth={2.2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#c084fc', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 3 }}
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="no"
-              stroke="#ff3366"
-              strokeWidth={2.2}
-              dot={false}
-              activeDot={{ r: 4, fill: '#ff3366', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 3 }}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className={styles.tvChartWrap}>
-          <div ref={tvContainerRef} className={styles.tvChart} />
-          {singleCandleData.length === 0 && (
-            <div className={styles.tvEmpty}>Waiting for transaction activity...</div>
-          )}
+      <div className={styles.tvChartWrap} style={{ height: chartHeight }}>
+        <div ref={tvContainerRef} className={styles.tvChart} />
+        <div
+          className={styles.crosshairPanel}
+          aria-live="polite"
+          style={{ left: crosshairPanelPos.left, top: crosshairPanelPos.top }}
+        >
+          <p className={styles.crosshairTime}>{crosshairActive ? crosshairTime : 'Latest'}</p>
+          {crosshairRows.map((row) => (
+            <p key={row.key} className={styles.crosshairRow} style={{ color: row.color }}>
+              {row.name} {row.value.toFixed(2)}%
+            </p>
+          ))}
         </div>
-      )}
+        {((isMultiSeries && multiChartData.length === 0) || (!isMultiSeries && singleLineData.length === 0)) && (
+          <div className={styles.tvEmpty}>Waiting for transaction activity...</div>
+        )}
+      </div>
     </div>
   )
 }
