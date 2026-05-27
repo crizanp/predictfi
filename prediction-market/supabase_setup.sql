@@ -124,6 +124,7 @@ $$;
 CREATE TABLE IF NOT EXISTS market_activity (
   id           BIGSERIAL PRIMARY KEY,
   market_id    INTEGER       NOT NULL,
+  event_id     INTEGER,
   user_address TEXT          NOT NULL,
   choice       SMALLINT      NOT NULL,   -- 1 = YES, 2 = NO
   amount_eth   TEXT          NOT NULL,

@@ -200,6 +200,7 @@ export async function getActivity(marketId: number): Promise<MarketActivity[]> {
     .from('market_activity')
     .select('*')
     .eq('market_id', marketId)
+    .order('id', { ascending: false })
     .order('created_at', { ascending: false })
   return (data as MarketActivity[]) ?? []
 }
@@ -214,18 +215,37 @@ export async function recordActivity(
   eventId?: number
 ): Promise<void> {
   if (!supabaseKey) return
-  await supabase.from('market_activity').upsert(
-    {
-      market_id: marketId,
-      event_id: eventId ?? null,
-      user_address: userAddress.toLowerCase(),
-      choice,
-      amount_eth: amountEth,
-      tx_hash: txHash,
-      block_number: blockNumber ?? null,
-    },
-    { onConflict: 'tx_hash' }
-  )
+  const baseRow = {
+    market_id: marketId,
+    user_address: userAddress.toLowerCase(),
+    choice,
+    amount_eth: amountEth,
+    tx_hash: txHash,
+    block_number: blockNumber ?? null,
+  }
+
+  const withEvent = { ...baseRow, event_id: eventId ?? null }
+  const { error: upsertError } = await supabase
+    .from('market_activity')
+    .upsert(withEvent, { onConflict: 'tx_hash' })
+
+  if (!upsertError) return
+
+  const msg = upsertError.message.toLowerCase()
+  const hasEventIdSchemaMismatch =
+    msg.includes('event_id') &&
+    (msg.includes('column') || msg.includes('schema cache'))
+
+  if (hasEventIdSchemaMismatch) {
+    const { error: fallbackError } = await supabase
+      .from('market_activity')
+      .upsert(baseRow, { onConflict: 'tx_hash' })
+    if (!fallbackError) return
+    console.warn('recordActivity fallback insert failed:', fallbackError.message)
+    return
+  }
+
+  console.warn('recordActivity failed:', upsertError.message)
 }
 
 // ── Public profiles ───────────────────────────────────────────────────────────
