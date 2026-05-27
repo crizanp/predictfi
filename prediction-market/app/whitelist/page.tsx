@@ -3,40 +3,77 @@
 import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 import { useWallet } from '../../context/WalletContext'
-import { getWhitelistApplication, submitWhitelistApplication } from '../../lib/supabase'
+import { getWhitelistApplication, getWhitelistApplications, submitWhitelistApplication } from '../../lib/supabase'
 import type { WhitelistApplication } from '../../lib/supabase'
 import styles from './page.module.css'
 
-const MIN_BNB = 0.1
+const MIN_BNB = 0.01
+const MAINNET_CHAIN_ID = 56
+
+function maskIdentity(value: string): string {
+  const cleaned = value.trim()
+  if (cleaned.length <= 5) return cleaned
+  return `${cleaned.slice(0, 2)}***${cleaned.slice(-3)}`
+}
 
 export default function WhitelistPage() {
-  const { account, walletProvider, setShowWalletModal } = useWallet()
+  const { account, walletProvider, setShowWalletModal, connectInjectedWallet } = useWallet()
 
   const [balance, setBalance] = useState<number | null>(null)
+  const [isMainnet, setIsMainnet] = useState<boolean | null>(null)
+  const [networkLabel, setNetworkLabel] = useState('Unknown')
   const [existing, setExisting] = useState<WhitelistApplication | null | undefined>(undefined)
+  const [joinedList, setJoinedList] = useState<WhitelistApplication[]>([])
   const [form, setForm] = useState({ name: '', email: '', telegram: '' })
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [checkingBalance, setCheckingBalance] = useState(false)
+  const [loadingJoined, setLoadingJoined] = useState(false)
+
+  useEffect(() => {
+    const loadJoinedList = async () => {
+      setLoadingJoined(true)
+      const rows = await getWhitelistApplications(300)
+      setJoinedList(rows)
+      setLoadingJoined(false)
+    }
+    void loadJoinedList()
+  }, [])
 
   // Fetch balance and existing application
   useEffect(() => {
-    if (!account) { setBalance(null); setExisting(undefined); return }
+    if (!account) {
+      setBalance(null)
+      setIsMainnet(null)
+      setNetworkLabel('Unknown')
+      setExisting(undefined)
+      return
+    }
     setCheckingBalance(true)
     const fetchData = async () => {
       try {
-        // get balance
         if (walletProvider) {
-          const provider = new ethers.BrowserProvider(walletProvider as Parameters<typeof ethers.BrowserProvider>[0])
+          const provider = new ethers.BrowserProvider(walletProvider as ethers.Eip1193Provider)
+          const network = await provider.getNetwork()
+          const chainId = Number(network.chainId)
+          setIsMainnet(chainId === MAINNET_CHAIN_ID)
+          setNetworkLabel(chainId === MAINNET_CHAIN_ID ? 'BNB Smart Chain Mainnet' : `Chain ${chainId}`)
+
           const bal = await provider.getBalance(account)
           setBalance(parseFloat(ethers.formatEther(bal)))
+        } else {
+          setBalance(0)
+          setIsMainnet(false)
+          setNetworkLabel('No wallet provider')
         }
-        // check existing application
+
         const app = await getWhitelistApplication(account)
         setExisting(app)
       } catch {
         setBalance(0)
+        setIsMainnet(false)
+        setNetworkLabel('Unable to read network')
       } finally {
         setCheckingBalance(false)
       }
@@ -45,25 +82,34 @@ export default function WhitelistPage() {
   }, [account, walletProvider])
 
   const hasEnoughBNB = balance !== null && balance >= MIN_BNB
+  const isEligible = Boolean(hasEnoughBNB && isMainnet)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!account) return
+    if (!account || !isEligible) return
+
     setSubmitting(true)
     setSubmitError('')
+
     const result = await submitWhitelistApplication({
       wallet_address: account,
       name: form.name.trim(),
       email: form.email.trim(),
       telegram: form.telegram.trim(),
     })
+
     if (result.success) {
       setSubmitted(true)
-      const app = await getWhitelistApplication(account)
+      const [app, rows] = await Promise.all([
+        getWhitelistApplication(account),
+        getWhitelistApplications(300),
+      ])
       setExisting(app)
+      setJoinedList(rows)
     } else {
       setSubmitError(result.error ?? 'Submission failed. Please try again.')
     }
+
     setSubmitting(false)
   }
 
@@ -77,7 +123,6 @@ export default function WhitelistPage() {
     <main className={styles.main}>
       {/* Page header */}
       <div className={styles.pageHeader}>
-        <div className={styles.headerBadge}>PRESALE WHITELIST</div>
         <h1 className={styles.pageTitle}>Apply for Early Access</h1>
         <p className={styles.pageSub}>
           Secure your spot in the PredictFi PRFI token presale on{' '}
@@ -88,173 +133,190 @@ export default function WhitelistPage() {
         </p>
       </div>
 
-      {/* Rules card */}
-      <div className={styles.rulesCard}>
-        <div className={styles.rulesTitle}>Eligibility Rules</div>
-        <ul className={styles.rulesList}>
-          <li className={styles.rulesItem}>
-            <span className={styles.ruleIcon}>💜</span>
-            <div>
-              <strong>Minimum 0.1 BNB balance</strong> in your connected wallet.
-              Your BNB is <em>not deducted</em> — it just proves you&apos;re a real participant.
-            </div>
-          </li>
-          <li className={styles.rulesItem}>
-            <span className={styles.ruleIcon}>🔗</span>
-            <div><strong>Wallet must be connected</strong> to BSC Testnet at time of application.</div>
-          </li>
-          <li className={styles.rulesItem}>
-            <span className={styles.ruleIcon}>📋</span>
-            <div>One application per wallet address. Duplicates update your existing application.</div>
-          </li>
-          <li className={styles.rulesItem}>
-            <span className={styles.ruleIcon}>✅</span>
-            <div>Selected applicants will be contacted via email/Telegram before presale opens.</div>
-          </li>
-        </ul>
-      </div>
-
       {/* Main content */}
       <div className={styles.contentArea}>
-
-        {!account ? (
-          <div className={styles.connectCard}>
-            <div className={styles.connectIcon}>🔒</div>
-            <h2 className={styles.connectTitle}>Connect Your Wallet</h2>
-            <p className={styles.connectSub}>Connect your wallet to check eligibility and apply.</p>
-            <button className={styles.connectBtn} onClick={() => setShowWalletModal(true)}>
-              Connect Wallet
-            </button>
-          </div>
-        ) : checkingBalance ? (
-          <div className={styles.loadingCard}>
-            <div className={styles.spinner} />
-            <p>Checking your wallet balance...</p>
-          </div>
-        ) : (
-          <div className={styles.formArea}>
-
-            {/* Wallet status */}
-            <div className={`${styles.walletStatus} ${hasEnoughBNB ? styles.walletOk : styles.walletFail}`}>
-              <div className={styles.walletRow}>
-                <span className={styles.walletLabel}>Connected Wallet</span>
-                <span className={styles.walletAddr}>{account.slice(0, 6)}…{account.slice(-4)}</span>
-              </div>
-              <div className={styles.walletRow}>
-                <span className={styles.walletLabel}>BNB Balance</span>
-                <span className={styles.walletBal}>
-                  {balance !== null ? `${balance.toFixed(4)} BNB` : '…'}
-                </span>
-              </div>
-              <div className={styles.walletRow}>
-                <span className={styles.walletLabel}>Eligibility</span>
-                <span className={`${styles.eligibility} ${hasEnoughBNB ? styles.eligible : styles.ineligible}`}>
-                  {hasEnoughBNB ? '✓ Eligible (≥ 0.1 BNB)' : `✗ Need ≥ 0.1 BNB (have ${(balance ?? 0).toFixed(4)})`}
-                </span>
-              </div>
+        <section className={styles.leftPanel}>
+          {!account ? (
+            <div className={styles.connectCard}>
+              <div className={styles.connectIcon}>Secure Access</div>
+              <h2 className={styles.connectTitle}>Connect Your Wallet</h2>
+              <p className={styles.connectSub}>Connect wallet first. Eligibility needs 0.01+ real BNB on BNB Smart Chain Mainnet.</p>
+              <button
+                className={styles.connectBtn}
+                onClick={() => { void connectInjectedWallet() }}
+              >
+                Connect Wallet
+              </button>
+              <button className={styles.secondaryBtn} onClick={() => setShowWalletModal(true)}>
+                More Wallet Options
+              </button>
             </div>
-
-            {/* Existing application status */}
-            {existing && !submitted && (
-              <div className={styles.existingCard}>
-                <div className={styles.existingTitle}>Your Application</div>
-                <div className={styles.existingRow}>
-                  <span>Status</span>
-                  <span className={styles.statusBadge} style={{ color: statusColor[existing.status ?? 'pending'], borderColor: statusColor[existing.status ?? 'pending'] }}>
-                    {(existing.status ?? 'pending').toUpperCase()}
+          ) : checkingBalance ? (
+            <div className={styles.loadingCard}>
+              <div className={styles.spinner} />
+              <p>Checking network and real BNB balance...</p>
+            </div>
+          ) : (
+            <div className={styles.formArea}>
+              <div className={`${styles.walletStatus} ${isEligible ? styles.walletOk : styles.walletFail}`}>
+                <div className={styles.walletRow}>
+                  <span className={styles.walletLabel}>Connected Wallet</span>
+                  <span className={styles.walletAddr}>{maskIdentity(account)}</span>
+                </div>
+                <div className={styles.walletRow}>
+                  <span className={styles.walletLabel}>Network</span>
+                  <span className={styles.walletBal}>{networkLabel}</span>
+                </div>
+                <div className={styles.walletRow}>
+                  <span className={styles.walletLabel}>BNB Balance</span>
+                  <span className={styles.walletBal}>{balance !== null ? `${balance.toFixed(4)} BNB` : '...'}</span>
+                </div>
+                <div className={styles.walletRow}>
+                  <span className={styles.walletLabel}>Eligibility</span>
+                  <span className={`${styles.eligibility} ${isEligible ? styles.eligible : styles.ineligible}`}>
+                    {isEligible ? 'Eligible (real BNB >= 0.01)' : 'Not eligible yet'}
                   </span>
                 </div>
-                <div className={styles.existingRow}>
-                  <span>Name</span><span>{existing.name}</span>
-                </div>
-                <div className={styles.existingRow}>
-                  <span>Email</span><span>{existing.email}</span>
-                </div>
-                <div className={styles.existingRow}>
-                  <span>Telegram</span><span>{existing.telegram}</span>
-                </div>
-                <p className={styles.existingNote}>You can re-submit to update your information.</p>
               </div>
-            )}
 
-            {submitted && (
-              <div className={styles.successCard}>
-                <div className={styles.successIcon}>🎉</div>
-                <div className={styles.successTitle}>Application Submitted!</div>
-                <p>You&apos;re on the list. We&apos;ll contact you before Jun 1 if selected.</p>
-              </div>
-            )}
-
-            {/* Form */}
-            {!submitted && (
-              <form onSubmit={(e) => { void handleSubmit(e) }} className={styles.form}>
-                <div className={styles.formTitle}>{existing ? 'Update Application' : 'Apply for Whitelist'}</div>
-
-                {!hasEnoughBNB && (
-                  <div className={styles.warningBanner}>
-                    ⚠ Your balance is below the minimum 0.1 BNB required. You can still fill the form, but your application won&apos;t be eligible.
+              {existing && !submitted && (
+                <div className={styles.existingCard}>
+                  <div className={styles.existingTitle}>Your Application</div>
+                  <div className={styles.existingRow}>
+                    <span>Status</span>
+                    <span className={styles.statusBadge} style={{ color: statusColor[existing.status ?? 'pending'], borderColor: statusColor[existing.status ?? 'pending'] }}>
+                      {(existing.status ?? 'pending').toUpperCase()}
+                    </span>
                   </div>
-                )}
-
-                <div className={styles.field}>
-                  <label className={styles.label}>Full Name <span className={styles.required}>*</span></label>
-                  <input
-                    className={styles.input}
-                    type="text"
-                    placeholder="Satoshi Nakamoto"
-                    value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    required
-                  />
+                  <div className={styles.existingRow}>
+                    <span>Name</span><span>{existing.name}</span>
+                  </div>
+                  <div className={styles.existingRow}>
+                    <span>Email</span><span>{existing.email}</span>
+                  </div>
+                  <div className={styles.existingRow}>
+                    <span>Telegram</span><span>{existing.telegram}</span>
+                  </div>
+                  <p className={styles.existingNote}>You can re-submit to update your information.</p>
                 </div>
+              )}
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Email Address <span className={styles.required}>*</span></label>
-                  <input
-                    className={styles.input}
-                    type="email"
-                    placeholder="you@example.com"
-                    value={form.email}
-                    onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                    required
-                  />
+              {submitted && (
+                <div className={styles.successCard}>
+                  <div className={styles.successTitle}>Application Submitted</div>
+                  <p>You are on the FCFS list. We will contact selected users before Jun 1.</p>
                 </div>
+              )}
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Telegram Handle <span className={styles.required}>*</span></label>
-                  <input
-                    className={styles.input}
-                    type="text"
-                    placeholder="@yourhandle"
-                    value={form.telegram}
-                    onChange={(e) => setForm((p) => ({ ...p, telegram: e.target.value }))}
-                    required
-                  />
-                </div>
+              {!submitted && (
+                <form onSubmit={(e) => { void handleSubmit(e) }} className={styles.form}>
+                  <div className={styles.formTitle}>{existing ? 'Update Application' : 'Apply for Whitelist'}</div>
 
-                <div className={styles.field}>
-                  <label className={styles.label}>Wallet Address</label>
-                  <input
-                    className={`${styles.input} ${styles.inputDisabled}`}
-                    type="text"
-                    value={account}
-                    readOnly
-                  />
-                </div>
+                  {(!isMainnet || !hasEnoughBNB) && (
+                    <div className={styles.warningBanner}>
+                      {!isMainnet
+                        ? 'Use BNB Smart Chain Mainnet. Testnet balance is not accepted for whitelist eligibility.'
+                        : `Need at least ${MIN_BNB} real BNB in this wallet. Current balance: ${(balance ?? 0).toFixed(4)} BNB.`}
+                    </div>
+                  )}
 
-                {submitError && <div className={styles.errorMsg}>{submitError}</div>}
+                  <div className={styles.field}>
+                    <label className={styles.label}>Full Name <span className={styles.required}>*</span></label>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      placeholder="Satoshi Nakamoto"
+                      value={form.name}
+                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                      required
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  className={styles.submitBtn}
-                  disabled={submitting || !form.name || !form.email || !form.telegram}
-                >
-                  {submitting ? 'Submitting…' : existing ? 'Update Application' : 'Apply for Whitelist'}
-                </button>
-              </form>
-            )}
+                  <div className={styles.field}>
+                    <label className={styles.label}>Email Address <span className={styles.required}>*</span></label>
+                    <input
+                      className={styles.input}
+                      type="email"
+                      placeholder="you@example.com"
+                      value={form.email}
+                      onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.label}>Telegram Handle <span className={styles.required}>*</span></label>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      placeholder="@yourhandle"
+                      value={form.telegram}
+                      onChange={(e) => setForm((p) => ({ ...p, telegram: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label className={styles.label}>Wallet Address</label>
+                    <input
+                      className={`${styles.input} ${styles.inputDisabled}`}
+                      type="text"
+                      value={account}
+                      readOnly
+                    />
+                  </div>
+
+                  {submitError && <div className={styles.errorMsg}>{submitError}</div>}
+
+                  <button
+                    type="submit"
+                    className={styles.submitBtn}
+                    disabled={submitting || !form.name || !form.email || !form.telegram || !isEligible}
+                  >
+                    {submitting ? 'Submitting...' : existing ? 'Update Application' : 'Apply for Whitelist'}
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+        </section>
+
+        <aside className={styles.rightPanel}>
+          <div className={styles.infoCard}>
+            <h3 className={styles.infoTitle}>Why Join The Whitelist</h3>
+            <p className={styles.infoText}>Whitelist users get priority consideration for the PRFI presale allocation.</p>
+            <div className={styles.infoList}>
+              <div className={styles.infoItem}>First come, first serve review order.</div>
+              <div className={styles.infoItem}>Minimum eligibility: 0.01 real BNB on BNB Mainnet.</div>
+              <div className={styles.infoItem}>Application data can be updated anytime before final review.</div>
+            </div>
           </div>
-        )}
+
+          <div className={styles.feedCard}>
+            <div className={styles.feedHeader}>
+              <h3 className={styles.feedTitle}>Whitelist Joiners</h3>
+              <span className={styles.feedCount}>{joinedList.length} joined</span>
+            </div>
+            <p className={styles.feedSub}>Ordered by join time (oldest first).</p>
+
+            <div className={styles.feedList}>
+              {loadingJoined ? (
+                <div className={styles.feedEmpty}>Loading joiners...</div>
+              ) : joinedList.length === 0 ? (
+                <div className={styles.feedEmpty}>No applications yet.</div>
+              ) : (
+                joinedList.map((row, index) => (
+                  <div key={`${row.wallet_address}-${row.created_at ?? index}`} className={styles.feedRow}>
+                    <span className={styles.feedRank}>#{index + 1}</span>
+                    <span className={styles.feedName}>{maskIdentity(row.name || 'Unknown')}</span>
+                    <span className={styles.feedAddress}>{maskIdentity(row.wallet_address)}</span>
+                    <span className={styles.feedStatus}>{(row.status ?? 'pending').toUpperCase()}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   )

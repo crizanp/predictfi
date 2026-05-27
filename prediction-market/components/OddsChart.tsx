@@ -4,8 +4,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Area,
-  AreaChart,
   Brush,
   CartesianGrid,
   Legend,
@@ -16,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { CandlestickSeries, ColorType, createChart, type CandlestickData, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts'
 import { getOddsHistory, recordOddsSnapshot } from '../lib/supabase'
 import styles from './OddsChart.module.css'
 
@@ -171,16 +170,98 @@ function seriesKey(eventId: number): string {
   return `event_${eventId}`
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SingleTooltip = ({ active, payload, label, yesLabel, noLabel }: any) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className={styles.tooltip}>
-      <p className={styles.tooltipTime}>{label}</p>
-      <p className={styles.tooltipYes}>{yesLabel ?? 'YES'} {payload[0]?.value}%</p>
-      <p className={styles.tooltipNo}>{noLabel ?? 'NO'} {payload[1]?.value}%</p>
-    </div>
-  )
+function autoCandleBucketSec(points: ChartPoint[]): number {
+  if (points.length < 2) return 60
+  const spanMs = points[points.length - 1].ts - points[0].ts
+  if (spanMs <= 0) return 60
+  const avgGapMs = spanMs / Math.max(1, points.length - 1)
+  if (avgGapMs <= 2000) return 1
+  if (avgGapMs <= 7000) return 5
+  if (avgGapMs <= 25000) return 15
+  return 60
+}
+
+function bucketSecFromInterval(interval: IntervalKey, points: ChartPoint[]): number {
+  if (interval === 'auto') return autoCandleBucketSec(points)
+  if (interval === '5m') return 5
+  if (interval === '30m') return 15
+  if (interval === '3h') return 60
+  if (interval === '12h') return 300
+  if (interval === '1d') return 900
+  if (interval === '7d') return 3600
+  return 14400
+}
+
+function clampPct(value: number): number {
+  return Math.max(0, Math.min(100, value))
+}
+
+function buildCandles(points: ChartPoint[], bucketSec: number): CandlestickData<UTCTimestamp>[] {
+  const bucketMs = Math.max(1, bucketSec) * 1000
+  const map = new Map<number, { open: number; high: number; low: number; close: number }>()
+
+  for (const point of points) {
+    if (!isValidTimestamp(point.ts)) continue
+    const bucket = Math.floor(point.ts / bucketMs) * bucketMs
+    const current = map.get(bucket)
+    if (!current) {
+      map.set(bucket, { open: point.yes, high: point.yes, low: point.yes, close: point.yes })
+      continue
+    }
+    if (point.yes > current.high) current.high = point.yes
+    if (point.yes < current.low) current.low = point.yes
+    current.close = point.yes
+  }
+
+  const ordered = Array.from(map.entries()).sort((a, b) => a[0] - b[0])
+  const result: CandlestickData<UTCTimestamp>[] = []
+  // Start odds candles from neutral baseline so first movement is from 50%.
+  let prevClose = 50
+  const minBody = 0.2
+  const minRange = 0.35
+
+  for (const [ts, candle] of ordered) {
+    const open = prevClose
+    const close = candle.close
+    let high = Math.max(candle.high, open, close)
+    let low = Math.min(candle.low, open, close)
+
+    if (Math.abs(close - open) < minBody) {
+      const mid = (open + close) / 2
+      const halfBody = minBody / 2
+      const adjustedOpen = clampPct(mid - halfBody)
+      const adjustedClose = clampPct(mid + halfBody)
+      high = Math.max(high, adjustedOpen, adjustedClose)
+      low = Math.min(low, adjustedOpen, adjustedClose)
+      prevClose = adjustedClose
+      result.push({
+        time: Math.floor(ts / 1000) as UTCTimestamp,
+        open: adjustedOpen,
+        high,
+        low,
+        close: adjustedClose,
+      })
+      continue
+    }
+
+    if (high - low < minRange) {
+      const mid = (high + low) / 2
+      const half = minRange / 2
+      high = clampPct(mid + half)
+      low = clampPct(mid - half)
+    }
+
+    prevClose = close
+    result.push({
+      time: Math.floor(ts / 1000) as UTCTimestamp,
+      open,
+      high,
+      low,
+      close,
+    })
+  }
+
+  return result
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,6 +303,9 @@ export default function OddsChart({
   const [windowEndIndex, setWindowEndIndex] = useState(0)
   const supabaseSynced = useRef(false)
   const lastSnapshotBucket = useRef<Record<string, number>>({})
+  const tvContainerRef = useRef<HTMLDivElement | null>(null)
+  const tvChartRef = useRef<IChartApi | null>(null)
+  const tvSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
 
   useEffect(() => {
     const localSingle = loadLocal<ChartPoint>(marketId, chartKey)
@@ -395,49 +479,14 @@ export default function OddsChart({
   }, [isMultiSeries, marketId, eventId, chartKey, yesPool, noPool, totalPool, resolved])
 
   const bucketMs = useMemo(() => {
-    const sourceLen = isMultiSeries ? multiHistory.length : history.length
-    const source = isMultiSeries ? multiHistory : history
+    const sourceLen = multiHistory.length
+    const source = multiHistory
     const spanMs = sourceLen > 1 ? source[sourceLen - 1].ts - source[0].ts : 0
     if (interval !== 'auto') {
       return INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms ?? 5 * 60 * 1000
     }
     return autoBucketMs(sourceLen, spanMs)
-  }, [history, interval, isMultiSeries, multiHistory])
-
-  const singleChartData = useMemo<RenderPoint[]>(() => {
-    const total = parseFloat(totalPool)
-    const yesPct = total > 0 ? Math.round((parseFloat(yesPool) / total) * 100) : 50
-    const ts = Date.now()
-    const nowPt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: 100 - yesPct }
-
-    if (history.length === 0) {
-      const openTs = ts - 5 * 60 * 1000
-      return [
-        { ts: openTs, time: 'Open', yes: 50, no: 50 },
-        { ts: nowPt.ts, time: formatTick(nowPt.ts, 5 * 60 * 1000), yes: nowPt.yes, no: nowPt.no },
-      ]
-    }
-
-    const slicedByInterval = (() => {
-      if (interval === 'auto') return history
-      const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
-      if (!ms) return history
-      const minTs = ts - ms
-      return history.filter((point) => point.ts >= minTs)
-    })()
-
-    const basePoints = slicedByInterval.length ? slicedByInterval : history
-    const withCurrent = [...basePoints, nowPt].sort((a, b) => a.ts - b.ts)
-    const sampled = downsampleSingle(withCurrent, bucketMs)
-    const spanMs = sampled.length > 1 ? sampled[sampled.length - 1].ts - sampled[0].ts : 5 * 60 * 1000
-
-    return sampled.map((point) => ({
-      ts: point.ts,
-      time: formatTick(point.ts, spanMs),
-      yes: point.yes,
-      no: point.no,
-    }))
-  }, [bucketMs, history, interval, totalPool, yesPool])
+  }, [interval, multiHistory])
 
   const series = useMemo(() =>
     seriesEvents.map((seriesEvent, index) => ({
@@ -483,9 +532,33 @@ export default function OddsChart({
     }))
   }, [bucketMs, interval, multiHistory, series])
 
-  const renderData = isMultiSeries ? multiChartData : singleChartData
+  const renderData = multiChartData
+
+  const singleTickData = useMemo<ChartPoint[]>(() => {
+    if (isMultiSeries) return []
+
+    const ts = Date.now()
+    const total = parseFloat(totalPool)
+    const yesPct = total > 0 ? Math.round((parseFloat(yesPool) / total) * 100) : 50
+    const nowPt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: 100 - yesPct }
+    const slicedByInterval = (() => {
+      if (interval === 'auto') return history
+      const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
+      if (!ms) return history
+      const minTs = ts - ms
+      return history.filter((point) => point.ts >= minTs)
+    })()
+
+    const source = (slicedByInterval.length ? slicedByInterval : history).slice(-MAX_PTS)
+    return [...source, nowPt].sort((a, b) => a.ts - b.ts)
+  }, [history, interval, isMultiSeries, totalPool, yesPool])
+
+  const candleBucketSec = useMemo(() => bucketSecFromInterval(interval, singleTickData), [interval, singleTickData])
+  const singleCandleData = useMemo(() => buildCandles(singleTickData, candleBucketSec), [singleTickData, candleBucketSec])
+  const candleModeLabel = candleBucketSec < 60 ? `${candleBucketSec}s` : `${Math.round(candleBucketSec / 60)}m`
 
   useEffect(() => {
+    if (!isMultiSeries) return
     if (renderData.length === 0) {
       setWindowStartIndex(0)
       setWindowEndIndex(0)
@@ -496,9 +569,103 @@ export default function OddsChart({
     setWindowStartIndex(Math.max(0, renderData.length - span))
   }, [interval, isMultiSeries, renderData.length])
 
-  const hasBrush = renderData.length > 30
+  const hasBrush = isMultiSeries && renderData.length > 30
   const safeStart = Math.min(windowStartIndex, Math.max(0, renderData.length - 1))
   const safeEnd = Math.max(safeStart, Math.min(windowEndIndex, Math.max(0, renderData.length - 1)))
+
+  useEffect(() => {
+    if (isMultiSeries) {
+      if (tvChartRef.current) {
+        tvChartRef.current.remove()
+        tvChartRef.current = null
+        tvSeriesRef.current = null
+      }
+      return
+    }
+
+    const el = tvContainerRef.current
+    if (!el || tvChartRef.current) return
+
+    const chart = createChart(el, {
+      height: 220,
+      layout: {
+        background: { type: ColorType.Solid, color: 'transparent' },
+        textColor: '#9aa8bf',
+      },
+      grid: {
+        vertLines: { color: 'rgba(255,255,255,0.05)' },
+        horzLines: { color: 'rgba(255,255,255,0.05)' },
+      },
+      rightPriceScale: {
+        borderVisible: false,
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+      },
+      timeScale: {
+        borderVisible: false,
+        rightOffset: 2,
+        timeVisible: true,
+        secondsVisible: candleBucketSec < 60,
+      },
+      crosshair: {
+        vertLine: { color: 'rgba(192,132,252,0.55)' },
+        horzLine: { color: 'rgba(192,132,252,0.35)' },
+      },
+      localization: {
+        priceFormatter: (price) => `${price.toFixed(2)}%`,
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: false,
+      },
+      handleScale: {
+        axisPressedMouseMove: true,
+        mouseWheel: true,
+        pinch: true,
+      },
+    })
+
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: '#a855f7',
+      downColor: '#ff3366',
+      wickUpColor: '#c084fc',
+      wickDownColor: '#ff5a83',
+      borderVisible: false,
+    })
+
+    tvChartRef.current = chart
+    tvSeriesRef.current = candleSeries
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        chart.applyOptions({ width: entry.contentRect.width })
+      }
+    })
+    observer.observe(el)
+
+    return () => {
+      observer.disconnect()
+      if (tvChartRef.current) {
+        tvChartRef.current.remove()
+        tvChartRef.current = null
+        tvSeriesRef.current = null
+      }
+    }
+  }, [candleBucketSec, isMultiSeries])
+
+  useEffect(() => {
+    if (isMultiSeries) return
+    const chart = tvChartRef.current
+    const candleSeries = tvSeriesRef.current
+    if (!chart || !candleSeries) return
+
+    candleSeries.setData(singleCandleData)
+    chart.applyOptions({
+      timeScale: { secondsVisible: candleBucketSec < 60 },
+    })
+    chart.timeScale().fitContent()
+  }, [candleBucketSec, isMultiSeries, singleCandleData])
 
   return (
     <div className={styles.wrapper}>
@@ -519,6 +686,7 @@ export default function OddsChart({
             ))}
           </div>
         </div>
+        {!isMultiSeries && <span className={styles.modeBadge}>TradingView Candles {candleModeLabel}</span>}
         <div className={styles.legend}>
           {isMultiSeries ? (
             series.map((entry) => (
@@ -536,8 +704,8 @@ export default function OddsChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={220}>
-        {isMultiSeries ? (
+      {isMultiSeries ? (
+        <ResponsiveContainer width="100%" height={220}>
           <LineChart data={renderData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis
@@ -579,50 +747,15 @@ export default function OddsChart({
               />
             )}
           </LineChart>
-        ) : (
-          <AreaChart data={renderData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="gradYes" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00ff88" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#00ff88" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradNo" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ff3366" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#ff3366" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-            <XAxis
-              dataKey="time"
-              tick={{ fill: '#5a7a63', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              minTickGap={20}
-            />
-            <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-            <Tooltip content={<SingleTooltip yesLabel={yesLabel} noLabel={noLabel} />} />
-            <Legend wrapperStyle={{ display: 'none' }} />
-            <Area type="monotone" dataKey="yes" stroke="#00ff88" strokeWidth={2.5} fill="url(#gradYes)" dot={false} activeDot={{ r: 5, fill: '#00ff88', stroke: 'rgba(0,255,136,0.4)', strokeWidth: 4 }} />
-            <Area type="monotone" dataKey="no" stroke="#ff3366" strokeWidth={2.5} fill="url(#gradNo)" dot={false} activeDot={{ r: 5, fill: '#ff3366', stroke: 'rgba(255,51,102,0.4)', strokeWidth: 4 }} />
-            {hasBrush && (
-              <Brush
-                dataKey="time"
-                height={18}
-                stroke="rgba(192,132,252,0.6)"
-                startIndex={safeStart}
-                endIndex={safeEnd}
-                travellerWidth={10}
-                onChange={(next) => {
-                  if (typeof next?.startIndex === 'number' && typeof next?.endIndex === 'number') {
-                    setWindowStartIndex(next.startIndex)
-                    setWindowEndIndex(next.endIndex)
-                  }
-                }}
-              />
-            )}
-          </AreaChart>
-        )}
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      ) : (
+        <div className={styles.tvChartWrap}>
+          <div ref={tvContainerRef} className={styles.tvChart} />
+          {singleCandleData.length === 0 && (
+            <div className={styles.tvEmpty}>Waiting for transaction activity...</div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -2,8 +2,6 @@
 
 import { useEffect } from 'react'
 import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react'
-// Side-effect: initializes AppKit when this module is loaded (client-only)
-import '../lib/appkit'
 import { WalletProvider, useWallet, type Eip1193Provider } from '../context/WalletContext'
 import { MarketsProvider } from '../context/MarketsContext'
 import AdminPortal from './AdminPortal'

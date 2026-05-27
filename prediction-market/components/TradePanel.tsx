@@ -179,7 +179,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     isEventResolved &&
     (selectedEventState?.result ?? 0) !== 0 &&
     userPrediction &&
-    userPrediction.choice === (selectedEventState?.result ?? 0) &&
+    Number.parseFloat(userPrediction.amount) > 0 &&
     !userPrediction.claimed
 
   const canResolve = isOwner && !isEventResolved && isEnded
@@ -315,13 +315,13 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
               </div>
               {isEventResolved && (
                 <div className={styles.positionRow}>
-                  <span className={styles.positionLabel}>
-                    {userPrediction.choice === (selectedEventState?.result ?? 0) ? 'Est. Reward' : 'Result'}
-                  </span>
-                  <span className={userPrediction.choice === (selectedEventState?.result ?? 0) ? styles.win : styles.lose}>
-                    {userPrediction.choice === (selectedEventState?.result ?? 0)
-                      ? `${potentialReward.toFixed(4)} tBNB`
-                      : 'LOST'}
+                  <span className={styles.positionLabel}>Claim Status</span>
+                  <span className={canClaimWinnings ? styles.win : userPrediction.claimed ? styles.win : styles.lose}>
+                    {userPrediction.claimed
+                      ? 'CLAIMED'
+                      : canClaimWinnings
+                        ? 'CAN CLAIM ON-CHAIN'
+                        : 'NO CLAIM'}
                   </span>
                 </div>
               )}

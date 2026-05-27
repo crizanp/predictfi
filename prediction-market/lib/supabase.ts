@@ -114,6 +114,17 @@ export async function submitWhitelistApplication(app: Omit<WhitelistApplication,
   return { success: true }
 }
 
+export async function getWhitelistApplications(limit = 250): Promise<WhitelistApplication[]> {
+  if (!supabaseKey) return []
+  const { data, error } = await supabase
+    .from('whitelist_applications')
+    .select('wallet_address, name, status, created_at')
+    .order('created_at', { ascending: true })
+    .limit(limit)
+  if (error) return []
+  return (data as WhitelistApplication[]) ?? []
+}
+
 // ── Discussion comments ───────────────────────────────────────────────────────
 
 export interface MarketComment {

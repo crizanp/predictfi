@@ -324,7 +324,6 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
         const resolved = Boolean(freshEvent.resolved)
         const result = Number(freshEvent.result)
-        const choice = freshPrediction ? Number(freshPrediction.choice) : 0
         const claimed = freshPrediction ? Boolean(freshPrediction.claimed) : true
         const amount = freshPrediction ? Number(freshPrediction.amount) : 0
 
@@ -334,10 +333,6 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         }
         if (amount === 0) {
           setStatusMessage('error', 'No prediction found for this event.')
-          return
-        }
-        if (choice !== result) {
-          setStatusMessage('error', 'Your prediction did not match the winning outcome.')
           return
         }
         if (claimed) {
