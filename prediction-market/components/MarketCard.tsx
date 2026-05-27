@@ -29,6 +29,12 @@ interface EventRowOption {
   totalPool?: string
 }
 
+interface RgbColor {
+  r: number
+  g: number
+  b: number
+}
+
 function formatTimeLeft(endTime: number, nowInSeconds: number): string {
   if (nowInSeconds <= 0) return '...'
   const secs = endTime - nowInSeconds
@@ -50,6 +56,78 @@ function isDark(hex: string): boolean {
     const b = parseInt(h.slice(4, 6), 16)
     return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55
   } catch { return true }
+}
+
+function clampChannel(value: number): number {
+  return Math.max(0, Math.min(255, Math.round(value)))
+}
+
+function parseColor(value: string | null | undefined): RgbColor | null {
+  const raw = value?.trim()
+  if (!raw) return null
+
+  const hex = raw.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+  if (hex) {
+    const body = hex[1]
+    if (body.length === 3) {
+      return {
+        r: parseInt(body[0] + body[0], 16),
+        g: parseInt(body[1] + body[1], 16),
+        b: parseInt(body[2] + body[2], 16),
+      }
+    }
+    return {
+      r: parseInt(body.slice(0, 2), 16),
+      g: parseInt(body.slice(2, 4), 16),
+      b: parseInt(body.slice(4, 6), 16),
+    }
+  }
+
+  const rgb = raw.match(/^rgba?\(([^)]+)\)$/i)
+  if (rgb) {
+    const [r, g, b] = rgb[1].split(',').map((part) => Number.parseFloat(part.trim()))
+    if ([r, g, b].every((num) => Number.isFinite(num))) {
+      return { r: clampChannel(r), g: clampChannel(g), b: clampChannel(b) }
+    }
+  }
+
+  return null
+}
+
+function toRgbString(color: RgbColor): string {
+  return `rgb(${clampChannel(color.r)}, ${clampChannel(color.g)}, ${clampChannel(color.b)})`
+}
+
+function toRgbaString(color: RgbColor, alpha: number): string {
+  return `rgba(${clampChannel(color.r)}, ${clampChannel(color.g)}, ${clampChannel(color.b)}, ${Math.max(0, Math.min(1, alpha)).toFixed(3)})`
+}
+
+function mixColors(a: RgbColor, b: RgbColor, ratioToB: number): RgbColor {
+  const t = Math.max(0, Math.min(1, ratioToB))
+  return {
+    r: a.r + (b.r - a.r) * t,
+    g: a.g + (b.g - a.g) * t,
+    b: a.b + (b.b - a.b) * t,
+  }
+}
+
+function relativeLuminance(color: RgbColor): number {
+  const normalize = (channel: number) => {
+    const s = channel / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  const r = normalize(color.r)
+  const g = normalize(color.g)
+  const b = normalize(color.b)
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+function contrastRatio(a: RgbColor, b: RgbColor): number {
+  const l1 = relativeLuminance(a)
+  const l2 = relativeLuminance(b)
+  const light = Math.max(l1, l2)
+  const dark = Math.min(l1, l2)
+  return (light + 0.05) / (dark + 0.05)
 }
 
 function parseEventRows(
@@ -206,9 +284,52 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   const timeLeft    = formatTimeLeft(market.endTime, nowInSeconds)
   const statusLabel = market.resolved ? 'Resolved' : timeLeft === 'Ended' ? 'Ended' : 'Live'
 
-  const hasBg    = Boolean(cardBg)
-  const darkBg   = hasBg ? isDark(cardBg!) : true
-  const baseText = hasBg ? (cardText ?? (darkBg ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.85)')) : undefined
+  const hasBg = Boolean(cardBg)
+
+  const cardStyle = useMemo(() => {
+    if (!cardBg) return undefined
+
+    const bg = parseColor(cardBg)
+    if (!bg) {
+      return {
+        background: cardBg,
+        color: cardText || undefined,
+      }
+    }
+
+    const isBgDark = relativeLuminance(bg) < 0.42
+    const lightText: RgbColor = { r: 242, g: 246, b: 255 }
+    const darkText: RgbColor = { r: 18, g: 24, b: 39 }
+
+    let textRgb = parseColor(cardText) || (isBgDark ? lightText : darkText)
+    if (contrastRatio(bg, textRgb) < 4.5) {
+      textRgb = contrastRatio(bg, lightText) > contrastRatio(bg, darkText) ? lightText : darkText
+    }
+
+    const muted = mixColors(textRgb, bg, 0.45)
+    const softBorder = mixColors(textRgb, bg, 0.72)
+    const rowBg = mixColors(bg, textRgb, isBgDark ? 0.13 : 0.08)
+    const chipBg = mixColors(bg, textRgb, isBgDark ? 0.18 : 0.12)
+    const footerBg = mixColors(bg, textRgb, isBgDark ? 0.11 : 0.07)
+
+    return {
+      background: cardBg,
+      color: toRgbString(textRgb),
+      '--mc-text': toRgbString(textRgb),
+      '--mc-muted': toRgbString(muted),
+      '--mc-border': toRgbaString(softBorder, 0.55),
+      '--mc-soft-border': toRgbaString(softBorder, 0.35),
+      '--mc-chip-bg': toRgbaString(chipBg, 0.5),
+      '--mc-chip-border': toRgbaString(softBorder, 0.55),
+      '--mc-chip-text': toRgbString(mixColors(textRgb, bg, 0.08)),
+      '--mc-row-bg': toRgbaString(rowBg, 0.88),
+      '--mc-row-border': toRgbaString(softBorder, 0.42),
+      '--mc-footer-bg': toRgbaString(footerBg, 0.72),
+      '--mc-footer-border': toRgbaString(softBorder, 0.4),
+      '--mc-main-value': toRgbString(textRgb),
+      '--mc-sub-value': toRgbString(muted),
+    } as React.CSSProperties
+  }, [cardBg, cardText])
 
   const rowsToShow   = eventRows.length > 0
     ? eventRows
@@ -252,7 +373,7 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
     <Link
       href={`/market/${market.id}`}
       className={`${styles.card} ${isMultiEvent ? styles.multiCard : styles.singleCard}`}
-      style={{ ...(cardBg ? { background: cardBg } : {}), ...(baseText ? { color: baseText } : {}) }}
+      style={cardStyle}
     >
       {market.resolved && <div className={styles.resolvedOverlay} aria-hidden />}
 
@@ -277,7 +398,7 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
         </div>
 
         <div className={styles.headerMeta}>
-          <h3 className={styles.question} style={hasBg ? { color: baseText } : undefined}>
+          <h3 className={styles.question}>
             {market.question}
           </h3>
           <div className={styles.headerBadges}>

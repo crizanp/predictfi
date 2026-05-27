@@ -60,20 +60,21 @@ export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_
   })
 }
 
-export async function getOddsHistory(marketId: number, eventId?: number): Promise<OddsSnapshot[]> {
+export async function getOddsHistory(marketId: number, eventId?: number, limit = 2000): Promise<OddsSnapshot[]> {
   if (!supabaseKey) return []
   let query = supabase
     .from('market_odds_history')
     .select('*')
     .eq('market_id', marketId)
-    .order('recorded_at', { ascending: true })
-    .limit(200)
+    .order('recorded_at', { ascending: false })
+    .limit(limit)
   if (eventId !== undefined) {
     query = query.eq('event_id', eventId)
   }
   const { data, error } = await query
   if (error) return []
-  return (data as OddsSnapshot[]) ?? []
+  const ordered = ((data as OddsSnapshot[]) ?? []).slice().reverse()
+  return ordered
 }
 
 // ── Whitelist applications ────────────────────────────────────────────────────

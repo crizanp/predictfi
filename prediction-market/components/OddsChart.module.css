@@ -11,9 +11,38 @@
   white-space: nowrap;
   z-index: 0;
 }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px 12px; margin-bottom: 16px; }
 .title { font-size: 11px; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin: 0; }
-.legend { display: flex; gap: 14px; }
+.chartControls { display: flex; align-items: center; justify-content: center; }
+.intervalPills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(192,132,252,0.25);
+  border-radius: 999px;
+  background: rgba(14, 14, 20, 0.55);
+}
+.intervalBtn {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.intervalBtn:hover {
+  background: rgba(192,132,252,0.18);
+  color: #f6eefe;
+}
+.intervalBtnActive {
+  background: rgba(192,132,252,0.32);
+  color: #f8f0ff;
+}
+.legend { display: flex; gap: 14px; flex-wrap: wrap; }
 .legendYes { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--yes); }
 .legendNo { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--no); }
 .legendItem { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; }
@@ -23,3 +52,16 @@
 .tooltipYes { font-size: 13px; font-weight: 900; color: var(--yes); margin: 0 0 2px; }
 .tooltipNo { font-size: 13px; font-weight: 900; color: var(--no); margin: 0; }
 .tooltipLine { font-size: 12px; font-weight: 800; margin: 0 0 2px; }
+
+@media (max-width: 760px) {
+  .intervalPills {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 4px 6px;
+  }
+
+  .intervalPills::-webkit-scrollbar {
+    height: 0;
+  }
+}

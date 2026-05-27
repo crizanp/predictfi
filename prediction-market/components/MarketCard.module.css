@@ -7,7 +7,7 @@
   width: 100%;
   padding: 14px 14px 12px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--mc-border, rgba(255, 255, 255, 0.09));
   background: #161b2e;
   text-decoration: none;
   color: inherit;
@@ -25,7 +25,7 @@
 }
 
 .card:hover {
-  border-color: rgba(130, 110, 255, 0.55);
+  border-color: var(--mc-border, rgba(130, 110, 255, 0.55));
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
   transform: translateY(-1px);
 }
@@ -64,8 +64,8 @@
   flex: 0 0 44px;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--mc-soft-border, rgba(255, 255, 255, 0.1));
+  background: var(--mc-footer-bg, rgba(255, 255, 255, 0.05));
 }
 .mediaImg { object-fit: cover; }
 
@@ -105,7 +105,7 @@
   font-weight: 700;
   line-height: 1.3;
   line-clamp: 2;
-  color: #e4e8f4;
+  color: var(--mc-text, #e4e8f4);
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -133,9 +133,9 @@
   height: 18px;
   padding: 0 7px;
   border-radius: 999px;
-  border: 1px solid rgba(140, 120, 255, 0.35);
-  background: rgba(140, 120, 255, 0.1);
-  color: #b09dff;
+  border: 1px solid var(--mc-chip-border, rgba(140, 120, 255, 0.35));
+  background: var(--mc-chip-bg, rgba(140, 120, 255, 0.1));
+  color: var(--mc-chip-text, #b09dff);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -143,9 +143,9 @@
 }
 
 .badgeId {
-  border-color: rgba(80, 130, 255, 0.35);
-  background: rgba(80, 130, 255, 0.1);
-  color: #7eb3ff;
+  border-color: var(--mc-chip-border, rgba(80, 130, 255, 0.35));
+  background: var(--mc-chip-bg, rgba(80, 130, 255, 0.1));
+  color: var(--mc-chip-text, #7eb3ff);
 }
 
 .badgeTrending {
@@ -263,14 +263,14 @@
   gap: 6px;
   padding: 7px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--mc-row-border, rgba(255, 255, 255, 0.07));
+  background: var(--mc-row-bg, rgba(255, 255, 255, 0.03));
 }
 
 .rowIdx {
   font-size: 10px;
   font-weight: 800;
-  color: rgba(160, 150, 220, 0.5);
+  color: var(--mc-muted, rgba(160, 150, 220, 0.5));
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -278,7 +278,7 @@
 .rowName {
   font-size: 12.5px;
   font-weight: 700;
-  color: #d8dff5;
+  color: var(--mc-text, #d8dff5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -287,7 +287,7 @@
 .rowChance {
   font-size: 12px;
   font-weight: 800;
-  color: #8896b8;
+  color: var(--mc-muted, #8896b8);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -325,7 +325,7 @@
   align-items: center;
   gap: 6px;
   padding-top: 2px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--mc-soft-border, rgba(255, 255, 255, 0.06));
 }
 
 .footerItem {
@@ -334,9 +334,9 @@
   gap: 5px;
   padding: 4px 9px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(255, 255, 255, 0.03);
-  color: #7a8aaa;
+  border: 1px solid var(--mc-footer-border, rgba(255, 255, 255, 0.07));
+  background: var(--mc-footer-bg, rgba(255, 255, 255, 0.03));
+  color: var(--mc-muted, #7a8aaa);
   font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -353,7 +353,7 @@
 .footerMainValue {
   font-size: 11px;
   font-weight: 800;
-  color: #d9e2f8;
+  color: var(--mc-main-value, #d9e2f8);
   line-height: 1;
   white-space: nowrap;
 }
@@ -366,7 +366,7 @@
 .footerSubValue {
   font-size: 9px;
   font-weight: 700;
-  color: #8ea0c6;
+  color: var(--mc-sub-value, #8ea0c6);
   margin-left: 2px;
   white-space: nowrap;
 }
