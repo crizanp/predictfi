@@ -856,14 +856,16 @@ export default function OddsChart({
         return
       }
 
+      const point = param.point!
+
       const containerWidth = tvContainerRef.current?.clientWidth ?? 0
       const panelWidth = 190
       const spacing = 12
-      const preferredLeft = param.point.x + spacing
+      const preferredLeft = point.x + spacing
       const nextLeft = preferredLeft + panelWidth > containerWidth
-        ? Math.max(10, param.point.x - panelWidth - spacing)
+        ? Math.max(10, point.x - panelWidth - spacing)
         : Math.max(10, preferredLeft)
-      const nextTop = Math.max(10, Math.min(param.point.y + spacing, chartHeight - 92))
+      const nextTop = Math.max(10, Math.min(point.y + spacing, chartHeight - 92))
       setCrosshairPanelPos({ left: nextLeft, top: nextTop })
 
       if (isMultiSeries) {
