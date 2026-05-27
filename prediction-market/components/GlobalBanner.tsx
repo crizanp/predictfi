@@ -38,22 +38,30 @@ export default function GlobalBanner() {
     const key = pageKey(pathname)
     const now = new Date().toISOString()
 
-    supabase
-      .from('banner_ads')
-      .select('*')
-      .eq('is_active', true)
-      .lte('start_date', now)
-      .gte('end_date', now)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (!data || data.length === 0) { setAd(null); return }
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from('banner_ads')
+          .select('*')
+          .eq('is_active', true)
+          .lte('start_date', now)
+          .gte('end_date', now)
+          .order('created_at', { ascending: false })
+
+        if (!data || data.length === 0) {
+          setAd(null)
+          return
+        }
+
         // prefer a page-specific ad, fall back to 'all'
         const ads = data as BannerAd[]
-        const specific = ads.find(a => a.pages.includes(key))
-        const allPages = ads.find(a => a.pages.includes('all'))
+        const specific = ads.find((a) => a.pages.includes(key))
+        const allPages = ads.find((a) => a.pages.includes('all'))
         setAd(specific ?? allPages ?? null)
-      })
-      .catch(() => setAd(null))
+      } catch {
+        setAd(null)
+      }
+    })()
   }, [pathname])
 
   // reset image state whenever the ad changes
