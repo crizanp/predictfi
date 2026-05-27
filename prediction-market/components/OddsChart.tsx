@@ -3,6 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ethers } from 'ethers'
 import {
   Brush,
   CartesianGrid,
@@ -16,6 +17,7 @@ import {
 } from 'recharts'
 import { CandlestickSeries, ColorType, createChart, type CandlestickData, type IChartApi, type ISeriesApi, type UTCTimestamp } from 'lightweight-charts'
 import { getOddsHistory, recordOddsSnapshot } from '../lib/supabase'
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../lib/contract'
 import styles from './OddsChart.module.css'
 
 interface SeriesEvent {
@@ -151,7 +153,7 @@ function toChance(yesPool: string, totalPool: string): number {
   const yes = parseFloat(yesPool)
   if (!Number.isFinite(total) || total <= 0) return 50
   if (!Number.isFinite(yes) || yes <= 0) return 0
-  return Math.round((yes / total) * 100)
+  return Number(((yes / total) * 100).toFixed(4))
 }
 
 function seriesKey(eventId: number): string {
@@ -159,6 +161,7 @@ function seriesKey(eventId: number): string {
 }
 
 function autoCandleBucketSec(points: ChartPoint[]): number {
+  if (points.length <= 100) return 1
   if (points.length < 2) return 60
   const spanMs = points[points.length - 1].ts - points[0].ts
   if (spanMs <= 0) return 60
@@ -203,8 +206,9 @@ function buildCandles(points: ChartPoint[], bucketSec: number): CandlestickData<
 
   const ordered = Array.from(map.entries()).sort((a, b) => a[0] - b[0])
   const result: CandlestickData<UTCTimestamp>[] = []
-  // Start odds candles from neutral baseline so first movement is from 50%.
-  let prevClose = 50
+  // Start from first bucket open when available so fresh/incognito sessions
+  // don't render a giant first candle from an artificial baseline.
+  let prevClose = ordered.length > 0 ? ordered[0][1].open : 50
   const minBody = 0.2
   const minRange = 0.35
 
@@ -270,6 +274,20 @@ const MultiTooltip = ({ active, payload, label, series }: any) => {
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SingleTooltip = ({ active, payload, label, yesLabel, noLabel }: any) => {
+  if (!active || !payload?.length) return null
+  const yesValue = payload.find((point: { dataKey?: string }) => point.dataKey === 'yes')?.value
+  const noValue = payload.find((point: { dataKey?: string }) => point.dataKey === 'no')?.value
+  return (
+    <div className={styles.tooltip}>
+      <p className={styles.tooltipTime}>{label}</p>
+      <p className={styles.tooltipYes}>{yesLabel} {typeof yesValue === 'number' ? `${yesValue}%` : '50%'}</p>
+      <p className={styles.tooltipNo}>{noLabel} {typeof noValue === 'number' ? `${noValue}%` : '50%'}</p>
+    </div>
+  )
+}
+
 export default function OddsChart({
   marketId,
   eventId,
@@ -294,6 +312,7 @@ export default function OddsChart({
   const tvContainerRef = useRef<HTMLDivElement | null>(null)
   const tvChartRef = useRef<IChartApi | null>(null)
   const tvSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const txHistorySyncedRef = useRef('')
 
   useEffect(() => {
     const localSingle = loadLocal<ChartPoint>(marketId, chartKey)
@@ -363,17 +382,29 @@ export default function OddsChart({
         return
       }
 
-      const pts: ChartPoint[] = snaps
-        .filter((snap) => (eventId === undefined ? !snap.event_id : snap.event_id === eventId))
+      const strictEventSnaps = snaps.filter((snap) => (eventId === undefined ? !snap.event_id : snap.event_id === eventId))
+      const legacySnaps = eventId === undefined
+        ? strictEventSnaps
+        : snaps.filter((snap) => snap.event_id == null)
+      const fallbackAllSnaps = eventId === undefined ? strictEventSnaps : snaps
+
+      // Prefer exact event matches, then legacy null event rows, then all rows.
+      const selectedSnaps = strictEventSnaps.length >= 2
+        ? strictEventSnaps
+        : (strictEventSnaps.length + legacySnaps.length >= 2
+          ? [...strictEventSnaps, ...legacySnaps]
+          : fallbackAllSnaps)
+
+      const pts: ChartPoint[] = selectedSnaps
         .map((snap) => {
           const total = parseFloat(snap.total_pool)
-          const yesPct = total > 0 ? Math.round((parseFloat(snap.yes_pool) / total) * 100) : 50
+          const yesPct = total > 0 ? Number(((parseFloat(snap.yes_pool) / total) * 100).toFixed(4)) : 50
           const ts = coerceTs(snap.recorded_at)
           return {
             ts,
             iso: safeIsoFromTs(ts),
             yes: yesPct,
-            no: 100 - yesPct,
+            no: Number((100 - yesPct).toFixed(4)),
           }
         })
 
@@ -387,6 +418,95 @@ export default function OddsChart({
       })
     })
   }, [isMultiSeries, marketId, eventId, chartKey])
+
+  useEffect(() => {
+    if (isMultiSeries) return
+    if (!ethers.isAddress(CONTRACT_ADDRESS)) return
+
+    const syncKey = `${marketId}:${eventId ?? 0}:${chartKey ?? 'default'}`
+    if (txHistorySyncedRef.current === syncKey) return
+    txHistorySyncedRef.current = syncKey
+
+    let cancelled = false
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const provider = new ethers.JsonRpcProvider('https://data-seed-prebsc-1-s1.binance.org:8545/')
+          const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const filter = (contract.filters as any).PredictionPlaced(marketId, eventId ?? null)
+          const events = await contract.queryFilter(filter)
+          if (!events.length) return
+
+          const blockNumbers = Array.from(new Set(events.map((entry) => entry.blockNumber)))
+          const blocks = await Promise.all(
+            blockNumbers.map(async (blockNumber) => ({
+              blockNumber,
+              block: await provider.getBlock(blockNumber),
+            }))
+          )
+          const timestampByBlock = new Map<number, number>()
+          for (const { blockNumber, block } of blocks) {
+            const ts = Number(block?.timestamp ?? 0)
+            timestampByBlock.set(blockNumber, ts > 0 ? ts * 1000 : Date.now())
+          }
+
+          const txs = events
+            .map((entry) => {
+              const args = (entry as { args?: unknown[] }).args ?? []
+              return {
+                ts: timestampByBlock.get(entry.blockNumber) ?? Date.now(),
+                choice: Number(args[3] ?? 0),
+                amount: parseFloat(ethers.formatEther((args[4] as bigint) ?? BigInt(0))) || 0,
+              }
+            })
+            .filter((entry) => (entry.choice === 1 || entry.choice === 2) && entry.amount > 0)
+            .sort((a, b) => a.ts - b.ts)
+
+          if (!txs.length) return
+
+          const totalYesAdded = txs.filter((entry) => entry.choice === 1).reduce((sum, entry) => sum + entry.amount, 0)
+          const totalNoAdded = txs.filter((entry) => entry.choice === 2).reduce((sum, entry) => sum + entry.amount, 0)
+          let runningYes = Math.max(0, (parseFloat(yesPool) || 0) - totalYesAdded)
+          let runningNo = Math.max(0, (parseFloat(noPool) || 0) - totalNoAdded)
+          const txPoints: ChartPoint[] = []
+
+          for (let index = 0; index < txs.length; index += 1) {
+            const tx = txs[index]
+            if (tx.choice === 1) runningYes += tx.amount
+            if (tx.choice === 2) runningNo += tx.amount
+            const total = runningYes + runningNo
+            const yesPct = total > 0 ? Number(((runningYes / total) * 100).toFixed(4)) : 50
+            const tsWithOffset = tx.ts + index
+            txPoints.push({
+              ts: tsWithOffset,
+              iso: safeIsoFromTs(tsWithOffset),
+              yes: yesPct,
+              no: Number((100 - yesPct).toFixed(4)),
+            })
+          }
+
+          if (cancelled || txPoints.length === 0) return
+
+          setHistory((prev) => {
+            const map = new Map<number, ChartPoint>()
+            for (const point of prev) map.set(point.ts, point)
+            for (const point of txPoints) map.set(point.ts, point)
+            const merged = Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
+            saveLocal(marketId, merged, chartKey)
+            return merged
+          })
+        } catch {
+          // ignore tx-history fallback failures
+        }
+      })()
+    }, 0)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [chartKey, eventId, isMultiSeries, marketId, noPool, yesPool])
 
   useEffect(() => {
     if (!isMultiSeries) return
@@ -437,9 +557,9 @@ export default function OddsChart({
     const total = parseFloat(totalPool)
     if (total <= 0) return
 
-    const yesPct = Math.round((parseFloat(yesPool) / total) * 100)
+    const yesPct = Number(((parseFloat(yesPool) / total) * 100).toFixed(4))
     const ts = Date.now()
-    const pt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: 100 - yesPct }
+    const pt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: Number((100 - yesPct).toFixed(4)) }
 
     setHistory((prev) => {
       const last = prev[prev.length - 1]
@@ -527,8 +647,8 @@ export default function OddsChart({
 
     const ts = Date.now()
     const total = parseFloat(totalPool)
-    const yesPct = total > 0 ? Math.round((parseFloat(yesPool) / total) * 100) : 50
-    const nowPt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: 100 - yesPct }
+    const yesPct = total > 0 ? Number(((parseFloat(yesPool) / total) * 100).toFixed(4)) : 50
+    const nowPt: ChartPoint = { ts, iso: safeIsoFromTs(ts), yes: yesPct, no: Number((100 - yesPct).toFixed(4)) }
     const slicedByInterval = (() => {
       if (interval === 'auto') return history
       const ms = INTERVAL_OPTIONS.find((item) => item.key === interval)?.ms
@@ -543,6 +663,15 @@ export default function OddsChart({
 
   const candleBucketSec = useMemo(() => bucketSecFromInterval(interval, singleTickData), [interval, singleTickData])
   const singleCandleData = useMemo(() => buildCandles(singleTickData, candleBucketSec), [singleTickData, candleBucketSec])
+  const useCommonLineForSingle = !isMultiSeries && singleTickData.length > 100
+  const singleLineData = useMemo<RenderPoint[]>(() => {
+    if (isMultiSeries) return []
+    const spanMs = singleTickData.length > 1 ? singleTickData[singleTickData.length - 1].ts - singleTickData[0].ts : 5 * 60 * 1000
+    return singleTickData.map((point) => ({
+      ...point,
+      time: formatTick(point.ts, spanMs),
+    }))
+  }, [isMultiSeries, singleTickData])
 
   useEffect(() => {
     if (!isMultiSeries) return
@@ -673,7 +802,11 @@ export default function OddsChart({
             ))}
           </div>
         </div>
-        {!isMultiSeries && <span ></span>}
+        {!isMultiSeries && (
+          <span className={styles.modeBadge}>
+            {useCommonLineForSingle ? 'Common View' : 'Candle View'}
+          </span>
+        )}
         <div className={styles.legend}>
           {isMultiSeries ? (
             series.map((entry) => (
@@ -733,6 +866,40 @@ export default function OddsChart({
                 }}
               />
             )}
+          </LineChart>
+        </ResponsiveContainer>
+      ) : useCommonLineForSingle ? (
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={singleLineData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis
+              dataKey="time"
+              tick={{ fill: '#5a7a63', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              minTickGap={20}
+            />
+            <YAxis domain={[0, 100]} tick={{ fill: '#5a7a63', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+            <Tooltip content={<SingleTooltip yesLabel={yesLabel} noLabel={noLabel} />} />
+            <Legend wrapperStyle={{ display: 'none' }} />
+            <Line
+              type="monotone"
+              dataKey="yes"
+              stroke="#c084fc"
+              strokeWidth={2.2}
+              dot={false}
+              activeDot={{ r: 4, fill: '#c084fc', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 3 }}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="no"
+              stroke="#ff3366"
+              strokeWidth={2.2}
+              dot={false}
+              activeDot={{ r: 4, fill: '#ff3366', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 3 }}
+              isAnimationActive={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       ) : (
