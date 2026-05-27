@@ -24,21 +24,13 @@ const HOME_NAV = [
   { label: 'Social', href: '#social' },
 ]
 
-const INNER_NAV = [
-  { label: 'Markets', href: '/markets' },
-  { label: 'Portfolio', href: '/portfolio' },
-  { label: 'Activity', href: '/activity' },
-  { label: 'Leaderboard', href: '/leaderboard' },
-  { label: 'Whitelist', href: '/whitelist' },
-]
-
 export default function Navbar() {
   const pathname = usePathname()
   const isHome = pathname === '/'
 
   const {
     account,
-    isOwner,
+    isAdmin,
     activeChainId,
     isWrongNetwork,
     isBusy,
@@ -74,34 +66,27 @@ export default function Navbar() {
   return (
     <header className={styles.header}>
       <div className={styles.controlsRow}>
-        {isHome ? (
+        <div className={styles.pageNavLeft}>
+          <Link href="/" className={styles.backToHome}>← PredictFi</Link>
           <nav className={styles.homeNav}>
-            {HOME_NAV.map(item => (
-              <a key={item.label} href={item.href} className={styles.homeNavLink}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        ) : (
-          <div className={styles.pageNavLeft}>
-            <Link href="/" className={styles.backToHome}>← PredictFi</Link>
-            <nav className={styles.innerNav}>
-              {INNER_NAV.map(item => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`${styles.innerNavLink} ${pathname === item.href ? styles.activeLink : ''}`}
-                >
+            {HOME_NAV.map((item) => {
+              const href = item.href.startsWith('#') && !isHome ? `/${item.href}` : item.href
+              if (href.startsWith('#')) {
+                return (
+                  <a key={item.label} href={href} className={styles.homeNavLink}>
+                    {item.label}
+                  </a>
+                )
+              }
+              return (
+                <Link key={item.label} href={href} className={styles.homeNavLink}>
                   {item.label}
                 </Link>
-              ))}
-            </nav>
-          </div>
-        )}
+              )
+            })}
+          </nav>
+        </div>
         <div className={styles.right}>
-          <a href="#" className={styles.adsPill} aria-label="Top right ad slot">
-            Ads
-          </a>
           <div className={styles.socialLinks}>
             {SOCIAL_LINKS.map(({ Icon, href, label }) => (
               <a key={label} href={href} target="_blank" rel="noopener noreferrer"
@@ -110,7 +95,7 @@ export default function Navbar() {
               </a>
             ))}
           </div>
-          {isOwner && (
+          {isAdmin && (
             <button className={styles.adminBtn} onClick={() => setShowAdminPortal(true)}>
               <RiSettings3Line className={styles.adminIcon} /> ADMIN
             </button>

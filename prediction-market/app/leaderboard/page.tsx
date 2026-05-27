@@ -1,33 +1,107 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import {
-  RiTrophyLine,
-  RiMedalLine,
-  RiFireLine,
-  RiBarChart2Line,
-  RiStarLine,
-} from 'react-icons/ri'
+import { RiBarChart2Line, RiFireLine, RiLineChartLine, RiUserStarLine } from 'react-icons/ri'
 import { useMarkets } from '../../context/MarketsContext'
-import { getMarketDetailPath } from '../../lib/utils'
+import { getProfilesByAddresses, getRecentActivity } from '../../lib/supabase'
+import { getMarketDetailPath, shortenAddress } from '../../lib/utils'
 import styles from './page.module.css'
 
-const DUMMY_USERS = [
-  { rank: 1, addr: '0xA1b2…C3d4', wins: 47, total: 89, vol: '12.45', profit: '+4.21', badge: '🥇' },
-  { rank: 2, addr: '0xF4e5…D6c7', wins: 39, total: 71, vol: '9.82',  profit: '+3.67', badge: '🥈' },
-  { rank: 3, addr: '0xB8a9…E0f1', wins: 35, total: 68, vol: '8.30',  profit: '+2.95', badge: '🥉' },
-  { rank: 4, addr: '0xC2d3…F4e5', wins: 28, total: 56, vol: '6.11',  profit: '+2.10', badge: null },
-  { rank: 5, addr: '0xD6e7…A8b9', wins: 24, total: 50, vol: '5.40',  profit: '+1.88', badge: null },
-  { rank: 6, addr: '0xE0f1…B2c3', wins: 21, total: 45, vol: '4.92',  profit: '+1.44', badge: null },
-  { rank: 7, addr: '0xF4a5…C6d7', wins: 19, total: 42, vol: '4.33',  profit: '+1.22', badge: null },
-  { rank: 8, addr: '0x1234…5678', wins: 17, total: 38, vol: '3.90',  profit: '+0.98', badge: null },
-  { rank: 9, addr: '0x9abc…def0', wins: 14, total: 32, vol: '3.20',  profit: '+0.76', badge: null },
-  { rank: 10, addr: '0xA1B2…C3D4', wins: 12, total: 28, vol: '2.87', profit: '+0.55', badge: null },
-]
+type LeaderRow = {
+  address: string
+  name: string
+  volume: number
+  predictions: number
+  markets: number
+  wins: number
+  resolvedPredictions: number
+  winRate: number
+}
 
 export default function LeaderboardPage() {
-  const { markets } = useMarkets()
+  const { markets, isLoadingMarkets, hasLoadedMarkets } = useMarkets()
+  const [rows, setRows] = useState<LeaderRow[]>([])
+  const [isLoadingRows, setIsLoadingRows] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoadingRows(true)
+      void (async () => {
+        try {
+          const activity = await getRecentActivity(10000)
+          const marketMap = new Map(markets.map((market) => [market.id, market]))
+          const aggregate = new Map<string, {
+            volume: number
+            predictions: number
+            markets: Set<number>
+            wins: number
+            resolvedPredictions: number
+          }>()
+
+          for (const row of activity) {
+            const address = row.user_address.toLowerCase()
+            const current = aggregate.get(address) ?? {
+              volume: 0,
+              predictions: 0,
+              markets: new Set<number>(),
+              wins: 0,
+              resolvedPredictions: 0,
+            }
+
+            const amount = parseFloat(row.amount_eth) || 0
+            current.volume += amount
+            current.predictions += 1
+            current.markets.add(row.market_id)
+
+            const market = marketMap.get(row.market_id)
+            const eventId = Number(row.event_id ?? 1)
+            const event = market?.events.find((eventItem) => eventItem.id === eventId)
+            if (event?.resolved && (event.result === 1 || event.result === 2)) {
+              current.resolvedPredictions += 1
+              if (Number(row.choice) === event.result) current.wins += 1
+            }
+
+            aggregate.set(address, current)
+          }
+
+          const addresses = Array.from(aggregate.keys())
+          const profiles = await getProfilesByAddresses(addresses)
+
+          const nextRows: LeaderRow[] = addresses
+            .map((address) => {
+              const data = aggregate.get(address)
+              if (!data) return null
+              const winRate = data.resolvedPredictions > 0
+                ? Math.round((data.wins / data.resolvedPredictions) * 100)
+                : 0
+              return {
+                address,
+                name: profiles[address]?.display_name?.trim() || '',
+                volume: data.volume,
+                predictions: data.predictions,
+                markets: data.markets.size,
+                wins: data.wins,
+                resolvedPredictions: data.resolvedPredictions,
+                winRate,
+              }
+            })
+            .filter((entry): entry is LeaderRow => entry !== null)
+            .sort((a, b) => {
+              if (b.volume !== a.volume) return b.volume - a.volume
+              if (b.wins !== a.wins) return b.wins - a.wins
+              return b.predictions - a.predictions
+            })
+
+          setRows(nextRows)
+        } finally {
+          setIsLoadingRows(false)
+        }
+      })()
+    }, 0)
+
+    return () => clearTimeout(timer)
+  }, [markets])
 
   const topMarkets = useMemo(() =>
     [...markets]
@@ -36,142 +110,94 @@ export default function LeaderboardPage() {
     [markets]
   )
 
-  const podium = DUMMY_USERS.slice(0, 3)
-  const rest   = DUMMY_USERS.slice(3)
+  const totalVolume = rows.reduce((sum, row) => sum + row.volume, 0)
+  const totalPredictions = rows.reduce((sum, row) => sum + row.predictions, 0)
+  const avgWinRate = rows.length > 0 ? Math.round(rows.reduce((sum, row) => sum + row.winRate, 0) / rows.length) : 0
+  const isLoading = isLoadingRows || !hasLoadedMarkets || isLoadingMarkets
+
+  const renderStat = (value: string | number) => (
+    isLoading ? <div className={styles.statSkeleton} /> : value
+  )
 
   return (
     <div className={styles.page}>
-
-      {/* ── Hero header (solid purple bg) ─────────────── */}
-      <div className={styles.hero}>
-        <div className={styles.heroInner}>
-          <div className={styles.heroBadge}><RiTrophyLine /> Leaderboard</div>
-          <h1 className={styles.heroTitle}>Top Predictors</h1>
-          <p className={styles.heroSub}>The most accurate and active traders on PredictFi</p>
+      <div className={styles.pageHeader}>
+        <div>
+          <h1 className={styles.pageTitle}>Leaderboard</h1>
+          <p className={styles.pageSub}>Live ranking from recent platform activity</p>
         </div>
       </div>
 
-      <div className={styles.body}>
-
-        {/* ── Left: Rankings ──────────────────────────── */}
-        <div className={styles.mainCol}>
-
-          {/* Podium — top 3 */}
-          <div className={styles.podium}>
-            {/* 2nd */}
-            <div className={`${styles.podiumCard} ${styles.second}`}>
-              <div className={styles.podiumBadge}>🥈</div>
-              <div className={styles.podiumRank}>#2</div>
-              <div className={styles.podiumAddr}>{podium[1].addr}</div>
-              <div className={styles.podiumStat}>{podium[1].vol} tBNB</div>
-              <div className={styles.podiumWins}>{podium[1].wins}/{podium[1].total} wins</div>
-            </div>
-            {/* 1st */}
-            <div className={`${styles.podiumCard} ${styles.first}`}>
-              <div className={styles.crownGlow} />
-              <div className={styles.podiumBadge}>🥇</div>
-              <div className={styles.podiumRank}>#1</div>
-              <div className={styles.podiumAddr}>{podium[0].addr}</div>
-              <div className={styles.podiumStat}>{podium[0].vol} tBNB</div>
-              <div className={styles.podiumWins}>{podium[0].wins}/{podium[0].total} wins</div>
-              <div className={styles.firstLabel}>TOP PREDICTOR</div>
-            </div>
-            {/* 3rd */}
-            <div className={`${styles.podiumCard} ${styles.third}`}>
-              <div className={styles.podiumBadge}>🥉</div>
-              <div className={styles.podiumRank}>#3</div>
-              <div className={styles.podiumAddr}>{podium[2].addr}</div>
-              <div className={styles.podiumStat}>{podium[2].vol} tBNB</div>
-              <div className={styles.podiumWins}>{podium[2].wins}/{podium[2].total} wins</div>
-            </div>
-          </div>
-
-          {/* Ranks 4–10 table */}
-          <div className={styles.rankTable}>
-            <div className={styles.tableHeader}>
-              <span>#</span>
-              <span>Address</span>
-              <span className={styles.alignRight}>Wins</span>
-              <span className={styles.alignRight}>Volume</span>
-              <span className={styles.alignRight}>Profit</span>
-              <span className={styles.alignRight}>Rate</span>
-            </div>
-            {rest.map((u) => (
-              <div key={u.rank} className={styles.tableRow}>
-                <span className={styles.rankNum}>{u.rank}</span>
-                <span className={styles.rankAddr}>{u.addr}</span>
-                <span className={`${styles.alignRight} ${styles.rankWins}`}>{u.wins}/{u.total}</span>
-                <span className={`${styles.alignRight} ${styles.rankVol}`}>{u.vol} tBNB</span>
-                <span className={`${styles.alignRight} ${styles.rankProfit}`}>{u.profit}</span>
-                <span className={`${styles.alignRight} ${styles.rankRate}`}>{Math.round((u.wins/u.total)*100)}%</span>
-              </div>
-            ))}
-          </div>
-
-          <p className={styles.demoNote}>* Leaderboard data is illustrative. Live on-chain rankings coming soon.</p>
+      <div className={styles.statsRow}>
+        <div className={`${styles.statCard} ${styles.statCardUsers}`}>
+          <RiUserStarLine className={styles.statIcon} />
+          <div className={styles.statNum}>{renderStat(rows.length)}</div>
+          <div className={styles.statLabel}>Active Traders</div>
         </div>
-
-        {/* ── Right: Hot markets ───────────────────────── */}
-        <div className={styles.sideCol}>
-
-          <div className={styles.sideCard}>
-            <div className={styles.sideCardHeader}>
-              <RiFireLine className={styles.sideCardIcon} /> Hottest Markets
-            </div>
-            {topMarkets.length === 0 ? (
-              <p className={styles.noMarkets}>No markets yet</p>
-            ) : (
-              topMarkets.map((m, i) => {
-                const total = parseFloat(m.totalPool) || 0
-                const yes   = parseFloat(m.yesPool)   || 0
-                const yesP  = total > 0 ? Math.round((yes / total) * 100) : 50
-                const shortQ = m.question.length > 40 ? m.question.slice(0, 40) + '…' : m.question
-                return (
-                  <Link href={getMarketDetailPath(m.question, m.id)} key={m.id} className={styles.hotMarket}>
-                    <div className={styles.hotRank}>#{i + 1}</div>
-                    <div className={styles.hotContent}>
-                      <div className={styles.hotQ}>{shortQ}</div>
-                      <div className={styles.hotMeta}>
-                        <span className={styles.hotVol}><RiBarChart2Line /> {total.toFixed(3)} tBNB</span>
-                        <span className={styles.hotYes}>{yesP}% YES</span>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })
-            )}
-          </div>
-
-          <div className={styles.sideCard}>
-            <div className={styles.sideCardHeader}>
-              <RiStarLine className={styles.sideCardIcon} /> Your Stats
-            </div>
-            <div className={styles.yourRank}>
-              <div className={styles.yourRankNum}>—</div>
-              <div className={styles.yourRankLabel}>Your current rank</div>
-              <p className={styles.yourRankSub}>Connect your wallet and start trading to appear on the leaderboard</p>
-            </div>
-          </div>
-
-          <div className={styles.sideCard}>
-            <div className={styles.sideCardHeader}>
-              <RiMedalLine className={styles.sideCardIcon} /> How to Climb
-            </div>
-            <div className={styles.howList}>
-              {[
-                'Make accurate predictions',
-                'Trade on more markets',
-                'Claim winnings promptly',
-                'Build a winning streak',
-              ].map((tip, i) => (
-                <div key={i} className={styles.howItem}>
-                  <span className={styles.howNum}>{i + 1}</span>
-                  <span className={styles.howTip}>{tip}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className={`${styles.statCard} ${styles.statCardVolume}`}>
+          <RiBarChart2Line className={styles.statIcon} />
+          <div className={styles.statNum}>{renderStat(totalVolume.toFixed(4))}</div>
+          <div className={styles.statLabel}>Total Volume (tBNB)</div>
         </div>
+        <div className={`${styles.statCard} ${styles.statCardPredictions}`}>
+          <RiLineChartLine className={styles.statIcon} />
+          <div className={styles.statNum}>{renderStat(totalPredictions)}</div>
+          <div className={styles.statLabel}>Predictions</div>
+        </div>
+        <div className={`${styles.statCard} ${styles.statCardRate}`}>
+          <RiFireLine className={styles.statIcon} />
+          <div className={styles.statNum}>{renderStat(`${avgWinRate}%`)}</div>
+          <div className={styles.statLabel}>Avg Win Rate</div>
+        </div>
+      </div>
+
+      <div className={styles.sectionLabel}>Top Traders</div>
+      {isLoading ? (
+        <div className={styles.tableCard}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className={styles.rowSkeleton} />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <div className={styles.emptyState}>No trading activity found yet.</div>
+      ) : (
+        <div className={styles.tableCard}>
+          <div className={styles.tableHead}>
+            <span>Rank</span>
+            <span>Trader</span>
+            <span>Predictions</span>
+            <span>Markets</span>
+            <span>Wins</span>
+            <span>Win Rate</span>
+            <span>Volume</span>
+          </div>
+          {rows.map((row, index) => (
+            <div key={row.address} className={styles.tableRow}>
+              <span className={styles.rankCell}>#{index + 1}</span>
+              <span className={styles.addressCell}>{row.name || shortenAddress(row.address)}</span>
+              <span>{row.predictions}</span>
+              <span>{row.markets}</span>
+              <span>{row.wins}/{row.resolvedPredictions || 0}</span>
+              <span>{row.winRate}%</span>
+              <span>{row.volume.toFixed(4)} tBNB</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className={styles.sectionLabel}>Hot Markets</div>
+      <div className={styles.marketGrid}>
+        {topMarkets.map((market) => {
+          const totalPool = parseFloat(market.totalPool) || 0
+          const yesPool = parseFloat(market.yesPool) || 0
+          const yesPct = totalPool > 0 ? Math.round((yesPool / totalPool) * 100) : 50
+          return (
+            <Link key={market.id} href={getMarketDetailPath(market.question, market.id)} className={styles.marketCard}>
+              <div className={styles.marketQuestion}>{market.question}</div>
+              <div className={styles.marketMeta}>YES {yesPct}% · Pool {totalPool.toFixed(3)} tBNB</div>
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

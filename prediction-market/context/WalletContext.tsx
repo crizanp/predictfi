@@ -42,10 +42,17 @@ export const BSC_TESTNET_PARAMS = {
 
 export const READ_ONLY_RPC = BSC_TESTNET_PARAMS.rpcUrls[0]
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
+const EXTRA_ADMINS_STORAGE_KEY = 'predictfi-extra-admin-addresses'
+const ENV_ADMIN_ADDRESSES = (process.env.NEXT_PUBLIC_EXTRA_ADMIN_ADDRESSES || '')
+  .split(',')
+  .map((entry) => entry.trim().toLowerCase())
+  .filter((entry) => entry.length > 0 && ethers.isAddress(entry))
 
 export interface WalletContextValue {
   account: string
   isOwner: boolean
+  isAdmin: boolean
+  adminAddresses: string[]
   activeChainId: number | null
   connectionType: ConnectionType
   walletProvider: Eip1193Provider | null
@@ -62,6 +69,8 @@ export interface WalletContextValue {
   setStatus: (status: StatusMessage | null) => void
   setStatusMessage: (tone: StatusTone, text: string) => void
   setBusyAction: (action: string | null) => void
+  addAdminAddress: (address: string) => boolean
+  removeAdminAddress: (address: string) => void
   connectInjectedWallet: () => Promise<void>
   connectWalletConnect: () => void
   setExternalProvider: (provider: Eip1193Provider | null, type: ConnectionType) => Promise<void>
@@ -87,6 +96,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const [account, setAccount] = useState('')
   const [isOwner, setIsOwner] = useState(false)
+    const [adminAddresses, setAdminAddresses] = useState<string[]>(ENV_ADMIN_ADDRESSES)
   const [walletProvider, setWalletProvider] = useState<Eip1193Provider | null>(null)
   const [connectionType, setConnectionType] = useState<ConnectionType>(null)
   const [injectedAvailable, setInjectedAvailable] = useState(false)
@@ -104,6 +114,30 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [showAdminPortal, setShowAdminPortal] = useState(false)
   const [blockExternalSync, setBlockExternalSync] = useState(false)
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem(EXTRA_ADMINS_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as unknown
+      if (!Array.isArray(parsed)) return
+      const normalized = Array.from(
+        new Set(
+          parsed
+            .map((entry) => (typeof entry === 'string' ? entry.trim().toLowerCase() : ''))
+            .filter((entry) => entry.length > 0 && ethers.isAddress(entry))
+            .concat(ENV_ADMIN_ADDRESSES)
+        )
+      )
+      const timer = setTimeout(() => {
+        setAdminAddresses(normalized)
+      }, 0)
+      return () => clearTimeout(timer)
+    } catch {
+      // Ignore invalid persisted admin list.
+    }
+  }, [])
+
   const setStatusMessage = useCallback((tone: StatusTone, text: string) => {
     setStatus({ tone, text })
   }, [])
@@ -117,6 +151,35 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const isBusy = busyAction !== null
   const isWrongNetwork = account !== '' && activeChainId !== null && activeChainId !== CHAIN_ID
+  const isAdmin = account !== '' && (isOwner || adminAddresses.includes(account.toLowerCase()))
+
+  const persistAdminAddresses = useCallback((next: string[]) => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem(EXTRA_ADMINS_STORAGE_KEY, JSON.stringify(next))
+  }, [])
+
+  const addAdminAddress = useCallback((address: string): boolean => {
+    const normalized = address.trim().toLowerCase()
+    if (!ethers.isAddress(normalized)) return false
+    let added = false
+    setAdminAddresses((previous) => {
+      if (previous.includes(normalized)) return previous
+      const next = [...previous, normalized]
+      persistAdminAddresses(next)
+      added = true
+      return next
+    })
+    return added
+  }, [persistAdminAddresses])
+
+  const removeAdminAddress = useCallback((address: string) => {
+    const normalized = address.trim().toLowerCase()
+    setAdminAddresses((previous) => {
+      const next = previous.filter((entry) => entry !== normalized)
+      persistAdminAddresses(next)
+      return next
+    })
+  }, [persistAdminAddresses])
 
   const clearWalletSession = useCallback(() => {
     setAccount('')
@@ -437,6 +500,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       value={{
         account,
         isOwner,
+        isAdmin,
+        adminAddresses,
         activeChainId,
         connectionType,
         walletProvider,
@@ -453,6 +518,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setStatus,
         setStatusMessage,
         setBusyAction,
+        addAdminAddress,
+        removeAdminAddress,
         connectInjectedWallet,
         connectWalletConnect,
         setExternalProvider,

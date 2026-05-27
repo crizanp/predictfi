@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { ethers } from 'ethers'
 import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import {
@@ -10,20 +11,34 @@ import {
   getMarketCategory,
   getStoredCategories,
   setStoredCategory,
+  shortenAddress,
 } from '../lib/utils'
 import { getMarketMeta, upsertMarketMeta, type MarketMeta } from '../lib/supabase'
 import styles from './AdminPortal.module.css'
 
 export default function AdminPortal() {
-  const { showAdminPortal, setShowAdminPortal, isOwner, isBusy, busyAction, isContractConfigured } = useWallet()
+  const {
+    showAdminPortal,
+    setShowAdminPortal,
+    isOwner,
+    isAdmin,
+    adminAddresses,
+    addAdminAddress,
+    removeAdminAddress,
+    isBusy,
+    busyAction,
+    isContractConfigured,
+  } = useWallet()
   const { markets, isLoadingMarkets, loadMarkets, createMarket, resolveMarket } = useMarkets()
 
   const [nowInSeconds, setNowInSeconds] = useState(0)
   const [eventNamesText, setEventNamesText] = useState('')
   const [question, setQuestion] = useState('')
   const [duration, setDuration] = useState('')
-  const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'markets'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'markets' | 'team'>('overview')
   const [storedCategories, setStoredCategoriesState] = useState<Record<string, string>>({})
+  const [newAdminAddress, setNewAdminAddress] = useState('')
+  const [adminFeedback, setAdminFeedback] = useState('')
 
   // Per-market metadata editing state
   const [metaEditing, setMetaEditing] = useState<Record<number, Partial<MarketMeta>>>({})
@@ -183,7 +198,22 @@ export default function AdminPortal() {
     return { total, resolved, live, ended, totalVol }
   }, [markets, nowInSeconds])
 
-  if (!showAdminPortal || !isOwner) return null
+  const handleAddAdmin = useCallback(() => {
+    const normalized = newAdminAddress.trim().toLowerCase()
+    if (!ethers.isAddress(normalized)) {
+      setAdminFeedback('Enter a valid wallet address.')
+      return
+    }
+    const added = addAdminAddress(normalized)
+    if (!added) {
+      setAdminFeedback('Address is already in the admin list.')
+      return
+    }
+    setNewAdminAddress('')
+    setAdminFeedback('Admin added successfully.')
+  }, [addAdminAddress, newAdminAddress])
+
+  if (!showAdminPortal || !isAdmin) return null
 
   return (
     <div className={styles.overlay}>
@@ -204,6 +234,9 @@ export default function AdminPortal() {
           <button className={activeTab === 'create' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('create')}>Create Market</button>
           <button className={activeTab === 'markets' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('markets')}>
             Manage Markets <span className={styles.tabCount}>{markets.length}</span>
+          </button>
+          <button className={activeTab === 'team' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('team')}>
+            Admin Team <span className={styles.tabCount}>{adminAddresses.length}</span>
           </button>
         </div>
 
@@ -311,10 +344,13 @@ export default function AdminPortal() {
                 <button
                   className={styles.createBtn}
                   onClick={() => { void handleCreate() }}
-                  disabled={isBusy || !eventNamesText.trim() || !question.trim() || !duration || !isContractConfigured}
+                  disabled={isBusy || !eventNamesText.trim() || !question.trim() || !duration || !isContractConfigured || !isOwner}
                 >
-                  {busyAction === 'create-market' ? 'Creating...' : 'Create Market on BSC Testnet'}
+                  {busyAction === 'create-market' ? 'Creating...' : isOwner ? 'Create Market on BSC Testnet' : 'Owner Wallet Required'}
                 </button>
+                {!isOwner && (
+                  <div className={styles.warning}>Only contract owner can create or resolve markets. Co-admins can manage metadata and categories.</div>
+                )}
               </div>
             </div>
           )}
@@ -386,16 +422,16 @@ export default function AdminPortal() {
                                     <button
                                       className={styles.resolveYes}
                                       onClick={() => { void resolveMarket(market.id, 1, event.id) }}
-                                      disabled={isBusy || event.resolved}
+                                      disabled={isBusy || event.resolved || !isOwner}
                                     >
-                                      {event.resolved ? 'Resolved' : 'Resolve YES'}
+                                      {event.resolved ? 'Resolved' : !isOwner ? 'Owner Only' : 'Resolve YES'}
                                     </button>
                                     <button
                                       className={styles.resolveNo}
                                       onClick={() => { void resolveMarket(market.id, 2, event.id) }}
-                                      disabled={isBusy || event.resolved}
+                                      disabled={isBusy || event.resolved || !isOwner}
                                     >
-                                      {event.resolved ? 'Resolved' : 'Resolve NO'}
+                                      {event.resolved ? 'Resolved' : !isOwner ? 'Owner Only' : 'Resolve NO'}
                                     </button>
                                   </div>
                                 </div>
@@ -605,6 +641,52 @@ export default function AdminPortal() {
                   })}
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'team' && (
+            <div className={styles.teamTab}>
+              <h2 className={styles.sectionTitle}>Admin Team</h2>
+              <p className={styles.teamSub}>Add up to trusted co-admin wallets for metadata and operational management.</p>
+
+              <div className={styles.teamInputRow}>
+                <input
+                  className={styles.input}
+                  value={newAdminAddress}
+                  onChange={(e) => setNewAdminAddress(e.target.value)}
+                  placeholder="0x..."
+                  disabled={!isOwner}
+                />
+                <button className={styles.createBtn} onClick={handleAddAdmin} disabled={!isOwner || !newAdminAddress.trim()}>
+                  Add Admin
+                </button>
+              </div>
+              {!isOwner && (
+                <div className={styles.warning}>Only the contract owner can add or remove admin addresses.</div>
+              )}
+              {adminFeedback && <div className={styles.teamFeedback}>{adminFeedback}</div>}
+
+              <div className={styles.teamList}>
+                {adminAddresses.length === 0 ? (
+                  <div className={styles.empty}>No delegated admins yet.</div>
+                ) : (
+                  adminAddresses.map((address) => (
+                    <div key={address} className={styles.teamItem}>
+                      <div>
+                        <div className={styles.teamAddr}>{address}</div>
+                        <div className={styles.teamAddrShort}>{shortenAddress(address)}</div>
+                      </div>
+                      <button
+                        className={styles.clearBtn}
+                        onClick={() => removeAdminAddress(address)}
+                        disabled={!isOwner}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </div>

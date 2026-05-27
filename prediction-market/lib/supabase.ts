@@ -228,6 +228,17 @@ export async function getActivityByUserAddress(userAddress: string): Promise<Mar
   return (data as MarketActivity[]) ?? []
 }
 
+export async function getRecentActivity(limit = 5000): Promise<MarketActivity[]> {
+  if (!supabaseKey) return []
+  const { data, error } = await supabase
+    .from('market_activity')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data as MarketActivity[]) ?? []
+}
+
 export async function recordActivity(
   marketId: number,
   userAddress: string,

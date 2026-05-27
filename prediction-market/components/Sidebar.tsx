@@ -38,21 +38,6 @@ const NAV = [
     label: 'Whitelist',
     d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
   },
-  {
-    href: '/ads',
-    label: 'Ads',
-    d: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
-  },
-  {
-    href: '#',
-    label: 'Create Market',
-    d: 'M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v8M8 12h8',
-  },
-  {
-    href: '#',
-    label: 'Governance',
-    d: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z',
-  },
 ]
 
 export default function Sidebar() {
@@ -61,7 +46,12 @@ export default function Sidebar() {
   const [balance, setBalance] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!account) { setBalance(null); return }
+    if (!account) {
+      const timer = setTimeout(() => {
+        setBalance(null)
+      }, 0)
+      return () => clearTimeout(timer)
+    }
     let cancelled = false
     const fetchBal = async () => {
       try {
