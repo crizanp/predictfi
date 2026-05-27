@@ -87,13 +87,43 @@
 }
 
 .statCard {
-  background: #0d1014;
+  background: #0c1117;
   border: 1px solid rgba(255,255,255,0.055);
   border-radius: 12px;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.statCardWallet {
+  background: #0d1218;
+  border-color: rgba(0,255,136,0.12);
+}
+
+.statCardPositions {
+  background: #10121a;
+  border-color: rgba(168,85,247,0.12);
+}
+
+.statCardWins {
+  background: #12100b;
+  border-color: rgba(245,158,11,0.12);
+}
+
+.statCardRate {
+  background: #0d131a;
+  border-color: rgba(59,130,246,0.12);
+}
+
+.statCardClaimable {
+  background: #111017;
+  border-color: rgba(168,85,247,0.12);
+}
+
+.statCardClaimed {
+  background: #0f1411;
+  border-color: rgba(34,197,94,0.12);
 }
 
 .statIcon {
@@ -107,6 +137,20 @@
   font-weight: 900;
   color: #e8eaf0;
   line-height: 1;
+}
+
+.statValueSkeleton {
+  width: 72px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%);
+  background-size: 180% 100%;
+  animation: statShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes statShimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 180% 50%; }
 }
 
 .statLabel {
@@ -171,6 +215,34 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.liveSplitBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.liveSplitYes,
+.liveSplitNo {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.liveSplitYes {
+  color: #00ff88;
+  background: rgba(0,255,136,0.08);
+}
+
+.liveSplitNo {
+  color: #ff4d6d;
+  background: rgba(255,77,109,0.08);
 }
 
 .sideBadge {
@@ -462,6 +534,65 @@
 .txRowClaim {
   color: #c084fc;
   font-weight: 700;
+}
+
+.rowSkeletonTop,
+.lineSkeletonLg,
+.lineSkeletonMd,
+.lineSkeletonSm,
+.buttonSkeleton,
+.statLabelSkeleton,
+.statIconSkeleton {
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%);
+  background-size: 180% 100%;
+  animation: statShimmer 1.2s ease-in-out infinite;
+}
+
+.rowSkeletonTop {
+  width: 38%;
+  height: 18px;
+}
+
+.lineSkeletonLg {
+  width: 82%;
+  height: 14px;
+}
+
+.lineSkeletonMd {
+  width: 56%;
+  height: 12px;
+}
+
+.lineSkeletonSm {
+  width: 28%;
+  height: 12px;
+}
+
+.buttonSkeleton {
+  width: 92px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.posFooterSkeleton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.statIconSkeleton {
+  width: 20px;
+  height: 20px;
+}
+
+.statLabelSkeleton {
+  width: 86px;
+  height: 11px;
+  border-radius: 999px;
 }
 
 /* â”€â”€ Empty state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

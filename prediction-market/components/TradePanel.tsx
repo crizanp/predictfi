@@ -297,9 +297,9 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           {!isMarketClosed && (
             <div className={styles.toWinRow}>
               <div className={styles.toWinLeft}>
-                <span className={styles.toWinLabel}>Est. payout</span>
-                <span className={styles.toWinSub}>
-                  Potential profit: {estimatedProfit > 0 ? `+${estimatedProfit.toFixed(4)}` : estimatedProfit.toFixed(4)} tBNB
+                {/* <span className={styles.toWinLabel}></span> */}
+                <span className={styles.toWinSub}>Est. payout
+                  {/* Potential profit: {estimatedProfit > 0 ? `+${estimatedProfit.toFixed(4)}` : estimatedProfit.toFixed(4)} tBNB */}
                   <span className={styles.priceHintWrap}>
                     <span className={styles.priceHintTrigger} tabIndex={0}>i</span>
                     <span className={styles.priceHintBubble}>

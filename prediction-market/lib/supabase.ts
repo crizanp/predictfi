@@ -216,6 +216,18 @@ export async function getActivity(marketId: number): Promise<MarketActivity[]> {
   return (data as MarketActivity[]) ?? []
 }
 
+export async function getActivityByUserAddress(userAddress: string): Promise<MarketActivity[]> {
+  if (!supabaseKey) return []
+  const normalizedAddress = userAddress.trim()
+  const { data } = await supabase
+    .from('market_activity')
+    .select('*')
+    .ilike('user_address', normalizedAddress)
+    .order('id', { ascending: false })
+    .order('created_at', { ascending: false })
+  return (data as MarketActivity[]) ?? []
+}
+
 export async function recordActivity(
   marketId: number,
   userAddress: string,
