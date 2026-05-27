@@ -82,7 +82,10 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
       return
     }
     if (!eventOptions.some((event) => event.key === selectedEventKeyState) && eventOptions[0]) {
-      setSelectedEventKeyState(eventOptions[0].key)
+      const timer = setTimeout(() => {
+        setSelectedEventKeyState(eventOptions[0].key)
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [eventOptions, selectedEventKeyProp, selectedEventKeyState])
 
@@ -145,16 +148,6 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     if (sharePrice <= 0) return 0
     return amt / sharePrice
   }, [amount, metrics, activeOutcome])
-
-  const potentialReward = useMemo(() => {
-    if (!userPrediction) return 0
-    const total = Number.parseFloat(selectedEventState?.totalPool ?? '0')
-    const winPool = userPrediction.choice === 1
-      ? Number.parseFloat(selectedEventState?.yesPool ?? '0')
-      : Number.parseFloat(selectedEventState?.noPool ?? '0')
-    if (winPool <= 0) return 0
-    return (Number.parseFloat(userPrediction.amount) * total) / winPool
-  }, [selectedEventState, userPrediction])
 
   const handleBuy = useCallback(async () => {
     if (!account) { setShowWalletModal(true); return }
@@ -325,7 +318,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
                   </span>
                 </div>
               )}
-              {userPrediction.claimed && <div className={styles.claimedBadge}>? Winnings Claimed</div>}
+              {userPrediction.claimed && <div className={styles.claimedBadge}>Payout claimed on-chain</div>}
             </div>
           )}
 
@@ -362,14 +355,14 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           onClick={() => { void claimWinnings(market.id, selectedEventId) }}
           disabled={isClaiming || isBusy}
         >
-          {isClaiming ? 'Claiming...' : '?? Claim Winnings'}
+          {isClaiming ? 'Claiming...' : 'Claim Winnings'}
         </button>
       )}
 
       {/* -- Admin Resolve ----------------------------- */}
       {canResolve && (
         <div className={styles.resolveSection}>
-          <p className={styles.resolveLabel}>? Resolve Market (Owner Only)</p>
+          <p className={styles.resolveLabel}>Resolve Market (Owner Only)</p>
           <div className={styles.resolveBtns}>
             <button
               className={styles.resolveYesBtn}

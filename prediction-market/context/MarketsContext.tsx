@@ -45,6 +45,15 @@ export interface PredictionEvent {
   blockNumber: number
 }
 
+export interface ClaimEvent {
+  address: string
+  eventId: number
+  amount: string
+  txHash: string
+  blockNumber: number
+  claimedAt?: string
+}
+
 export interface MarketsContextValue {
   markets: Market[]
   userPredictions: Record<number, UserPrediction>
@@ -61,6 +70,7 @@ export interface MarketsContextValue {
   createMarket: (question: string, durationMinutes: number, eventNames: string[]) => Promise<void>
   fetchMarket: (id: number) => Promise<Market | null>
   getMarketPredictions: (marketId: number, eventId?: number) => Promise<PredictionEvent[]>
+  getMarketClaims: (marketId: number, eventId?: number) => Promise<ClaimEvent[]>
 }
 
 const MarketsContext = createContext<MarketsContextValue | null>(null)
@@ -438,6 +448,33 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     [getReadContract, isContractConfigured]
   )
 
+  const getMarketClaims = useCallback(
+    async (marketId: number, eventId?: number): Promise<ClaimEvent[]> => {
+      if (!isContractConfigured) return []
+      try {
+        const contract = getReadContract()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const filter = (contract.filters as any).WinningsClaimed(marketId, eventId ?? null, account ?? null)
+        const events = await contract.queryFilter(filter)
+        return await Promise.all(events.map(async (e) => {
+          const args = (e as { args?: unknown[] }).args ?? []
+          const block = await e.getBlock()
+          return {
+            eventId: Number(args[1] ?? 0),
+            address: (args[2] as string) ?? '0x???',
+            amount: ethers.formatEther((args[3] as bigint) ?? 0n),
+            txHash: e.transactionHash,
+            blockNumber: e.blockNumber,
+            claimedAt: new Date(Number(block.timestamp) * 1000).toISOString(),
+          }
+        })).then((rows) => rows.reverse())
+      } catch {
+        return []
+      }
+    },
+    [account, getReadContract, isContractConfigured]
+  )
+
   useEffect(() => {
     silentRefreshRef.current = async () => {
       if (!isContractConfigured) return
@@ -514,6 +551,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         createMarket,
         fetchMarket,
         getMarketPredictions,
+        getMarketClaims,
       }}
     >
       {children}
