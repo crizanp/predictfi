@@ -4,9 +4,6 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   RiFireLine,
-  RiShieldCheckLine,
-  RiTrophyLine,
-  RiFlashlightLine,
   RiPercentLine,
   RiStackLine,
   RiGovernmentLine,
@@ -151,10 +148,21 @@ export default function HomePage() {
     }
   }, [isTokenomicsModalOpen, activeUseCase])
 
-  // Top 6 – latest first
+  // Top 6 – live first, ended next, resolved last
   const top6 = useMemo(() =>
-    [...markets].sort((a, b) => b.id - a.id).slice(0, 6),
-    [markets]
+    [...markets].sort((a, b) => {
+      const rank = (market: typeof a) => {
+        const isLive = !market.resolved && (nowInSeconds <= 0 || market.endTime > nowInSeconds)
+        const isEnded = !market.resolved && nowInSeconds > 0 && market.endTime <= nowInSeconds
+        if (isLive) return 0
+        if (isEnded) return 1
+        return 2
+      }
+      const rankDelta = rank(a) - rank(b)
+      if (rankDelta !== 0) return rankDelta
+      return b.id - a.id
+    }).slice(0, 6),
+    [markets, nowInSeconds]
   )
 
   const selectedAllocation = useMemo(() =>

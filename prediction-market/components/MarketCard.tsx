@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
-import { RiBarChart2Line, RiTimeLine, RiCheckboxCircleLine } from 'react-icons/ri'
-import { computePoolMetrics } from '../lib/utils'
+import { RiBarChart2Line, RiTimeLine } from 'react-icons/ri'
+import { computePoolMetrics, getMarketDetailPath } from '../lib/utils'
 import { getActivity, getComments, getMarketMeta } from '../lib/supabase'
 import type { Market } from '../context/MarketsContext'
 import styles from './MarketCard.module.css'
@@ -33,29 +33,6 @@ interface RgbColor {
   r: number
   g: number
   b: number
-}
-
-function formatTimeLeft(endTime: number, nowInSeconds: number): string {
-  if (nowInSeconds <= 0) return '...'
-  const secs = endTime - nowInSeconds
-  if (secs <= 0) return 'Ended'
-  const days = Math.floor(secs / 86400)
-  const hours = Math.floor((secs % 86400) / 3600)
-  const mins = Math.floor((secs % 3600) / 60)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m ${secs % 60}s`
-}
-
-function isDark(hex: string): boolean {
-  try {
-    const h = hex.replace('#', '')
-    if (h.length < 6) return true
-    const r = parseInt(h.slice(0, 2), 16)
-    const g = parseInt(h.slice(2, 4), 16)
-    const b = parseInt(h.slice(4, 6), 16)
-    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.55
-  } catch { return true }
 }
 
 function clampChannel(value: number): number {
@@ -251,13 +228,16 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   }, [market.id])
 
   useEffect(() => {
-    let alive = true
     const cached = typeof window !== 'undefined' ? window.localStorage.getItem('predictfi_bnb_usd_price') : null
     if (cached) {
       const parsed = Number.parseFloat(cached)
-      if (Number.isFinite(parsed) && parsed > 0) setBnbUsdPrice(parsed)
+      if (Number.isFinite(parsed) && parsed > 0) {
+        const timer = window.setTimeout(() => setBnbUsdPrice(parsed), 0)
+        return () => window.clearTimeout(timer)
+      }
     }
 
+    let alive = true
     void fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd', {
       headers: { accept: 'application/json' },
     })
@@ -280,11 +260,6 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   const yesPool = parseFloat(market.yesPool) || 0
   const noPool  = parseFloat(market.noPool)  || 0
   const total   = yesPool + noPool
-
-  const timeLeft    = formatTimeLeft(market.endTime, nowInSeconds)
-  const statusLabel = market.resolved ? 'Resolved' : timeLeft === 'Ended' ? 'Ended' : 'Live'
-
-  const hasBg = Boolean(cardBg)
 
   const cardStyle = useMemo(() => {
     if (!cardBg) return undefined
@@ -371,7 +346,7 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
 
   return (
     <Link
-      href={`/market/${market.id}`}
+      href={getMarketDetailPath(market.question, market.id)}
       className={`${styles.card} ${isMultiEvent ? styles.multiCard : styles.singleCard}`}
       style={cardStyle}
     >

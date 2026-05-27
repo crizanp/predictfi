@@ -72,6 +72,35 @@ export const inferCategory = (question: string): string => {
   return 'Trending'
 }
 
+export const slugifyMarketTitle = (title: string): string => {
+  const normalized = title
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return normalized || 'market'
+}
+
+export const getMarketDetailSlug = (title: string, marketId: number): string => {
+  const slug = slugifyMarketTitle(title)
+  const hash = marketId.toString(36)
+  return `${slug}-${hash}`
+}
+
+export const getMarketDetailPath = (title: string, marketId: number): string =>
+  `/market/${getMarketDetailSlug(title, marketId)}`
+
+export const parseMarketIdFromDetailSlug = (value: string): number | null => {
+  const raw = value.trim()
+  if (!raw) return null
+  if (/^\d+$/.test(raw)) return Number(raw)
+  const hash = raw.split('-').at(-1)
+  if (!hash) return null
+  const parsed = Number.parseInt(hash, 36)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 const CATEGORIES_STORAGE_KEY = 'predictfi_market_categories'
 
 export const getStoredCategories = (): Record<string, string> => {

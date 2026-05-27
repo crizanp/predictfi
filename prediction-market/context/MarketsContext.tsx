@@ -34,6 +34,9 @@ export interface UserPrediction {
   choice: number
   amount: string
   claimed: boolean
+  yesAmount?: string
+  noAmount?: string
+  hasBothSides?: boolean
 }
 
 export interface PredictionEvent {
@@ -77,6 +80,14 @@ const MarketsContext = createContext<MarketsContextValue | null>(null)
 
 function eventPredictionKey(marketId: number, eventId: number): string {
   return `${marketId}:${eventId}`
+}
+
+function marketLifecycleRank(market: Market, nowInSeconds = Math.floor(Date.now() / 1000)): number {
+  const isLive = !market.resolved && (nowInSeconds <= 0 || market.endTime > nowInSeconds)
+  const isEnded = !market.resolved && nowInSeconds > 0 && market.endTime <= nowInSeconds
+  if (isLive) return 0
+  if (isEnded) return 1
+  return 2
 }
 
 async function hydrateMarket(contract: ethers.Contract, marketId: number): Promise<Market> {
@@ -161,7 +172,12 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         marketList.push(await hydrateMarket(contract, index))
       }
 
-      const sorted = [...marketList].reverse()
+      const nowInSeconds = Math.floor(Date.now() / 1000)
+      const sorted = [...marketList].sort((a, b) => {
+        const rankDelta = marketLifecycleRank(a, nowInSeconds) - marketLifecycleRank(b, nowInSeconds)
+        if (rankDelta !== 0) return rankDelta
+        return b.id - a.id
+      })
       setMarkets(sorted)
       setHasLoadedMarkets(true)
       return sorted
@@ -204,19 +220,53 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
           let aggregateAmount = 0
           let latestChoice = 0
           let allClaimed = true
+          let aggregateYes = 0
+          let aggregateNo = 0
 
           for (const event of market.events) {
-            const prediction = await contract.getUserPrediction(market.id, event.id, currentAccount)
-            const amount = Number(prediction.amount)
-            if (amount > 0) {
+            const [prediction, placedEvents] = await Promise.all([
+              contract.getUserPrediction(market.id, event.id, currentAccount),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              contract.queryFilter((contract.filters as any).PredictionPlaced(market.id, event.id, currentAccount)),
+            ])
+
+            let yesAmountWei = 0n
+            let noAmountWei = 0n
+            let latestChoiceForEvent = Number(prediction.choice)
+
+            for (const placedEvent of placedEvents) {
+              const args = (placedEvent as { args?: unknown[] }).args ?? []
+              const choice = Number(args[3] ?? 0)
+              const amountWei = (args[4] as bigint) ?? 0n
+              if (choice === 1) yesAmountWei += amountWei
+              if (choice === 2) noAmountWei += amountWei
+              if (choice === 1 || choice === 2) latestChoiceForEvent = choice
+            }
+
+            const totalFromLogs = yesAmountWei + noAmountWei
+            const fallbackAmount = (prediction.amount as bigint) ?? 0n
+            const totalAmountWei = totalFromLogs > 0n ? totalFromLogs : fallbackAmount
+            if (totalAmountWei > 0n) {
+              const resolvedYesWei = yesAmountWei > 0n
+                ? yesAmountWei
+                : (latestChoiceForEvent === 1 ? totalAmountWei : 0n)
+              const resolvedNoWei = noAmountWei > 0n
+                ? noAmountWei
+                : (latestChoiceForEvent === 2 ? totalAmountWei : 0n)
+
               const mapped: UserPrediction = {
-                choice: Number(prediction.choice),
-                amount: ethers.formatEther(prediction.amount),
+                choice: latestChoiceForEvent || Number(prediction.choice),
+                amount: ethers.formatEther(totalAmountWei),
                 claimed: Boolean(prediction.claimed),
+                yesAmount: ethers.formatEther(resolvedYesWei),
+                noAmount: ethers.formatEther(resolvedNoWei),
+                hasBothSides: resolvedYesWei > 0n && resolvedNoWei > 0n,
               }
               eventPredictionMap[eventPredictionKey(market.id, event.id)] = mapped
 
               aggregateAmount += Number(mapped.amount)
+              aggregateYes += Number(mapped.yesAmount ?? '0')
+              aggregateNo += Number(mapped.noAmount ?? '0')
               latestChoice = mapped.choice
               allClaimed = allClaimed && mapped.claimed
             }
@@ -224,9 +274,12 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
           if (aggregateAmount > 0) {
             marketPredictionMap[market.id] = {
-              choice: latestChoice,
+              choice: latestChoice || (aggregateYes >= aggregateNo ? 1 : 2),
               amount: aggregateAmount.toString(),
               claimed: allClaimed,
+              yesAmount: aggregateYes.toString(),
+              noAmount: aggregateNo.toString(),
+              hasBothSides: aggregateYes > 0 && aggregateNo > 0,
             }
           }
         }
@@ -234,7 +287,12 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         setUserPredictions(marketPredictionMap)
         setEventPredictions(eventPredictionMap)
       } catch (error) {
-        setStatusMessage('error', `Could not load your predictions. ${toErrorMessage(error)}`)
+        const message = toErrorMessage(error)
+        if (message.toLowerCase().includes('missing response for request')) {
+          console.warn('loadUserPredictions transient RPC failure:', message)
+          return
+        }
+        setStatusMessage('error', `Could not load your predictions. ${message}`)
       }
     },
     [getReadContract, isContractConfigured, setStatusMessage]

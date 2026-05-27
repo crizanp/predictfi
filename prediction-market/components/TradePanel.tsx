@@ -115,6 +115,9 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   const noLabel  = selectedEvent?.noLabel  || meta?.no_label  || 'NO'
 
   const userPrediction: UserPrediction | undefined = account ? getEventUserPrediction(market.id, selectedEventId) : undefined
+  const userYesAmount = Number.parseFloat(userPrediction?.yesAmount ?? '0')
+  const userNoAmount = Number.parseFloat(userPrediction?.noAmount ?? '0')
+  const hasMixedPosition = userYesAmount > 0 && userNoAmount > 0
 
   const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
   const activeOutcome = selectedOutcome
@@ -141,13 +144,24 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
 
   const canBuy = isContractConfigured && account !== null && !isMarketClosed && !isBusy
 
-  const estimatedShares = useMemo(() => {
+  const estimatedPayout = useMemo(() => {
     const amt = Number.parseFloat(amount || '0')
     if (!Number.isFinite(amt) || amt <= 0) return 0
-    const sharePrice = activeOutcome === 1 ? metrics.yesPrice / 100 : metrics.noPrice / 100
-    if (sharePrice <= 0) return 0
-    return amt / sharePrice
-  }, [amount, metrics, activeOutcome])
+    const currentYes = Number.parseFloat(selectedEventState?.yesPool ?? '0')
+    const currentNo = Number.parseFloat(selectedEventState?.noPool ?? '0')
+    const winningPool = activeOutcome === 1 ? currentYes + amt : currentNo + amt
+    const losingPool = activeOutcome === 1 ? currentNo : currentYes
+    if (winningPool <= 0) return 0
+    const userLosingShare = (losingPool * amt) / winningPool
+    const fee = userLosingShare * 0.05
+    return amt + userLosingShare - fee
+  }, [amount, activeOutcome, selectedEventState])
+
+  const estimatedProfit = useMemo(() => {
+    const amt = Number.parseFloat(amount || '0')
+    if (!Number.isFinite(amt) || amt <= 0) return 0
+    return estimatedPayout - amt
+  }, [amount, estimatedPayout])
 
   const handleBuy = useCallback(async () => {
     if (!account) { setShowWalletModal(true); return }
@@ -172,12 +186,11 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     isEventResolved &&
     (selectedEventState?.result ?? 0) !== 0 &&
     userPrediction &&
-    Number.parseFloat(userPrediction.amount) > 0 &&
+    ((selectedEventState?.result ?? 0) === 1 ? userYesAmount : userNoAmount) > 0 &&
     !userPrediction.claimed
 
   const canResolve = isOwner && !isEventResolved && isEnded
   const currentLabel = activeOutcome === 1 ? yesLabel : noLabel
-  const currentPrice = activeOutcome === 1 ? metrics.yesPrice : metrics.noPrice
 
   return (
     <div className={styles.panel}>
@@ -284,24 +297,44 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           {!isMarketClosed && (
             <div className={styles.toWinRow}>
               <div className={styles.toWinLeft}>
-                <span className={styles.toWinLabel}>To Win</span>
-                <span className={styles.toWinSub}>Avg. Price: {currentPrice}¢</span>
+                <span className={styles.toWinLabel}>Est. payout</span>
+                <span className={styles.toWinSub}>
+                  Potential profit: {estimatedProfit > 0 ? `+${estimatedProfit.toFixed(4)}` : estimatedProfit.toFixed(4)} tBNB
+                  <span className={styles.priceHintWrap}>
+                    <span className={styles.priceHintTrigger} tabIndex={0}>i</span>
+                    <span className={styles.priceHintBubble}>
+                      This shows your estimated total payout if the selected side wins. It uses the current pool sizes, your stake, and the 5% platform fee applied to your share of the losing pool.
+                    </span>
+                  </span>
+                </span>
               </div>
               <div className={`${styles.toWinAmount} ${activeOutcome === 1 ? styles.toWinYes : styles.toWinNo}`}>
-                {estimatedShares > 0 ? `${estimatedShares.toFixed(4)} tBNB` : '—'}
+                {estimatedPayout > 0 ? `${estimatedPayout.toFixed(4)} tBNB` : '—'}
               </div>
             </div>
           )}
 
           {/* Your position card */}
           {userPrediction && (
-            <div className={`${styles.positionCard} ${userPrediction.choice === 1 ? styles.positionYes : styles.positionNo}`}>
+            <div className={`${styles.positionCard} ${hasMixedPosition ? styles.positionMixed : userPrediction.choice === 1 ? styles.positionYes : styles.positionNo}`}>
               <div className={styles.positionRow}>
                 <span className={styles.positionLabel}>Your Position</span>
-                <span className={`${styles.positionOutcome} ${userPrediction.choice === 1 ? styles.outcomeYes : styles.outcomeNo}`}>
-                  {userPrediction.choice === 1 ? yesLabel : noLabel}
+                <span className={`${styles.positionOutcome} ${hasMixedPosition ? styles.outcomeMixed : userPrediction.choice === 1 ? styles.outcomeYes : styles.outcomeNo}`}>
+                  {hasMixedPosition ? 'MIXED' : userPrediction.choice === 1 ? yesLabel : noLabel}
                 </span>
               </div>
+              {hasMixedPosition && (
+                <>
+                  <div className={styles.positionRow}>
+                    <span className={styles.positionLabel}>{yesLabel} Staked</span>
+                    <span className={styles.positionAmount}>{formatToken(userPrediction.yesAmount ?? '0')} tBNB</span>
+                  </div>
+                  <div className={styles.positionRow}>
+                    <span className={styles.positionLabel}>{noLabel} Staked</span>
+                    <span className={styles.positionAmount}>{formatToken(userPrediction.noAmount ?? '0')} tBNB</span>
+                  </div>
+                </>
+              )}
               <div className={styles.positionRow}>
                 <span className={styles.positionLabel}>Staked</span>
                 <span className={styles.positionAmount}>{formatToken(userPrediction.amount)} tBNB</span>
@@ -337,12 +370,12 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           </button>
 
           {/* You Get (est.) */}
-          {!isMarketClosed && estimatedShares > 0 && (
+          {!isMarketClosed && estimatedPayout > 0 && (
             <div className={styles.youGetRow}>
               <span className={styles.youGetLabel}>You Get (est.)</span>
               <div className={styles.youGetRight}>
-                <span className={styles.youGetAmount}>{estimatedShares.toFixed(3)}</span>
-                <span className={styles.youGetShares}>{currentLabel.toUpperCase()} Shares</span>
+                <span className={styles.youGetAmount}>{estimatedPayout.toFixed(4)}</span>
+                <span className={styles.youGetShares}>tBNB payout if {currentLabel.toUpperCase()} wins</span>
               </div>
             </div>
           )}

@@ -10,6 +10,7 @@ import {
   RiStarLine,
 } from 'react-icons/ri'
 import { useMarkets } from '../../context/MarketsContext'
+import { getMarketDetailPath } from '../../lib/utils'
 import styles from './page.module.css'
 
 const DUMMY_USERS = [
@@ -126,7 +127,7 @@ export default function LeaderboardPage() {
                 const yesP  = total > 0 ? Math.round((yes / total) * 100) : 50
                 const shortQ = m.question.length > 40 ? m.question.slice(0, 40) + '…' : m.question
                 return (
-                  <Link href={`/market/${m.id}`} key={m.id} className={styles.hotMarket}>
+                  <Link href={getMarketDetailPath(m.question, m.id)} key={m.id} className={styles.hotMarket}>
                     <div className={styles.hotRank}>#{i + 1}</div>
                     <div className={styles.hotContent}>
                       <div className={styles.hotQ}>{shortQ}</div>

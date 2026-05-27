@@ -38,12 +38,13 @@ export default function MarketsPage() {
   }, [])
 
   // reset to page 1 when filters change
-  useEffect(() => { setPage(1) }, [search, category, status, sort, minVol, minYes, maxYes])
+  useEffect(() => {
+    const timer = setTimeout(() => { setPage(1) }, 0)
+    return () => clearTimeout(timer)
+  }, [search, category, status, sort, minVol, minYes, maxYes])
 
   const liveCount     = useMemo(() => markets.filter(m => !m.resolved && (nowInSeconds <= 0 || m.endTime > nowInSeconds)).length, [markets, nowInSeconds])
   const resolvedCount = useMemo(() => markets.filter(m => m.resolved).length, [markets])
-  const endedCount    = useMemo(() => markets.filter(m => !m.resolved && nowInSeconds > 0 && m.endTime <= nowInSeconds).length, [markets, nowInSeconds])
-
   const filtered = useMemo(() => {
     const q     = search.trim().toLowerCase()
     const minV  = parseFloat(minVol) || 0
@@ -54,7 +55,6 @@ export default function MarketsPage() {
       const isEnd  = !m.resolved && nowInSeconds > 0 && m.endTime <= nowInSeconds
       const total  = parseFloat(m.totalPool) || 0
       const yesP   = parseFloat(m.yesPool)   || 0
-      const noP    = parseFloat(m.noPool)     || 0
       const yesOdds = total > 0 ? (yesP / total) * 100 : 50
 
       if (q && !m.question.toLowerCase().includes(q)) return false
@@ -66,7 +66,7 @@ export default function MarketsPage() {
       if (yesOdds < minYes || yesOdds > maxYes)  return false
       return true
     })
-  }, [markets, search, category, status, sort, minVol, minYes, maxYes, nowInSeconds])
+  }, [markets, search, category, status, minVol, minYes, maxYes, nowInSeconds])
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -74,15 +74,24 @@ export default function MarketsPage() {
       const volB = parseFloat(b.totalPool) || 0
       const yesA = volA > 0 ? (parseFloat(a.yesPool) / volA) * 100 : 50
       const yesB = volB > 0 ? (parseFloat(b.yesPool) / volB) * 100 : 50
+      const rank = (market: typeof a) => {
+        if (!market.resolved && (nowInSeconds <= 0 || market.endTime > nowInSeconds)) return 0
+        if (!market.resolved && nowInSeconds > 0 && market.endTime <= nowInSeconds) return 1
+        return 2
+      }
       if (sort === 'vol-desc')  return volB - volA
       if (sort === 'vol-asc')   return volA - volB
-      if (sort === 'newest')    return b.id - a.id
+      if (sort === 'newest') {
+        const rankDelta = rank(a) - rank(b)
+        if (rankDelta !== 0) return rankDelta
+        return b.id - a.id
+      }
       if (sort === 'ending')    return a.endTime - b.endTime
       if (sort === 'yes-desc')  return yesB - yesA
       if (sort === 'no-desc')   return (100 - yesB) - (100 - yesA)
       return 0
     })
-  }, [filtered, sort])
+  }, [filtered, sort, nowInSeconds])
 
   const totalVol = useMemo(() =>
     markets.reduce((s, m) => s + (parseFloat(m.totalPool) || 0), 0).toFixed(2),

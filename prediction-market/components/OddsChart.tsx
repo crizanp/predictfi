@@ -134,18 +134,6 @@ function autoBucketMs(points: number, spanMs: number): number {
   return nearestBucketMs(raw)
 }
 
-function downsampleSingle(points: ChartPoint[], bucketMs: number): ChartPoint[] {
-  if (!Number.isFinite(bucketMs) || bucketMs <= 0) return []
-  const map = new Map<number, ChartPoint>()
-  for (const point of points) {
-    if (!isValidTimestamp(point.ts)) continue
-    const bucket = Math.floor(point.ts / bucketMs) * bucketMs
-    if (!isValidTimestamp(bucket)) continue
-    map.set(bucket, { ...point, ts: bucket, iso: safeIsoFromTs(bucket) })
-  }
-  return Array.from(map.values()).sort((a, b) => a.ts - b.ts)
-}
-
 function downsampleMulti(points: MultiChartPoint[], bucketMs: number): MultiChartPoint[] {
   if (!Number.isFinite(bucketMs) || bucketMs <= 0) return []
   const map = new Map<number, MultiChartPoint>()
@@ -507,8 +495,8 @@ export default function OddsChart({
       const open: MultiChartPoint = { ts: openTs, iso: safeIsoFromTs(openTs) }
       for (const entry of series) open[entry.key] = 50
       return [
-        { ts: open.ts, time: 'Open', ...open },
-        { ts: current.ts, time: formatTick(current.ts, 5 * 60 * 1000), ...current },
+        { ...open, time: 'Open' },
+        { ...current, time: formatTick(current.ts, 5 * 60 * 1000) },
       ]
     }
 
@@ -555,7 +543,6 @@ export default function OddsChart({
 
   const candleBucketSec = useMemo(() => bucketSecFromInterval(interval, singleTickData), [interval, singleTickData])
   const singleCandleData = useMemo(() => buildCandles(singleTickData, candleBucketSec), [singleTickData, candleBucketSec])
-  const candleModeLabel = candleBucketSec < 60 ? `${candleBucketSec}s` : `${Math.round(candleBucketSec / 60)}m`
 
   useEffect(() => {
     if (!isMultiSeries) return
@@ -611,7 +598,7 @@ export default function OddsChart({
         horzLine: { color: 'rgba(192,132,252,0.35)' },
       },
       localization: {
-        priceFormatter: (price) => `${price.toFixed(2)}%`,
+        priceFormatter: (price: number) => `${price.toFixed(2)}%`,
       },
       handleScroll: {
         mouseWheel: true,
@@ -686,7 +673,7 @@ export default function OddsChart({
             ))}
           </div>
         </div>
-        {!isMultiSeries && <span className={styles.modeBadge}>TradingView Candles {candleModeLabel}</span>}
+        {!isMultiSeries && <span ></span>}
         <div className={styles.legend}>
           {isMultiSeries ? (
             series.map((entry) => (

@@ -22,6 +22,7 @@ import {
 import TradePanel from '../../../components/TradePanel'
 import OddsChart from '../../../components/OddsChart'
 import styles from './page.module.css'
+import { getMarketDetailPath, parseMarketIdFromDetailSlug } from '../../../lib/utils'
 
 const CATEGORY_COLORS: Record<string, string> = {
   Sports: '#3b82f6', Crypto: '#8b5cf6', Politics: '#f59e0b',
@@ -51,11 +52,12 @@ export default function MarketDetailPage() {
   const { fetchMarket, markets: ctxMarkets } = useMarkets()
   const { account, setShowWalletModal }      = useWallet()
 
-  const marketId = Number(params?.id)
+  const marketParam = Array.isArray(params?.id) ? params.id[0] : String(params?.id ?? '')
+  const marketId = useMemo(() => parseMarketIdFromDetailSlug(marketParam) ?? Number(marketParam), [marketParam])
 
   const [market, setMarket]             = useState<Awaited<ReturnType<typeof fetchMarket>>>(null)
   const [loading, setLoading]           = useState(true)
-  const [nowInSeconds, setNowInSeconds] = useState(Math.floor(Date.now() / 1000))
+  const [nowInSeconds, setNowInSeconds] = useState(0)
   const [meta, setMeta]                 = useState<MarketMeta | null>(null)
   const [selectedEventKey, setSelectedEventKey] = useState('1')
   const [shareCopied, setShareCopied] = useState(false)
@@ -90,29 +92,51 @@ export default function MarketDetailPage() {
   // Initial load
   useEffect(() => {
     if (!marketId || Number.isNaN(marketId)) { router.replace('/'); return }
-    setLoading(true)
-    fetchMarket(marketId).then(m => { setMarket(m); setLoading(false) })
-    getMarketMeta(marketId).then(setMeta)
+    const timer = window.setTimeout(() => {
+      setLoading(true)
+      fetchMarket(marketId).then(m => { setMarket(m); setLoading(false) })
+      getMarketMeta(marketId).then(setMeta)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [fetchMarket, marketId, router])
+
+  useEffect(() => {
+    if (!market || Number.isNaN(market.id)) return
+    const canonicalPath = getMarketDetailPath(market.question, market.id)
+    const currentSegment = marketParam
+    if (currentSegment && currentSegment !== canonicalPath.split('/').pop()) {
+      router.replace(canonicalPath)
+    }
+  }, [market, marketParam, router])
 
   // Live market state via context (WSS-driven)
   useEffect(() => {
     if (!marketId || !ctxMarkets.length) return
     const live = ctxMarkets.find(m => m.id === marketId)
-    if (live) setMarket(live)
+    if (live) {
+      const timer = window.setTimeout(() => setMarket(live), 0)
+      return () => window.clearTimeout(timer)
+    }
   }, [ctxMarkets, marketId])
 
   // Clock
   useEffect(() => {
-    const t = setInterval(() => setNowInSeconds(Math.floor(Date.now() / 1000)), 1000)
-    return () => clearInterval(t)
+    const update = () => setNowInSeconds(Math.floor(Date.now() / 1000))
+    const boot = window.setTimeout(update, 0)
+    const interval = window.setInterval(update, 1000)
+    return () => {
+      window.clearTimeout(boot)
+      window.clearInterval(interval)
+    }
   }, [])
 
   // Load comments + subscribe for real-time inserts
   useEffect(() => {
     if (!marketId) return
-    setCommentLoading(true)
-    getComments(marketId).then(data => { setRawComments(data); setCommentLoading(false) })
+    const timer = window.setTimeout(() => {
+      setCommentLoading(true)
+      getComments(marketId).then(data => { setRawComments(data); setCommentLoading(false) })
+    }, 0)
 
     // Supabase real-time: new comments appear instantly
     const ch = supabase
@@ -135,14 +159,20 @@ export default function MarketDetailPage() {
       )
       .subscribe()
 
-    return () => { void supabase.removeChannel(ch) }
+    return () => {
+      window.clearTimeout(timer)
+      void supabase.removeChannel(ch)
+    }
   }, [marketId, mergeComments])
 
   // Load activity immediately so holders/activity stay fresh without tab switching
   useEffect(() => {
     if (!marketId || activityLoaded || activityLoading) return
-    setActivityLoading(true)
-    getActivity(marketId).then(data => { setActivity(data); setActivityLoaded(true); setActivityLoading(false) })
+    const timer = window.setTimeout(() => {
+      setActivityLoading(true)
+      getActivity(marketId).then(data => { setActivity(data); setActivityLoaded(true); setActivityLoading(false) })
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [activityLoaded, activityLoading, marketId])
 
   // Subscribe for new activity rows (new bets placed by anyone)
@@ -270,7 +300,9 @@ export default function MarketDetailPage() {
 
   const handleShare = useCallback(async () => {
     try {
-      const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+      const shareUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}${market ? getMarketDetailPath(market.question, market.id) : window.location.pathname}`
+        : ''
       if (navigator.share) {
         await navigator.share({ title: market?.eventName || market?.question || 'PredictFi Market', url: shareUrl })
         return
@@ -283,7 +315,7 @@ export default function MarketDetailPage() {
     } catch {
       // Ignore canceled share interactions.
     }
-  }, [market?.eventName, market?.question])
+  }, [market])
 
   const yesLabel = meta?.yes_label ?? 'YES'
   const noLabel  = meta?.no_label  ?? 'NO'
@@ -327,7 +359,8 @@ export default function MarketDetailPage() {
   useEffect(() => {
     if (marketEvents.length === 0) return
     if (!marketEvents.some((event) => event.key === selectedEventKey)) {
-      setSelectedEventKey(marketEvents[0].key)
+      const timer = window.setTimeout(() => setSelectedEventKey(marketEvents[0].key), 0)
+      return () => window.clearTimeout(timer)
     }
   }, [marketEvents, selectedEventKey])
 
