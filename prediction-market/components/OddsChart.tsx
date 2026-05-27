@@ -165,7 +165,18 @@ function formatCrosshairTime(time: Time | undefined): string {
       minute: '2-digit',
     })
   }
-  if ('year' in time && 'month' in time && 'day' in time) {
+  if (typeof time === 'string') {
+    const parsed = new Date(time)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    }
+    return 'Latest'
+  }
+  if (typeof time === 'object' && time !== null && 'year' in time && 'month' in time && 'day' in time) {
     return new Date(time.year, time.month - 1, time.day).toLocaleDateString([], {
       month: 'short',
       day: 'numeric',
