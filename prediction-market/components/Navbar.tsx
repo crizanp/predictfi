@@ -21,7 +21,15 @@ const HOME_NAV = [
   { label: 'Whitepaper', href: '/whitepaper' },
   { label: 'Pitchdeck', href: '/pitchdeck' },
   { label: 'Roadmap', href: '/roadmap' },
-  
+]
+
+const MOBILE_NAV = [
+  { label: 'PRFI Token', href: '/#prfi' },
+  { label: 'Whitepaper', href: '/whitepaper' },
+  { label: 'Pitchdeck', href: '/pitchdeck' },
+  { label: 'Roadmap', href: '/roadmap' },
+  { label: 'Whitelist', href: '/whitelist' },
+  { label: 'Social', href: '/#social' },
 ]
 
 export default function Navbar() {
@@ -154,14 +162,33 @@ export default function Navbar() {
       )}
 
       <nav className={styles.mobileBottomNav} aria-label="Mobile quick links">
-        {HOME_NAV.map((item) => {
-          const href = item.href.startsWith('#') ? `/${item.href}` : item.href
-          return (
-            <Link key={`mobile-${item.label}`} href={href} className={styles.mobileBottomLink}>
-              {item.label}
-            </Link>
-          )
-        })}
+        {!account ? (
+          <button
+            className={styles.mobileWalletBtn}
+            onClick={() => setShowWalletModal(true)}
+            disabled={isBusy && busyAction?.startsWith('connect')}
+          >
+            {isBusy && busyAction?.startsWith('connect') ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        ) : isWrongNetwork ? (
+          <button
+            className={styles.mobileWalletBtn}
+            onClick={() => { void switchActiveNetwork() }}
+            disabled={isBusy}
+          >
+            {busyAction === 'switch-network' ? 'Switching...' : 'Switch Network'}
+          </button>
+        ) : (
+          <button className={styles.mobileWalletBtn} onClick={() => setShowWalletModal(true)}>
+            {shortenAddress(account)}
+          </button>
+        )}
+
+        {MOBILE_NAV.map((item) => (
+          <Link key={`mobile-${item.label}`} href={item.href} className={styles.mobileBottomLink}>
+            {item.label}
+          </Link>
+        ))}
       </nav>
     </header>
   )

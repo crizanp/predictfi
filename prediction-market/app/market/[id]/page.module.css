@@ -896,9 +896,53 @@
   .logoWrap { width: 56px; height: 56px; }
   .heroTop { flex-direction: column; align-items: flex-start; gap: 10px; }
   .heroStats { flex-wrap: wrap; gap: 10px; }
+  .eventRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+  .eventActions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .eventYes,
+  .eventNo {
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+  .tabsRow {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .tabBtn {
+    flex: 0 0 auto;
+  }
+  .holdersHeader {
+    display: none;
+  }
+  .holderRow,
+  .activityRow {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .holderAmount,
+  .activityAmount {
+    min-width: 0;
+  }
 }
 
 @media (max-width: 480px) {
   .container { padding: 0 10px; }
   .header { padding: 14px 12px; }
+  .question { font-size: 20px; line-height: 1.2; }
+  .meta { gap: 10px; }
+  .eventsSection,
+  .infoSection,
+  .discussionTab { padding-left: 12px; padding-right: 12px; }
 }

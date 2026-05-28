@@ -480,3 +480,66 @@
   40%  { box-shadow: 0 0 30px rgba(255,51,102,0.6); }
   100% { box-shadow: none; }
 }
+
+@media (max-width: 768px) {
+  .panel {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .panelHeader {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .outcomeBtn,
+  .outcomeBtnYesActive,
+  .outcomeBtnNoActive {
+    padding: 9px 10px;
+  }
+
+  .amountInput {
+    font-size: 18px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .presets {
+    flex-wrap: wrap;
+  }
+
+  .preset,
+  .presetActive {
+    min-width: calc(33.333% - 4px);
+    flex: 1 1 calc(33.333% - 4px);
+  }
+
+  .toWinRow,
+  .youGetRow {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs {
+    width: 100%;
+  }
+
+  .tab,
+  .tabActive {
+    flex: 1;
+    text-align: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .outcomeLabelText {
+    max-width: 76px;
+  }
+
+  .toWinAmount,
+  .youGetAmount {
+    font-size: 14px;
+  }
+}

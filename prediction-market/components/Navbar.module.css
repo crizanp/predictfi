@@ -372,14 +372,30 @@
   border: 1px solid rgba(255,255,255,0.09);
 }
 
+.mobileWalletBtn {
+  border: 1px solid rgba(192,132,252,0.45);
+  border-radius: 10px;
+  background: rgba(192,132,252,0.14);
+  color: #f0e6ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding: 8px 12px;
+}
+
 /* ══ RESPONSIVE ══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .controlsRow { padding: 0 12px 0 56px; height: 44px; gap: 6px; }
-  .homeNav { display: none; }
-  .pageNavLeft { gap: 6px; }
-  .backToHome { font-size: 11px; }
-  .socialLinks { display: none; }
-  .adsPill { display: none; }
+  .header {
+    position: static;
+    top: auto;
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .controlsRow { display: none; }
+  .wrongNetworkBanner { margin: 0 10px 10px; border-radius: 10px; }
 
   .mobileBottomNav {
     position: fixed;
@@ -404,5 +420,10 @@
 }
 
 @media (max-width: 480px) {
-  .controlsRow { padding: 0 8px 0 52px; }
+  .mobileBottomNav { padding-left: 8px; padding-right: 8px; }
+  .mobileBottomLink,
+  .mobileWalletBtn {
+    padding: 7px 9px;
+    font-size: 10px;
+  }
 }
