@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { S3Client, PutObjectCommand, CreateBucketCommand } from '@aws-sdk/client-s3'
 import { createClient } from '@supabase/supabase-js'
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 const S3_ENDPOINT = process.env.SUPABASE_S3_ENDPOINT ?? `${SUPABASE_URL}/storage/v1/s3`
@@ -14,14 +12,6 @@ const BUCKET = 'market-images'
 
 function getPublicUrl(key: string): string {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${key}`
-}
-
-async function uploadToLocalPublic(key: string, buffer: Buffer): Promise<string> {
-  const dir = path.join(process.cwd(), 'public', BUCKET)
-  await mkdir(dir, { recursive: true })
-  const filePath = path.join(dir, key)
-  await writeFile(filePath, buffer)
-  return `/${BUCKET}/${key}`
 }
 
 export async function POST(req: NextRequest) {
@@ -73,7 +63,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ url: getPublicUrl(key) })
       } catch {
-        // Fall through to Supabase client upload or local fallback.
+        // Fall through to Supabase client upload.
       }
     }
 
@@ -101,8 +91,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const localUrl = await uploadToLocalPublic(key, buffer)
-    return NextResponse.json({ url: localUrl, storage: 'local-fallback' })
+    return NextResponse.json(
+      {
+        error:
+          'Image upload failed. Configure a Supabase storage bucket with SUPABASE_SERVICE_ROLE_KEY or SUPABASE_S3_ACCESS_KEY_ID/SUPABASE_S3_SECRET_ACCESS_KEY in production.',
+      },
+      { status: 500 }
+    )
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
