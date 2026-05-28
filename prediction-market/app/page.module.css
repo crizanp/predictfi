@@ -1367,6 +1367,19 @@
     border-radius: 16px;
   }
 
+/* Final grid override: home market cards */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
   .prfiHeader {
     padding: 40px 16px 24px;
   }

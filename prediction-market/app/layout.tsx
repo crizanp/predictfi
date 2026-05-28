@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import CornerNotifications from '../components/CornerNotifications'
 import GlobalBanner from '../components/GlobalBanner'
+import TopAnnouncement from '../components/TopAnnouncement'
 import { ToastProvider } from '../context/ToastContext'
 
 const SITE_URL = 'https://predictfi.io'
@@ -83,13 +84,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <ToastProvider>
-            <div className="mainnetBanner">
-              🚀 <strong>Mainnet launches after PRFI token claim</strong> · Presale{' '}
-              <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer">
-                Jun 1–7 on moonsale.app
-              </a>
-              {' '}· Total raise: 150 BNB
-            </div>
+            <TopAnnouncement />
             <div className="appShell">
               <Sidebar />
               <div className="appMain">

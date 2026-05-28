@@ -34,6 +34,16 @@ export default function GlobalBanner() {
   const [ad, setAd] = useState<BannerAd | null | undefined>(undefined) // undefined = still loading
   const [imgState, setImgState] = useState<ImgState>('loading')
 
+  const hideBannerOnDocs =
+    pathname.startsWith('/whitepaper') ||
+    pathname.startsWith('/pitchdeck') ||
+    pathname.startsWith('/tokonomics') ||
+    pathname.startsWith('/roadmap')
+
+  if (hideBannerOnDocs) {
+    return null
+  }
+
   useEffect(() => {
     const key = pageKey(pathname)
     const now = new Date().toISOString()

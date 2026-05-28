@@ -9,7 +9,8 @@ export default function RoadmapPage() {
   return (
     <iframe
       src="/roadmap.html"
-      style={{ width: '100%', height: '100vh', border: 'none', display: 'block' }}
+      loading="lazy"
+      style={{ width: '100%', height: 'calc(100dvh - 120px)', minHeight: 640, border: 'none', display: 'block' }}
       title="PredictFi Roadmap"
     />
   )

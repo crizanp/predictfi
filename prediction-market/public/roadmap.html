@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PredictFi Roadmap</title>
+  <meta name="description" content="PredictFi roadmap and milestone timeline.">
+  <style>
+    :root {
+      --bg: #06050d;
+      --panel: #100f1d;
+      --text: #f4f2fb;
+      --muted: #b8aecb;
+      --accent: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { width: min(980px, 100%); margin: 0 auto; background: var(--panel); border-radius: 16px; border: 1px solid rgba(192,132,252,0.2); padding: 26px; }
+    h1 { margin: 0 0 10px; font-size: clamp(25px, 4vw, 38px); }
+    .timeline { margin-top: 20px; display: grid; gap: 12px; }
+    .item { border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; background: rgba(255,255,255,0.02); }
+    .phase { color: var(--accent); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+    .title { margin-top: 6px; font-size: 18px; font-weight: 700; }
+    .desc { margin-top: 8px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 620px) { body { padding: 12px; } .wrap { padding: 16px; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Roadmap</h1>
+    <div class="timeline">
+      <article class="item"><div class="phase">Phase 1</div><div class="title">Core Launch</div><div class="desc">Market creation, wallet flows, and initial liquidity bootstrap.</div></article>
+      <article class="item"><div class="phase">Phase 2</div><div class="title">Growth Layer</div><div class="desc">Referral systems, leaderboard expansion, and campaign tooling.</div></article>
+      <article class="item"><div class="phase">Phase 3</div><div class="title">Governance</div><div class="desc">PRFI staking, voting, and parameter upgrades through governance.</div></article>
+      <article class="item"><div class="phase">Phase 4</div><div class="title">Ecosystem</div><div class="desc">Multi-chain support and external integrations.</div></article>
+    </div>
+  </main>
+</body>
+</html>

@@ -9,7 +9,8 @@ export default function TokenomicsPage() {
   return (
     <iframe
       src="/tokonomics.html"
-      style={{ width: '100%', height: '100vh', border: 'none', display: 'block' }}
+      loading="lazy"
+      style={{ width: '100%', height: 'calc(100dvh - 120px)', minHeight: 640, border: 'none', display: 'block' }}
       title="PredictFi Tokenomics"
     />
   )

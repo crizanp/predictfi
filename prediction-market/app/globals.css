@@ -27,12 +27,12 @@
   --radius-lg: 18px;
   --radius-xl: 24px;
   --nav-h: 60px;
-  --banner-h: 32px;
+  --banner-h: 36px;
 }
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 
 body {
   background: #08070f;
@@ -42,6 +42,10 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+body.banner-hidden {
+  --banner-h: 0px;
 }
 
 /* Global no-glow mode: remove all glow-like effects across the platform */
@@ -55,15 +59,30 @@ body {
 .mainnetBanner {
   position: sticky;
   top: 0;
-  z-index: 800;
+  z-index: 1200;
+  min-height: var(--banner-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background:  #ffeed3;
   color: #111112;
   font-size: 12px;
   font-weight: 400;
   text-align: center;
-  padding: 7px 16px;
+  padding: 6px 16px;
   letter-spacing: 0.02em;
   border-bottom: 1px solid rgba(192,132,252,0.25);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.mainnetBanner::-webkit-scrollbar { display: none; }
+
+.mainnetBannerHidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 .mainnetBanner strong { color: #111010; }
 .mainnetBanner a { color: #070707; text-decoration: underline; }
@@ -330,10 +349,12 @@ input, textarea, select { font-family: Arial, 'Helvetica Neue', Helvetica, sans-
 /* Mobile: ≤ 768px */
 @media (max-width: 768px) {
   /* Sidebar collapses — push content full width */
-  .appMain { margin-left: 0; padding-top: 44px; }
+  :root { --banner-h: 34px; }
+
+  .appMain { margin-left: 0; padding-bottom: 62px; }
 
   /* Top banner */
-  .mainnetBanner { font-size: 10.5px; padding: 6px 12px; line-height: 1.4; }
+  .mainnetBanner { font-size: 10px; padding: 6px 10px; }
 
   /* Global page banner */
   .globalPageBannerWrap { padding: 10px 12px 4px; }

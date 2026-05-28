@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PredictFi Pitch Deck</title>
+  <meta name="description" content="PredictFi pitch deck.">
+  <style>
+    :root {
+      --bg: #06050d;
+      --panel: #0f0d1b;
+      --text: #f4f2fb;
+      --muted: #b8aecb;
+      --accent: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { width: min(1100px, 100%); margin: 0 auto; background: var(--panel); border: 1px solid rgba(192,132,252,0.2); border-radius: 16px; padding: 26px; }
+    h1 { margin: 0 0 10px; font-size: clamp(25px, 4vw, 38px); }
+    p { color: var(--muted); }
+    .slides { margin-top: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .slide { min-height: 180px; border-radius: 12px; border: 1px dashed rgba(192,132,252,0.35); background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; color: var(--accent); font-weight: 700; }
+    @media (max-width: 680px) { body { padding: 12px; } .wrap { padding: 16px; } .slides { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Pitch Deck</h1>
+    <p>Responsive starter for <strong>/pitchdeck.html</strong>. Replace with your final deck structure or embedded slides.</p>
+    <section class="slides">
+      <div class="slide">Slide 1</div>
+      <div class="slide">Slide 2</div>
+      <div class="slide">Slide 3</div>
+      <div class="slide">Slide 4</div>
+    </section>
+  </main>
+</body>
+</html>

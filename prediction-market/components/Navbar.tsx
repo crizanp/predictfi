@@ -21,8 +21,7 @@ const HOME_NAV = [
   { label: 'Whitepaper', href: '/whitepaper' },
   { label: 'Pitchdeck', href: '/pitchdeck' },
   { label: 'Roadmap', href: '/roadmap' },
-  { label: 'Whitelist', href: '/whitelist' },
-  { label: 'Social', href: '#social' },
+  
 ]
 
 export default function Navbar() {
@@ -153,6 +152,17 @@ export default function Navbar() {
           </button>
         </div>
       )}
+
+      <nav className={styles.mobileBottomNav} aria-label="Mobile quick links">
+        {HOME_NAV.map((item) => {
+          const href = item.href.startsWith('#') ? `/${item.href}` : item.href
+          return (
+            <Link key={`mobile-${item.label}`} href={href} className={styles.mobileBottomLink}>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
     </header>
   )
 }

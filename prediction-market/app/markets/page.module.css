@@ -479,3 +479,16 @@
   .grid, .marketsGrid, .cardGrid { grid-template-columns: 1fr; }
   .container, .wrap, .inner { padding: 0 10px; }
 }
+
+/* Final grid override: markets listing cards */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}

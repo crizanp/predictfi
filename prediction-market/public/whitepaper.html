@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PredictFi Whitepaper</title>
+  <meta name="description" content="PredictFi whitepaper: protocol architecture, winner calculation, token utility, and roadmap.">
+  <style>
+    :root {
+      --bg: #07060e;
+      --panel: #0f0d1a;
+      --border: rgba(192, 132, 252, 0.24);
+      --text: #f2f1f8;
+      --muted: #b6adc8;
+      --accent: #c084fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at 15% 10%, rgba(192,132,252,0.16), transparent 35%), var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 24px;
+    }
+    .wrap {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    h1, h2 { margin: 0 0 12px; }
+    h1 { font-size: clamp(26px, 4vw, 40px); }
+    h2 { font-size: clamp(18px, 2.5vw, 26px); color: #e9ddff; margin-top: 28px; }
+    p, li { color: var(--muted); font-size: 15px; }
+    .badge {
+      display: inline-block;
+      padding: 6px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(192,132,252,0.4);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    code {
+      display: block;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #d9c7ff;
+      overflow-x: auto;
+    }
+    @media (max-width: 640px) {
+      body { padding: 12px; }
+      .wrap { padding: 18px 14px; }
+      p, li { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <span class="badge">PredictFi Documentation</span>
+    <h1>Whitepaper</h1>
+    <p>This page is now correctly rendered from <strong>/public/whitepaper.html</strong>. You can replace this content anytime with your final whitepaper design/content.</p>
+
+    <h2>Protocol Summary</h2>
+    <p>PredictFi is a decentralized YES/NO prediction market protocol on BNB Chain, where users join outcome pools and receive proportional payouts after market resolution.</p>
+
+    <h2>Winner Calculation (Parimutuel)</h2>
+    <p>For winning side amount W, losing side amount L, user stake s, and platform fee f:</p>
+    <code>user_payout = s + (s / W) * (L * (1 - f))</code>
+
+    <h2>Status</h2>
+    <ul>
+      <li>Responsive document layout enabled</li>
+      <li>Dark theme matched to PredictFi styling</li>
+      <li>Ready for full custom content injection</li>
+    </ul>
+  </main>
+</body>
+</html>
