@@ -28,7 +28,7 @@ interface Props {
 }
 
 export default function TradePanel({ market, nowInSeconds, meta, selectedEventKey: selectedEventKeyProp, onSelectedEventKeyChange }: Props) {
-  const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured } = useWallet()
+  const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured, isAuthenticated } = useWallet()
   const { getEventUserPrediction, placePrediction, resolveMarket, claimWinnings } = useMarkets()
   const { addToast } = useToast()
 
@@ -142,7 +142,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   const isResolving  = busyAction?.startsWith(`resolve-${market.id}-${selectedEventId}-`)
   const isClaiming   = busyAction === `claim-${market.id}-${selectedEventId}`
 
-  const canBuy = isContractConfigured && account !== null && !isMarketClosed && !isBusy
+  const canBuy = isContractConfigured && isAuthenticated && account !== null && !isMarketClosed && !isBusy
 
   const estimatedPayout = useMemo(() => {
     const amt = Number.parseFloat(amount || '0')
@@ -164,7 +164,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   }, [amount, estimatedPayout])
 
   const handleBuy = useCallback(async () => {
-    if (!account) { setShowWalletModal(true); return }
+    if (!account || !isAuthenticated) { setShowWalletModal(true); return }
     const isYes = activeOutcome === 1
     const id = ++floatIdRef.current
     setFloats((prev) => [...prev, { id, text: `+${amount} tBNB`, isYes }])
@@ -180,9 +180,10 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     } catch {
       addToast('Trade failed. Check your wallet and try again.', 'error')
     }
-  }, [account, amount, market.id, placePrediction, selectedEventId, activeOutcome, setShowWalletModal, addToast, yesLabel, noLabel, selectedEvent])
+  }, [account, amount, market.id, placePrediction, selectedEventId, activeOutcome, setShowWalletModal, addToast, yesLabel, noLabel, selectedEvent, isAuthenticated])
 
   const canClaimWinnings =
+    isAuthenticated &&
     isEventResolved &&
     (selectedEventState?.result ?? 0) !== 0 &&
     userPrediction &&
@@ -363,7 +364,9 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           >
             {isBuyingThis && <span className={styles.btnSpinner} />}
             {!account
-              ? 'Connect Wallet'
+                ? 'Connect Wallet'
+                : !isAuthenticated
+                  ? 'Login / Signup'
               : isMarketClosed
                 ? (isEventResolved ? 'Event Resolved' : 'Market Ended')
                 : `Buy ${currentLabel}`}
