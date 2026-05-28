@@ -1,11 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Providers from '../components/Providers'
-import Navbar from '../components/Navbar'
-import Sidebar from '../components/Sidebar'
-import CornerNotifications from '../components/CornerNotifications'
-import GlobalBanner from '../components/GlobalBanner'
-import TopAnnouncement from '../components/TopAnnouncement'
+import AppShell from '../components/AppShell'
 import { ToastProvider } from '../context/ToastContext'
 
 const SITE_URL = 'https://predictfi.io'
@@ -84,16 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>
           <ToastProvider>
-            <TopAnnouncement />
-            <div className="appShell">
-              <Sidebar />
-              <div className="appMain">
-                <Navbar />
-                <GlobalBanner />
-                {children}
-              </div>
-              <CornerNotifications />
-            </div>
+            <AppShell>{children}</AppShell>
           </ToastProvider>
         </Providers>
       </body>

@@ -99,6 +99,10 @@ body.banner-hidden {
   min-height: 100vh;
 }
 
+.appShellDocs {
+  display: block;
+}
+
 .appMain {
   flex: 1;
   min-width: 0;
@@ -108,7 +112,17 @@ body.banner-hidden {
 }
 
 .appMainDocs {
+  --banner-h: 0px;
   margin-left: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.docsFrame {
+  display: block;
+  width: 100%;
+  height: calc(100dvh - 48px);
+  border: none;
 }
 
 .globalPageBannerWrap {

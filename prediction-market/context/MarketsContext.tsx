@@ -563,17 +563,26 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     if (!isContractConfigured) return
     let destroyed = false
     let wsProvider: ethers.WebSocketProvider | null = null
+    let wsContract: ethers.Contract | null = null
 
     const setup = async () => {
       try {
         wsProvider = new ethers.WebSocketProvider('wss://bsc-testnet-rpc.publicnode.com')
         const { CONTRACT_ABI: ABI, CONTRACT_ADDRESS: ADDR } = await import('../lib/contract')
-        const wsContract = new ethers.Contract(ADDR, ABI, wsProvider)
+        if (destroyed) {
+          await wsProvider.destroy().catch(() => {})
+          return
+        }
+
+        wsContract = new ethers.Contract(ADDR, ABI, wsProvider)
         const refresh = () => { if (!destroyed) void silentRefreshRef.current() }
-        wsContract.on('PredictionPlaced', refresh)
-        wsContract.on('EventResolved', refresh)
-        wsContract.on('WinningsClaimed', refresh)
-        wsContract.on('MarketCreated', refresh)
+
+        await Promise.allSettled([
+          wsContract.on('PredictionPlaced', refresh),
+          wsContract.on('EventResolved', refresh),
+          wsContract.on('WinningsClaimed', refresh),
+          wsContract.on('MarketCreated', refresh),
+        ])
       } catch {
         // fallback to polling
       }
@@ -582,6 +591,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     void setup()
     return () => {
       destroyed = true
+      wsContract?.removeAllListeners()
       wsProvider?.destroy().catch(() => {})
     }
   }, [isContractConfigured])

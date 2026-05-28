@@ -10,7 +10,7 @@ export default function WhitepaperPage() {
     <iframe
       src="/whitepaper.html"
       loading="lazy"
-      style={{ width: '100%', height: 'calc(100dvh - 120px)', minHeight: 640, border: 'none', display: 'block' }}
+      className="docsFrame"
       title="PredictFi Whitepaper"
     />
   )

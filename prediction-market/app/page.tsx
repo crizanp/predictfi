@@ -119,6 +119,10 @@ const DOC_LINKS = [
   { label: 'Audit', href: '#' },
 ]
 
+function openUseCase(setActiveUseCase: (useCase: UseCase) => void, item: UseCase) {
+  setActiveUseCase(item)
+}
+
 export default function HomePage() {
   const { markets, isLoadingMarkets, hasLoadedMarkets } = useMarkets()
   const [nowInSeconds, setNowInSeconds] = useState(() => Math.floor(Date.now() / 1000))
@@ -369,11 +373,18 @@ export default function HomePage() {
 
    <div className={styles.useCasesGrid}>
   {tokenUseCases.map((item) => (
-    <button
+    <div
       key={item.title}
-      type="button"
       className={styles.useCase}
-      onClick={() => setActiveUseCase(item)}
+      role="button"
+      tabIndex={0}
+      onClick={() => openUseCase(setActiveUseCase, item)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          openUseCase(setActiveUseCase, item)
+        }
+      }}
     >
       <item.Icon className={styles.useCaseIcon} style={{ color: 'black' }} />
       <div className={styles.useCaseBottom}>
@@ -383,14 +394,14 @@ export default function HomePage() {
           className={styles.useCaseBtn}
           style={{ borderColor: 'black', color: 'black' }}
           onClick={(e) => {
-            e.stopPropagation();
-            setActiveUseCase(item);
+            e.stopPropagation()
+            openUseCase(setActiveUseCase, item)
           }}
         >
           Learn more
         </button>
       </div>
-    </button>
+    </div>
   ))}
 </div>
         </div>  
