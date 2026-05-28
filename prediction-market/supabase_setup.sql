@@ -29,13 +29,17 @@ CREATE POLICY "Allow update market_metadata"
 CREATE TABLE IF NOT EXISTS market_odds_history (
   id          BIGSERIAL PRIMARY KEY,
   market_id   INTEGER       NOT NULL,
+  event_id    INTEGER,
   yes_pool    TEXT          NOT NULL,
   no_pool     TEXT          NOT NULL,
   total_pool  TEXT          NOT NULL,
   recorded_at TIMESTAMPTZ   DEFAULT NOW()
 );
 
+ALTER TABLE market_odds_history ADD COLUMN IF NOT EXISTS event_id INTEGER;
+
 CREATE INDEX IF NOT EXISTS idx_odds_market_id   ON market_odds_history (market_id);
+CREATE INDEX IF NOT EXISTS idx_odds_market_event ON market_odds_history (market_id, event_id);
 CREATE INDEX IF NOT EXISTS idx_odds_recorded_at ON market_odds_history (recorded_at);
 
 ALTER TABLE market_odds_history ENABLE ROW LEVEL SECURITY;
@@ -132,6 +136,8 @@ CREATE TABLE IF NOT EXISTS market_activity (
   block_number BIGINT,
   created_at   TIMESTAMPTZ   DEFAULT NOW()
 );
+
+ALTER TABLE market_activity ADD COLUMN IF NOT EXISTS event_id INTEGER;
 
 CREATE INDEX IF NOT EXISTS idx_activity_market_id  ON market_activity (market_id);
 CREATE INDEX IF NOT EXISTS idx_activity_user_addr  ON market_activity (user_address);

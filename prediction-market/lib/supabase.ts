@@ -5,6 +5,8 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
+let oddsHistoryEventIdSupported: boolean | null = null
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MarketMeta {
@@ -54,10 +56,44 @@ export async function upsertMarketMeta(meta: MarketMeta): Promise<boolean> {
 
 export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_at'>): Promise<void> {
   if (!supabaseKey) return
-  await supabase.from('market_odds_history').insert({
+  const row = {
     ...snapshot,
     recorded_at: new Date().toISOString(),
-  })
+  }
+
+  if (oddsHistoryEventIdSupported === false) {
+    const { event_id, ...legacyRow } = row
+    void event_id
+    const { error } = await supabase.from('market_odds_history').insert(legacyRow)
+    if (error) {
+      console.warn('recordOddsSnapshot legacy insert failed:', error.message)
+    }
+    return
+  }
+
+  const { error } = await supabase.from('market_odds_history').insert(row)
+  if (!error) {
+    oddsHistoryEventIdSupported = true
+    return
+  }
+
+  const msg = error.message.toLowerCase()
+  const hasEventIdSchemaMismatch =
+    msg.includes('event_id') &&
+    (msg.includes('column') || msg.includes('schema cache'))
+
+  if (hasEventIdSchemaMismatch) {
+    oddsHistoryEventIdSupported = false
+    const { event_id, ...legacyRow } = row
+    void event_id
+    const { error: fallbackError } = await supabase.from('market_odds_history').insert(legacyRow)
+    if (fallbackError) {
+      console.warn('recordOddsSnapshot fallback insert failed:', fallbackError.message)
+    }
+    return
+  }
+
+  console.warn('recordOddsSnapshot failed:', error.message)
 }
 
 export async function getOddsHistory(marketId: number, eventId?: number, limit = 2000): Promise<OddsSnapshot[]> {
@@ -72,7 +108,26 @@ export async function getOddsHistory(marketId: number, eventId?: number, limit =
     query = query.eq('event_id', eventId)
   }
   const { data, error } = await query
-  if (error) return []
+  if (error) {
+    const msg = error.message.toLowerCase()
+    const hasEventIdSchemaMismatch =
+      eventId !== undefined &&
+      msg.includes('event_id') &&
+      (msg.includes('column') || msg.includes('schema cache'))
+
+    if (!hasEventIdSchemaMismatch) return []
+
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('market_odds_history')
+      .select('*')
+      .eq('market_id', marketId)
+      .order('recorded_at', { ascending: false })
+      .limit(limit)
+
+    if (fallbackError) return []
+    const fallbackOrdered = ((fallbackData as OddsSnapshot[]) ?? []).slice().reverse()
+    return fallbackOrdered
+  }
   const ordered = ((data as OddsSnapshot[]) ?? []).slice().reverse()
   return ordered
 }

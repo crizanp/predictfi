@@ -77,7 +77,10 @@ function coerceTs(value: string | number | Date): number {
 
 function nearestBucketMs(rawMs: number): number {
   const steps = [
-    5 * 60 * 1000,
+    15 * 1000,
+    30 * 1000,
+    60 * 1000,
+    2 * 60 * 1000,
     30 * 60 * 1000,
     60 * 60 * 1000,
     3 * 60 * 60 * 1000,
@@ -93,8 +96,8 @@ function nearestBucketMs(rawMs: number): number {
 }
 
 function autoBucketMs(points: number, spanMs: number): number {
-  if (points <= 140) return 5 * 60 * 1000
-  const raw = Math.max(5 * 60 * 1000, Math.floor(spanMs / 140))
+  if (points <= 240) return 15 * 1000
+  const raw = Math.max(15 * 1000, Math.floor(spanMs / 240))
   return nearestBucketMs(raw)
 }
 
@@ -476,21 +479,22 @@ export default function OddsChart({
       setActivityHistory(activityRows)
 
       if (isMultiSeries) {
-        const buckets = new Map<number, MultiChartPoint>()
+        const validEventIds = new Set(seriesEvents.map((event) => event.id))
+        const pointsByTs = new Map<number, MultiChartPoint>()
         for (const snap of snaps) {
-          if (!snap.event_id) continue
+          if (snap.event_id == null) continue
+          if (!validEventIds.has(snap.event_id)) continue
           const ts = coerceTs(snap.recorded_at)
-          const bucket = Math.floor(ts / (5 * 60 * 1000)) * (5 * 60 * 1000)
-          if (!isValidTimestamp(bucket)) continue
+          if (!isValidTimestamp(ts)) continue
           const key = seriesKey(snap.event_id)
           const total = parseFloat(snap.total_pool)
-          const chance = total > 0 ? Math.round((parseFloat(snap.yes_pool) / total) * 100) : 50
-          const current = buckets.get(bucket) ?? { ts: bucket, iso: safeIsoFromTs(bucket) }
+          const chance = total > 0 ? Number(((parseFloat(snap.yes_pool) / total) * 100).toFixed(4)) : 50
+          const current = pointsByTs.get(ts) ?? { ts, iso: safeIsoFromTs(ts) }
           current[key] = chance
-          buckets.set(bucket, current)
+          pointsByTs.set(ts, current)
         }
 
-        const snapshotPoints = Array.from(buckets.values()).sort((a, b) => a.ts - b.ts)
+        const snapshotPoints = Array.from(pointsByTs.values()).sort((a, b) => a.ts - b.ts)
         const activityPoints = buildMultiActivityHistory(activityRows, seriesEvents)
         setMultiHistory(mergeMultiChartPoints(snapshotPoints, activityPoints))
         return
@@ -498,7 +502,7 @@ export default function OddsChart({
 
       if (!snaps.length && activityRows.length === 0) return
 
-      const strictEventSnaps = snaps.filter((snap) => (eventId === undefined ? !snap.event_id : snap.event_id === eventId))
+      const strictEventSnaps = snaps.filter((snap) => (eventId === undefined ? snap.event_id == null : snap.event_id === eventId))
       const legacySnaps = eventId === undefined
         ? strictEventSnaps
         : snaps.filter((snap) => snap.event_id == null)
@@ -724,8 +728,8 @@ export default function OddsChart({
 
     const basePoints = filterPointsInWindow(multiHistory, interval, ts)
     const withCurrent = [...basePoints, current].sort((a, b) => a.ts - b.ts)
-    const sampled = downsampleMulti(withCurrent, bucketMs)
-    return sampled
+    if (withCurrent.length <= 900) return withCurrent
+    return downsampleMulti(withCurrent, bucketMs)
   }, [bucketMs, interval, multiHistory, series])
 
   const singleTickData = useMemo<ChartPoint[]>(() => {
