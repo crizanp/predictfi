@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ethers } from 'ethers'
 import { ColorType, createChart, LineSeries, type CandlestickData, type IChartApi, type ISeriesApi, type LineData, type MouseEventParams, type Time, type UTCTimestamp } from 'lightweight-charts'
-import { getOddsHistory, recordOddsSnapshot } from '../lib/supabase'
+import { getActivity, getOddsHistory, recordOddsSnapshot, type MarketActivity } from '../lib/supabase'
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../lib/contract'
 import styles from './OddsChart.module.css'
 
@@ -57,7 +57,6 @@ const INTERVAL_OPTIONS: Array<{ key: IntervalKey; label: string; ms: number | nu
   { key: '30d', label: '30d', ms: 30 * 24 * 60 * 60 * 1000 },
 ]
 
-const LS_KEY = (id: number, chartKey?: string) => `pf_odds_${id}_${chartKey ?? 'default'}`
 const MAX_PTS = 5000
 const MIN_VALID_TS = -8640000000000000
 const MAX_VALID_TS = 8640000000000000
@@ -69,24 +68,6 @@ function isValidTimestamp(ts: unknown): ts is number {
 
 function safeIsoFromTs(ts: number): string {
   return isValidTimestamp(ts) ? new Date(ts).toISOString() : new Date(Date.now()).toISOString()
-}
-
-function loadLocal<T>(id: number, chartKey?: string): T[] {
-  if (typeof window === 'undefined') return []
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY(id, chartKey)) ?? '[]') as T[]
-  } catch {
-    return []
-  }
-}
-
-function saveLocal<T>(id: number, pts: T[], chartKey?: string) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(LS_KEY(id, chartKey), JSON.stringify(pts.slice(-MAX_PTS)))
-  } catch {
-    // ignore
-  }
 }
 
 function coerceTs(value: string | number | Date): number {
@@ -208,6 +189,145 @@ function toStrictAscLineData(data: LineData<UTCTimestamp>[]): LineData<UTCTimest
   return out
 }
 
+function mergeChartPoints(...groups: ChartPoint[][]): ChartPoint[] {
+  const map = new Map<number, ChartPoint>()
+  for (const group of groups) {
+    for (const point of group) {
+      map.set(point.ts, point)
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
+}
+
+function mergeMultiChartPoints(...groups: MultiChartPoint[][]): MultiChartPoint[] {
+  const map = new Map<number, MultiChartPoint>()
+  for (const group of groups) {
+    for (const point of group) {
+      const current = map.get(point.ts) ?? { ts: point.ts, iso: point.iso }
+      map.set(point.ts, { ...current, ...point })
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
+}
+
+function matchesActivityEvent(row: MarketActivity, eventId: number | undefined): boolean {
+  if (eventId === undefined) return row.event_id == null
+  return Number(row.event_id ?? Number.NaN) === eventId
+}
+
+function buildSingleActivityHistory(
+  rows: MarketActivity[],
+  eventId: number | undefined,
+  currentYesPool: string,
+  currentNoPool: string
+): ChartPoint[] {
+  const strictRows = rows.filter((row) => matchesActivityEvent(row, eventId))
+  const legacyRows = eventId === undefined ? strictRows : rows.filter((row) => row.event_id == null)
+  const selectedRows = strictRows.length > 0 ? strictRows : legacyRows
+  const orderedRows = selectedRows
+    .map((row) => ({
+      ts: coerceTs(row.created_at),
+      choice: Number(row.choice ?? 0),
+      amount: parseFloat(row.amount_eth) || 0,
+    }))
+    .filter((row) => (row.choice === 1 || row.choice === 2) && row.amount > 0)
+    .sort((a, b) => a.ts - b.ts)
+
+  if (orderedRows.length === 0) return []
+
+  const totalYesAdded = orderedRows.filter((row) => row.choice === 1).reduce((sum, row) => sum + row.amount, 0)
+  const totalNoAdded = orderedRows.filter((row) => row.choice === 2).reduce((sum, row) => sum + row.amount, 0)
+  let runningYes = Math.max(0, (parseFloat(currentYesPool) || 0) - totalYesAdded)
+  let runningNo = Math.max(0, (parseFloat(currentNoPool) || 0) - totalNoAdded)
+
+  const points: ChartPoint[] = []
+  const initialTotal = runningYes + runningNo
+  const initialYesPct = initialTotal > 0 ? Number(((runningYes / initialTotal) * 100).toFixed(4)) : 50
+  const initialTs = Math.max(0, orderedRows[0].ts - 1)
+  points.push({
+    ts: initialTs,
+    iso: safeIsoFromTs(initialTs),
+    yes: initialYesPct,
+    no: Number((100 - initialYesPct).toFixed(4)),
+  })
+
+  for (let index = 0; index < orderedRows.length; index += 1) {
+    const row = orderedRows[index]
+    if (row.choice === 1) runningYes += row.amount
+    if (row.choice === 2) runningNo += row.amount
+    const total = runningYes + runningNo
+    const yesPct = total > 0 ? Number(((runningYes / total) * 100).toFixed(4)) : 50
+    const ts = row.ts + index
+    points.push({
+      ts,
+      iso: safeIsoFromTs(ts),
+      yes: yesPct,
+      no: Number((100 - yesPct).toFixed(4)),
+    })
+  }
+
+  return points
+}
+
+function buildMultiActivityHistory(rows: MarketActivity[], events: SeriesEvent[]): MultiChartPoint[] {
+  if (events.length === 0) return []
+
+  const totalsByEvent = new Map<number, { yes: number; no: number }>()
+  for (const event of events) {
+    totalsByEvent.set(event.id, {
+      yes: parseFloat(event.yesPool) || 0,
+      no: Math.max(0, (parseFloat(event.totalPool) || 0) - (parseFloat(event.yesPool) || 0)),
+    })
+  }
+
+  const orderedRows = rows
+    .map((row) => ({
+      eventId: Number(row.event_id ?? Number.NaN),
+      ts: coerceTs(row.created_at),
+      choice: Number(row.choice ?? 0),
+      amount: parseFloat(row.amount_eth) || 0,
+    }))
+    .filter((row) => totalsByEvent.has(row.eventId) && (row.choice === 1 || row.choice === 2) && row.amount > 0)
+    .sort((a, b) => a.ts - b.ts)
+
+  if (orderedRows.length === 0) return []
+
+  for (const row of orderedRows) {
+    const totals = totalsByEvent.get(row.eventId)
+    if (!totals) continue
+    if (row.choice === 1) totals.yes = Math.max(0, totals.yes - row.amount)
+    if (row.choice === 2) totals.no = Math.max(0, totals.no - row.amount)
+  }
+
+  const points: MultiChartPoint[] = []
+  const initialTs = Math.max(0, orderedRows[0].ts - 1)
+  const initialPoint: MultiChartPoint = { ts: initialTs, iso: safeIsoFromTs(initialTs) }
+  for (const event of events) {
+    const totals = totalsByEvent.get(event.id)
+    const total = (totals?.yes ?? 0) + (totals?.no ?? 0)
+    initialPoint[seriesKey(event.id)] = total > 0 ? Number((((totals?.yes ?? 0) / total) * 100).toFixed(4)) : 50
+  }
+  points.push(initialPoint)
+
+  for (let index = 0; index < orderedRows.length; index += 1) {
+    const row = orderedRows[index]
+    const totals = totalsByEvent.get(row.eventId)
+    if (!totals) continue
+    if (row.choice === 1) totals.yes += row.amount
+    if (row.choice === 2) totals.no += row.amount
+    const total = totals.yes + totals.no
+    const chance = total > 0 ? Number(((totals.yes / total) * 100).toFixed(4)) : 50
+    const ts = row.ts + index
+    points.push({
+      ts,
+      iso: safeIsoFromTs(ts),
+      [seriesKey(row.eventId)]: chance,
+    })
+  }
+
+  return points
+}
+
 function autoCandleBucketSec(points: ChartPoint[]): number {
   if (points.length <= 100) return 1
   if (points.length < 2) return 60
@@ -320,8 +440,9 @@ export default function OddsChart({
 }: Props) {
   const isMultiSeries = seriesEvents.length > 1
 
-  const [history, setHistory] = useState<ChartPoint[]>(() => loadLocal<ChartPoint>(marketId, chartKey))
-  const [multiHistory, setMultiHistory] = useState<MultiChartPoint[]>(() => loadLocal<MultiChartPoint>(marketId, chartKey))
+  const [history, setHistory] = useState<ChartPoint[]>([])
+  const [multiHistory, setMultiHistory] = useState<MultiChartPoint[]>([])
+  const [activityHistory, setActivityHistory] = useState<MarketActivity[]>([])
   const [interval, setInterval] = useState<IntervalKey>('all')
   const [viewMode, setViewMode] = useState<ChartViewMode>('normal')
   const supabaseSynced = useRef(false)
@@ -340,32 +461,9 @@ export default function OddsChart({
   const chartHeight = viewMode === 'min' ? 130 : viewMode === 'max' ? 360 : 220
 
   useEffect(() => {
-    const localSingle = loadLocal<ChartPoint>(marketId, chartKey)
-      .map((point) => {
-        const legacy = point as ChartPoint & { time?: string }
-        if (isValidTimestamp(point.ts)) return { ...point, iso: safeIsoFromTs(point.ts) }
-        if (legacy.time) {
-          const guessed = coerceTs(new Date().toDateString() + ' ' + legacy.time)
-          return { ts: guessed, iso: safeIsoFromTs(guessed), yes: point.yes, no: point.no }
-        }
-        return null
-      })
-      .filter((point): point is ChartPoint => Boolean(point))
-
-    const localMulti = loadLocal<MultiChartPoint>(marketId, chartKey)
-      .map((point) => {
-        const legacy = point as MultiChartPoint & { time?: string }
-        if (isValidTimestamp(point.ts)) return { ...point, iso: safeIsoFromTs(point.ts) }
-        if (legacy.time) {
-          const guessed = coerceTs(new Date().toDateString() + ' ' + legacy.time)
-          return { ...point, ts: guessed, iso: safeIsoFromTs(guessed) }
-        }
-        return null
-      })
-      .filter((point): point is MultiChartPoint => Boolean(point))
-
-    setHistory(localSingle)
-    setMultiHistory(localMulti)
+    setHistory([])
+    setMultiHistory([])
+    setActivityHistory([])
     supabaseSynced.current = false
     lastSnapshotBucket.current = {}
   }, [marketId, chartKey])
@@ -374,8 +472,8 @@ export default function OddsChart({
     if (supabaseSynced.current) return
     supabaseSynced.current = true
 
-    void getOddsHistory(marketId).then((snaps) => {
-      if (!snaps.length) return
+    void Promise.all([getOddsHistory(marketId), getActivity(marketId)]).then(([snaps, activityRows]) => {
+      setActivityHistory(activityRows)
 
       if (isMultiSeries) {
         const buckets = new Map<number, MultiChartPoint>()
@@ -392,20 +490,13 @@ export default function OddsChart({
           buckets.set(bucket, current)
         }
 
-        const pts = Array.from(buckets.values()).sort((a, b) => a.ts - b.ts)
-        setMultiHistory((prev) => {
-          const map = new Map<number, MultiChartPoint>()
-          for (const point of prev) map.set(point.ts, point)
-          for (const point of pts) {
-            const current = map.get(point.ts) ?? { ts: point.ts, iso: point.iso }
-            map.set(point.ts, { ...current, ...point })
-          }
-          const merged = Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
-          saveLocal(marketId, merged, chartKey)
-          return merged
-        })
+        const snapshotPoints = Array.from(buckets.values()).sort((a, b) => a.ts - b.ts)
+        const activityPoints = buildMultiActivityHistory(activityRows, seriesEvents)
+        setMultiHistory(mergeMultiChartPoints(snapshotPoints, activityPoints))
         return
       }
+
+      if (!snaps.length && activityRows.length === 0) return
 
       const strictEventSnaps = snaps.filter((snap) => (eventId === undefined ? !snap.event_id : snap.event_id === eventId))
       const legacySnaps = eventId === undefined
@@ -433,19 +524,14 @@ export default function OddsChart({
           }
         })
 
-      setHistory((prev) => {
-        const map = new Map<number, ChartPoint>()
-        for (const point of prev) map.set(point.ts, point)
-        for (const point of pts) map.set(point.ts, point)
-        const merged = Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
-        saveLocal(marketId, merged, chartKey)
-        return merged
-      })
+      const activityPoints = buildSingleActivityHistory(activityRows, eventId, yesPool, noPool)
+      setHistory(mergeChartPoints(pts, activityPoints))
     })
-  }, [isMultiSeries, marketId, eventId, chartKey])
+  }, [chartKey, eventId, isMultiSeries, marketId, noPool, seriesEvents, yesPool])
 
   useEffect(() => {
     if (isMultiSeries) return
+    if (activityHistory.length > 0) return
     if (!ethers.isAddress(CONTRACT_ADDRESS)) return
 
     const syncKey = `${marketId}:${eventId ?? 0}:${chartKey ?? 'default'}`
@@ -517,9 +603,7 @@ export default function OddsChart({
             const map = new Map<number, ChartPoint>()
             for (const point of prev) map.set(point.ts, point)
             for (const point of txPoints) map.set(point.ts, point)
-            const merged = Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
-            saveLocal(marketId, merged, chartKey)
-            return merged
+            return Array.from(map.values()).sort((a, b) => a.ts - b.ts).slice(-MAX_PTS)
           })
         } catch {
           // ignore tx-history fallback failures
@@ -531,7 +615,7 @@ export default function OddsChart({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [chartKey, eventId, isMultiSeries, marketId, noPool, yesPool])
+  }, [activityHistory.length, chartKey, eventId, isMultiSeries, marketId, noPool, yesPool])
 
   useEffect(() => {
     if (!isMultiSeries) return
@@ -552,9 +636,7 @@ export default function OddsChart({
       if (unchanged) return prev
 
       const base = sameTime ? prev.slice(0, -1) : prev
-      const updated = [...base, point].slice(-MAX_PTS)
-      saveLocal(marketId, updated, chartKey)
-      return updated
+      return [...base, point].slice(-MAX_PTS)
     })
   }, [isMultiSeries, seriesEvents, marketId, chartKey])
 
@@ -589,11 +671,9 @@ export default function OddsChart({
     setHistory((prev) => {
       const last = prev[prev.length - 1]
       if (last && ts - last.ts < 60 * 1000 && last.yes === yesPct) return prev
-      const updated = [...prev, pt]
+      return [...prev, pt]
         .sort((a, b) => a.ts - b.ts)
         .slice(-MAX_PTS)
-      saveLocal(marketId, updated, chartKey)
-      return updated
     })
 
     if (!resolved) {
