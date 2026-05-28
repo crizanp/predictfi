@@ -69,6 +69,7 @@ export interface MarketsContextValue {
   loadUserPredictions: (account: string, mList: Market[]) => Promise<void>
   getEventUserPrediction: (marketId: number, eventId: number) => UserPrediction | undefined
   placePrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<void>
+  sellPrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<void>
   resolveMarket: (marketId: number, result: number, eventId?: number) => Promise<void>
   claimWinnings: (marketId: number, eventId?: number) => Promise<void>
   createMarket: (question: string, durationMinutes: number, eventNames: string[]) => Promise<void>
@@ -244,29 +245,66 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
           for (const event of market.events) {
             const prediction = await contract.getUserPrediction(market.id, event.id, currentAccount)
-            let placedEvents: Array<ethers.Log | ethers.EventLog> = []
-
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              placedEvents = await contract.queryFilter((contract.filters as any).PredictionPlaced(market.id, event.id, currentAccount))
-            } catch (error) {
-              const message = toErrorMessage(error)
-              console.warn(`PredictionPlaced history fallback for market ${market.id} event ${event.id}:`, message)
-            }
-
             let yesAmountWei = BigInt(0)
             let noAmountWei = BigInt(0)
             let latestChoiceForEvent = Number(prediction.choice)
+            let claimedForEvent = Boolean(prediction.claimed)
 
-            for (const placedEvent of placedEvents) {
-              const args = 'args' in placedEvent
-                ? (placedEvent.args as unknown[] | undefined) ?? []
-                : []
-              const choice = Number(args[3] ?? 0)
-              const amountWei = (args[4] as bigint) ?? BigInt(0)
-              if (choice === 1) yesAmountWei += amountWei
-              if (choice === 2) noAmountWei += amountWei
-              if (choice === 1 || choice === 2) latestChoiceForEvent = choice
+            let usedBreakdown = false
+            try {
+              const breakdown = await contract.getUserPositionBreakdown(market.id, event.id, currentAccount)
+              yesAmountWei = (breakdown[0] as bigint) ?? BigInt(0)
+              noAmountWei = (breakdown[1] as bigint) ?? BigInt(0)
+              claimedForEvent = Boolean(breakdown[2])
+              usedBreakdown = true
+            } catch {
+              usedBreakdown = false
+            }
+
+            if (!usedBreakdown) {
+              let placedEvents: Array<ethers.Log | ethers.EventLog> = []
+              let soldEvents: Array<ethers.Log | ethers.EventLog> = []
+
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                placedEvents = await contract.queryFilter((contract.filters as any).PredictionPlaced(market.id, event.id, currentAccount))
+              } catch (error) {
+                const message = toErrorMessage(error)
+                console.warn(`PredictionPlaced history fallback for market ${market.id} event ${event.id}:`, message)
+              }
+
+              try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                soldEvents = await contract.queryFilter((contract.filters as any).PredictionSold(market.id, event.id, currentAccount))
+              } catch {
+                soldEvents = []
+              }
+
+              for (const placedEvent of placedEvents) {
+                const args = 'args' in placedEvent
+                  ? (placedEvent.args as unknown[] | undefined) ?? []
+                  : []
+                const choice = Number(args[3] ?? 0)
+                const amountWei = (args[4] as bigint) ?? BigInt(0)
+                if (choice === 1) yesAmountWei += amountWei
+                if (choice === 2) noAmountWei += amountWei
+                if (choice === 1 || choice === 2) latestChoiceForEvent = choice
+              }
+
+              for (const soldEvent of soldEvents) {
+                const args = 'args' in soldEvent
+                  ? (soldEvent.args as unknown[] | undefined) ?? []
+                  : []
+                const choice = Number(args[3] ?? 0)
+                const amountWei = (args[4] as bigint) ?? BigInt(0)
+                if (choice === 1) {
+                  yesAmountWei = yesAmountWei > amountWei ? yesAmountWei - amountWei : BigInt(0)
+                }
+                if (choice === 2) {
+                  noAmountWei = noAmountWei > amountWei ? noAmountWei - amountWei : BigInt(0)
+                }
+                if (choice === 1 || choice === 2) latestChoiceForEvent = choice
+              }
             }
 
             const totalFromLogs = yesAmountWei + noAmountWei
@@ -283,7 +321,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
               const mapped: UserPrediction = {
                 choice: latestChoiceForEvent || Number(prediction.choice),
                 amount: ethers.formatEther(totalAmountWei),
-                claimed: Boolean(prediction.claimed),
+                claimed: claimedForEvent,
                 yesAmount: ethers.formatEther(resolvedYesWei),
                 noAmount: ethers.formatEther(resolvedNoWei),
                 hasBothSides: resolvedYesWei > BigInt(0) && resolvedNoWei > BigInt(0),
@@ -375,6 +413,46 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         setStatusMessage('success', 'Prediction placed successfully.')
       } catch (error) {
         setStatusMessage('error', `Prediction failed. ${toErrorMessage(error)}`)
+      } finally {
+        setBusyAction(null)
+      }
+    },
+    [account, getPreparedWriteContract, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
+  )
+
+  const sellPrediction = useCallback(
+    async (marketId: number, eventId: number, choice: number, amountInput: string) => {
+      const amount = amountInput.trim()
+      if (!amount) {
+        setStatusMessage('error', 'Enter an amount before selling.')
+        return
+      }
+
+      let parsedAmount: bigint
+      try {
+        parsedAmount = ethers.parseEther(amount)
+      } catch {
+        setStatusMessage('error', 'Amount format is invalid.')
+        return
+      }
+
+      if (parsedAmount <= BigInt(0)) {
+        setStatusMessage('error', 'Amount must be greater than zero.')
+        return
+      }
+
+      setBusyAction(`sell-${marketId}-${eventId}-${choice}`)
+
+      try {
+        const contract = await getPreparedWriteContract()
+        const tx = await contract.sellPrediction(marketId, eventId, choice, parsedAmount)
+        await tx.wait()
+
+        const loadedMarkets = await loadMarkets()
+        if (account) await loadUserPredictions(account, loadedMarkets)
+        setStatusMessage('success', 'Position sold successfully.')
+      } catch (error) {
+        setStatusMessage('error', `Sell failed. ${toErrorMessage(error)}`)
       } finally {
         setBusyAction(null)
       }
@@ -603,6 +681,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
         await Promise.allSettled([
           wsContract.on('PredictionPlaced', refresh),
+          wsContract.on('PredictionSold', refresh),
           wsContract.on('EventResolved', refresh),
           wsContract.on('WinningsClaimed', refresh),
           wsContract.on('MarketCreated', refresh),
@@ -653,6 +732,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         loadUserPredictions,
         getEventUserPrediction,
         placePrediction,
+        sellPrediction,
         resolveMarket,
         claimWinnings,
         createMarket,

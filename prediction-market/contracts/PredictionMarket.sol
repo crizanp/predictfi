@@ -45,6 +45,7 @@ contract PredictionMarket {
     event MarketCreated(uint256 indexed id, string question, uint256 endTime, uint256 eventCount);
     event MarketEventCreated(uint256 indexed marketId, uint256 indexed eventId, string name);
     event PredictionPlaced(uint256 indexed marketId, uint256 indexed eventId, address indexed user, Outcome choice, uint256 amount);
+    event PredictionSold(uint256 indexed marketId, uint256 indexed eventId, address indexed user, Outcome choice, uint256 amount);
     event EventResolved(uint256 indexed marketId, uint256 indexed eventId, Outcome result);
     event WinningsClaimed(uint256 indexed marketId, uint256 indexed eventId, address indexed user, uint256 amount);
 
@@ -113,6 +114,59 @@ contract PredictionMarket {
         emit PredictionPlaced(_marketId, _eventId, msg.sender, _choice, msg.value);
     }
 
+    function sellPrediction(uint256 _marketId, uint256 _eventId, Outcome _choice, uint256 _amount) external {
+        Market storage market = markets[_marketId];
+        require(market.id != 0, "Market does not exist");
+        require(_eventId > 0 && _eventId <= market.eventCount, "Event does not exist");
+        require(block.timestamp < market.endTime, "Market ended");
+        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
+        require(!eventMarket.resolved, "Event resolved");
+        require(_choice == Outcome.YES || _choice == Outcome.NO, "Invalid choice");
+        require(_amount > 0, "Amount must be > 0");
+
+        Position[] storage userPositions = positions[_marketId][_eventId][msg.sender];
+        require(userPositions.length > 0, "No prediction found");
+
+        uint256 availableAmount = 0;
+        for (uint256 i = 0; i < userPositions.length; i++) {
+            Position storage position = userPositions[i];
+            if (!position.claimed && position.choice == _choice) {
+                availableAmount += position.amount;
+            }
+        }
+        require(availableAmount >= _amount, "Insufficient position");
+
+        uint256 remainingToSell = _amount;
+        for (uint256 i = 0; i < userPositions.length && remainingToSell > 0; i++) {
+            Position storage position = userPositions[i];
+            if (position.claimed || position.choice != _choice || position.amount == 0) {
+                continue;
+            }
+
+            if (position.amount <= remainingToSell) {
+                remainingToSell -= position.amount;
+                position.amount = 0;
+            } else {
+                position.amount -= remainingToSell;
+                remainingToSell = 0;
+            }
+        }
+
+        if (_choice == Outcome.YES) {
+            require(eventMarket.yesPool >= _amount, "Pool underflow");
+            eventMarket.yesPool -= _amount;
+        } else {
+            require(eventMarket.noPool >= _amount, "Pool underflow");
+            eventMarket.noPool -= _amount;
+        }
+        require(eventMarket.totalPool >= _amount, "Pool underflow");
+        eventMarket.totalPool -= _amount;
+
+        payable(msg.sender).transfer(_amount);
+
+        emit PredictionSold(_marketId, _eventId, msg.sender, _choice, _amount);
+    }
+
     function resolveEvent(uint256 _marketId, uint256 _eventId, Outcome _result) external onlyOwner {
         Market storage market = markets[_marketId];
         require(market.id != 0, "Market does not exist");
@@ -139,21 +193,28 @@ contract PredictionMarket {
         require(userPositions.length > 0, "No prediction found");
 
         uint256 winningAmount = 0;
-        bool hasUnclaimedWinningPosition = false;
+        bool hasActivePosition = false;
 
         for (uint256 i = 0; i < userPositions.length; i++) {
             Position storage position = userPositions[i];
+            if (position.amount == 0) {
+                continue;
+            }
             require(!position.claimed, "Already claimed");
+            hasActivePosition = true;
 
             if (position.choice == eventMarket.result) {
                 winningAmount += position.amount;
-                hasUnclaimedWinningPosition = true;
             }
         }
 
-        require(hasUnclaimedWinningPosition, "You lost");
+        require(hasActivePosition, "No active prediction found");
+        require(winningAmount > 0, "You lost");
 
         for (uint256 i = 0; i < userPositions.length; i++) {
+            if (userPositions[i].amount == 0) {
+                continue;
+            }
             userPositions[i].claimed = true;
         }
 
@@ -192,15 +253,57 @@ contract PredictionMarket {
 
         uint256 totalAmount = 0;
         Outcome latestChoice = Outcome.NONE;
+        bool hasActivePosition = false;
         bool allClaimed = true;
 
         for (uint256 i = 0; i < userPositions.length; i++) {
-            totalAmount += userPositions[i].amount;
-            latestChoice = userPositions[i].choice;
-            allClaimed = allClaimed && userPositions[i].claimed;
+            Position storage position = userPositions[i];
+            if (position.amount == 0) {
+                continue;
+            }
+            hasActivePosition = true;
+            totalAmount += position.amount;
+            latestChoice = position.choice;
+            allClaimed = allClaimed && position.claimed;
+        }
+
+        if (!hasActivePosition) {
+            return Prediction({ choice: Outcome.NONE, amount: 0, claimed: false });
         }
 
         return Prediction({ choice: latestChoice, amount: totalAmount, claimed: allClaimed });
+    }
+
+    function getUserPositionBreakdown(uint256 _marketId, uint256 _eventId, address _user) external view returns (uint256 yesAmount, uint256 noAmount, bool allClaimed) {
+        Position[] storage userPositions = positions[_marketId][_eventId][_user];
+        if (userPositions.length == 0) {
+            return (0, 0, false);
+        }
+
+        bool hasActivePosition = false;
+        uint256 yes = 0;
+        uint256 no = 0;
+        bool claimed = true;
+
+        for (uint256 i = 0; i < userPositions.length; i++) {
+            Position storage position = userPositions[i];
+            if (position.amount == 0) {
+                continue;
+            }
+            hasActivePosition = true;
+            if (position.choice == Outcome.YES) {
+                yes += position.amount;
+            } else if (position.choice == Outcome.NO) {
+                no += position.amount;
+            }
+            claimed = claimed && position.claimed;
+        }
+
+        if (!hasActivePosition) {
+            return (0, 0, false);
+        }
+
+        return (yes, no, claimed);
     }
 
     function withdrawFees() external onlyOwner {

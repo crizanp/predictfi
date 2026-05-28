@@ -46,32 +46,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.tabs {
-  display: flex;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--radius-sm);
-  padding: 3px;
-  gap: 3px;
-}
-.tab {
-  padding: 6px 18px;
-  border-radius: 6px;
-  font-size: 13px; font-weight: 700;
-  color: var(--text-muted);
-  background: transparent; border: none;
-  transition: all 0.15s; cursor: pointer;
-}
-.tab:hover { color: var(--text-main); }
-.tabActive {
-  padding: 6px 18px;
-  border-radius: 6px;
-  font-size: 13px; font-weight: 700;
-  color: var(--text-main);
-  background: rgba(192,132,252,0.15);
-  border: 1px solid rgba(192,132,252,0.3);
-  cursor: pointer;
-}
 .orderType {
   font-size: 12px; font-weight: 600;
   color: var(--text-muted);
@@ -81,6 +55,74 @@
   padding: 5px 10px; white-space: nowrap;
 }
 
+/* ── Buy / Sell tabs ──────────────────────────────────────────── */
+.tradeTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+
+.tradeTab {
+  padding: 9px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px; font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  transition: all 0.18s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tradeTab:hover:not(.tradeTabActive) {
+  color: var(--text-main);
+  background: rgba(255,255,255,0.04);
+}
+
+.tradeTabBuyActive {
+  padding: 9px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px; font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #08070f;
+  background: #c084fc;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  animation: tab-pop 0.2s ease;
+}
+
+.tradeTabSellActive {
+  padding: 9px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px; font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: rgba(192,132,252,0.08);
+  border: 1px solid rgba(192,132,252,0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  animation: tab-pop 0.2s ease;
+}
+
+/* ── Event selector ───────────────────────────────────────────── */
 .eventSelectWrap {
   display: flex;
   flex-direction: column;
@@ -359,6 +401,14 @@
 .tradeBtn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .tradeBtnYes { background: #c084fc; color: #08070f; }
 .tradeBtnNo  { background: #ff3366; color: #ffffff; }
+.sellBtn {
+  background: rgba(7, 10, 18, 0.95);
+  border: 1px solid rgba(192,132,252,0.45);
+  color: #e9d5ff;
+}
+.sellBtn:hover:not(:disabled) {
+  border-color: rgba(216,180,254,0.75);
+}
 
 .btnSpinner {
   width: 16px; height: 16px;
@@ -384,7 +434,7 @@
 .youGetAmount { font-size: 16px; font-weight: 900; color: var(--text-main); }
 .youGetShares { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
 
-/* ── Sell tab ─────────────────────────────────────────────────── */
+/* ── Sell tab content ─────────────────────────────────────────── */
 .sellTab { display: flex; flex-direction: column; gap: 12px; }
 .sellInfo {
   display: flex; flex-direction: column; gap: 8px;
@@ -405,6 +455,68 @@
 .noPosition {
   text-align: center; padding: 24px;
   color: var(--text-muted); font-size: 13px; font-weight: 600;
+}
+
+/* ── Sell tab — outcome pill selector ─────────────────────────── */
+.sellOutcomeSelect {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sellOutcomeBtn {
+  padding: 9px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 13px; font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.sellOutcomeBtn:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.18);
+  color: var(--text-main);
+}
+
+.sellOutcomeBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.sellOutcomeBtnYesActive {
+  padding: 9px 12px;
+  background: rgba(192,132,252,0.12);
+  border: 2px solid rgba(192,132,252,0.5);
+  border-radius: var(--radius-md);
+  color: var(--yes);
+  font-size: 13px; font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.sellOutcomeBtnNoActive {
+  padding: 9px 12px;
+  background: rgba(255,51,102,0.1);
+  border: 2px solid rgba(255,51,102,0.5);
+  border-radius: var(--radius-md);
+  color: var(--no);
+  font-size: 13px; font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.sellPositionAmt {
+  font-size: 12px; font-weight: 800;
+  letter-spacing: -0.01em; flex-shrink: 0;
 }
 
 /* ── Text helpers ─────────────────────────────────────────────── */
@@ -469,6 +581,10 @@
   0%   { transform: scale(0.95) translateY(4px); opacity: 0; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
+@keyframes tab-pop {
+  0%   { transform: scale(0.96); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes flash-yes {
   0%   { box-shadow: none; }
@@ -494,7 +610,10 @@
 
   .outcomeBtn,
   .outcomeBtnYesActive,
-  .outcomeBtnNoActive {
+  .outcomeBtnNoActive,
+  .sellOutcomeBtn,
+  .sellOutcomeBtnYesActive,
+  .sellOutcomeBtnNoActive {
     padding: 9px 10px;
   }
 
@@ -522,12 +641,13 @@
 }
 
 @media (max-width: 480px) {
-  .tabs {
+  .tradeTabs {
     width: 100%;
   }
 
-  .tab,
-  .tabActive {
+  .tradeTab,
+  .tradeTabBuyActive,
+  .tradeTabSellActive {
     flex: 1;
     text-align: center;
     padding-left: 0;
