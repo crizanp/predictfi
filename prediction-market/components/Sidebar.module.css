@@ -98,6 +98,34 @@
   background: rgba(255,255,255,0.08);
 }
 
+.mobileOnlyMenu {
+  display: none;
+}
+
+.mobileSocialRow {
+  display: none;
+}
+
+.mobileSocialIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #d1d5db;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.mobileSocialIcon:hover {
+  color: #ffffff;
+  border-color: rgba(192,132,252,0.4);
+  background: rgba(192,132,252,0.16);
+}
+
 /* ── Bottom ────────────────────────────────── */
 .bottom {
   padding: 12px;
@@ -234,5 +262,18 @@
 
   .sidebarOpen {
     transform: translateX(0);
+  }
+
+  .mobileOnlyMenu {
+    display: block;
+  }
+
+  .mobileSocialRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 6px;
   }
 }

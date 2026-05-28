@@ -1367,19 +1367,6 @@
     border-radius: 16px;
   }
 
-/* Final grid override: home market cards */
-@media (max-width: 767px) {
-  .grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-}
-
   .prfiHeader {
     padding: 40px 16px 24px;
   }
@@ -1400,7 +1387,23 @@
 
   .tokenomicsCard,
   .presaleCard {
-    padding: 24px 16px;
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .useCase {
+    min-height: 124px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .useCaseTitle {
+    font-size: 15px;
+  }
+
+  .useCaseDesc {
+    font-size: 13px;
+    line-height: 1.6;
   }
 
   .totalSupply {
@@ -1413,7 +1416,7 @@
   }
 
   .allocRow {
-    padding: 9px 10px;
+    padding: 12px 12px;
   }
 
   .allocLabelWrap {
@@ -1691,4 +1694,17 @@
   .heroBannerHeadline { font-size: 18px; }
   .heroBannerTag { font-size: 9px; }
   .heroBannerBtn { padding: 8px 16px; font-size: 12px; }
+}
+
+/* Final grid override: homepage market cards */
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
 }

@@ -73,6 +73,14 @@
 /* ── Back link for inner pages ──────────────────────────────── */
 .pageNavLeft { display: flex; align-items: center; gap: 12px; }
 
+.mobileCenterBrand {
+  display: none;
+}
+
+.brandPredict { color: #c084fc; }
+.brandDot { color: #ffffff; margin: 0 1px; }
+.brandFi { color: #ffffff; }
+
 .backToHome {
   color: #6b7280;
   font-size: 12px;
@@ -363,6 +371,7 @@
     height: 44px;
     padding: 0 10px 0 56px;
     gap: 6px;
+    position: relative;
   }
 
   .pageNavLeft {
@@ -370,13 +379,32 @@
   }
 
   .right {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
     gap: 6px;
     min-width: 0;
+    margin-left: auto;
   }
 
-  .socialLinks,
+  .socialLinks {
+    display: none;
+  }
+
+  .mobileCenterBrand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 50%;
+    translate: 0 -50%;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    pointer-events: none;
+  }
+
   .adsPill,
   .profileNamePill,
   .networkPill,

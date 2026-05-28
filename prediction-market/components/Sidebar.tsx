@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
+import { RiTwitterXLine, RiTelegramLine, RiDiscordLine } from 'react-icons/ri'
 import { useWallet } from '../context/WalletContext'
-import { shortenAddress } from '../lib/utils'
 import styles from './Sidebar.module.css'
 
 const NAV = [
@@ -17,11 +17,17 @@ const NAV = [
 ]
 
 const MENU_LINKS = [
-  { href: '/#prfi', label: 'PRFI Token' },
-  { href: '/whitepaper', label: 'Whitepaper' },
-  { href: '/pitchdeck', label: 'Pitchdeck' },
-  { href: '/roadmap', label: 'Roadmap' },
-  { href: '/#social', label: 'Social' },
+  { href: '/#prfi', label: 'PRFI Token', d: 'M12 2l3 3-3 3-3-3 3-3z M12 8v12 M7 15h10' },
+  { href: '/whitepaper', label: 'Whitepaper', d: 'M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M15 3v4h4' },
+  { href: '/pitchdeck', label: 'Pitchdeck', d: 'M4 19h16 M7 14l3-4 3 2 4-6' },
+  { href: '/roadmap', label: 'Roadmap', d: 'M5 3v18 M5 4h10l-2 3 2 3H5' },
+  { href: '/#social', label: 'Social', d: 'M18 8a3 3 0 1 0-2.8-4 M6 14a3 3 0 1 0 2.8 4 M8.7 15.2l6.6 3.6 M15.3 5.2L8.7 8.8' },
+]
+
+const SOCIAL_LINKS = [
+  { Icon: RiTwitterXLine, href: 'https://x.com/predictfi', label: 'Twitter / X' },
+  { Icon: RiTelegramLine, href: 'https://t.me/predictfi', label: 'Telegram' },
+  { Icon: RiDiscordLine, href: 'https://discord.gg/predictfi', label: 'Discord' },
 ]
 
 export default function Sidebar() {
@@ -111,18 +117,24 @@ export default function Sidebar() {
             </Link>
           ))}
 
-          <div className={styles.navDivider} />
+          <div className={styles.mobileOnlyMenu}>
+            <div className={styles.navDivider} />
 
-          {MENU_LINKS.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={styles.navItem}
-            >
-              <span className={styles.icon} aria-hidden>•</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+            {MENU_LINKS.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={styles.navItem}
+              >
+                <svg className={styles.icon} viewBox="0 0 24 24" fill="none" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  {item.d.split('M').filter(Boolean).map((seg, i) => (
+                    <path key={i} d={`M${seg}`} />
+                  ))}
+                </svg>
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
         </nav>
 
         <div className={styles.bottom}>
@@ -139,8 +151,21 @@ export default function Sidebar() {
             <div className={styles.avatar}>
               {account ? account.slice(2, 3).toUpperCase() : 'N'}
             </div>
-            {account && <span className={styles.avatarAddr}>{shortenAddress(account)}</span>}
-            {account && <span className={styles.avatarArrow}>&#x203A;</span>}
+          </div>
+
+          <div className={styles.mobileSocialRow}>
+            {SOCIAL_LINKS.map(({ Icon, href, label }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.mobileSocialIcon}
+                aria-label={label}
+              >
+                <Icon />
+              </a>
+            ))}
           </div>
         </div>
       </aside>
