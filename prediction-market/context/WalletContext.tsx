@@ -13,6 +13,11 @@ export interface StatusMessage {
   text: string
 }
 
+export interface AuthUser {
+  address: string
+  username: string
+}
+
 type ProviderRequestParams = unknown[] | Record<string, unknown>
 type ProviderEvent = 'accountsChanged' | 'chainChanged' | 'disconnect'
 
@@ -69,6 +74,9 @@ export interface WalletContextValue {
   setStatus: (status: StatusMessage | null) => void
   setStatusMessage: (tone: StatusTone, text: string) => void
   setBusyAction: (action: string | null) => void
+  authUser: AuthUser | null
+  authLoading: boolean
+  isAuthenticated: boolean
   addAdminAddress: (address: string) => boolean
   removeAdminAddress: (address: string) => void
   connectInjectedWallet: () => Promise<void>
@@ -76,6 +84,9 @@ export interface WalletContextValue {
   setExternalProvider: (provider: Eip1193Provider | null, type: ConnectionType) => Promise<void>
   disconnectWallet: () => Promise<void>
   switchAccount: () => Promise<void>
+  refreshAuthSession: () => Promise<void>
+  signWithWalletAuth: (action: 'login' | 'signup', username?: string) => Promise<{ success: boolean; error?: string }>
+  logoutUser: () => Promise<void>
   switchActiveNetwork: () => Promise<void>
   refreshWalletState: (options?: {
     requestAccounts?: boolean
@@ -102,6 +113,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [injectedAvailable, setInjectedAvailable] = useState(false)
   const [activeChainId, setActiveChainId] = useState<number | null>(null)
   const [busyAction, setBusyAction] = useState<string | null>(null)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null)
+  const [authLoading, setAuthLoading] = useState(false)
   const [status, setStatus] = useState<StatusMessage | null>(
     isContractConfigured
       ? null
@@ -152,6 +165,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const isBusy = busyAction !== null
   const isWrongNetwork = account !== '' && activeChainId !== null && activeChainId !== CHAIN_ID
   const isAdmin = account !== '' && (isOwner || adminAddresses.includes(account.toLowerCase()))
+  const isAuthenticated = Boolean(authUser)
+
+  const refreshAuthSession = useCallback(async () => {
+    setAuthLoading(true)
+    try {
+      const response = await fetch('/api/auth/session', { credentials: 'include' })
+      const payload = (await response.json()) as { user?: AuthUser | null }
+      setAuthUser(payload.user ?? null)
+    } catch {
+      setAuthUser(null)
+    } finally {
+      setAuthLoading(false)
+    }
+  }, [])
 
   const persistAdminAddresses = useCallback((next: string[]) => {
     if (typeof window === 'undefined') return
@@ -432,9 +459,87 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }
     }
     clearWalletSession()
+    setAuthUser(null)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch {
+      // ignore network errors while disconnecting
+    }
     setStatusMessage('info', 'Wallet disconnected.')
     setBusyAction(null)
   }, [clearWalletSession, connectionType, setStatusMessage, walletProvider])
+
+  const signWithWalletAuth = useCallback(
+    async (action: 'login' | 'signup', username?: string): Promise<{ success: boolean; error?: string }> => {
+      if (!account) {
+        return { success: false, error: 'Connect wallet first.' }
+      }
+
+      setBusyAction(action === 'signup' ? 'auth-signup' : 'auth-login')
+      try {
+        const providerSource = requireProvider()
+        const provider = new ethers.BrowserProvider(providerSource)
+        const signer = await provider.getSigner()
+        const signerAddress = (await signer.getAddress()).toLowerCase()
+
+        if (signerAddress !== account.toLowerCase()) {
+          return { success: false, error: 'Wallet account changed. Please reconnect and try again.' }
+        }
+
+        const nonceRes = await fetch(`/api/auth/nonce?address=${encodeURIComponent(signerAddress)}&action=${action}`, {
+          credentials: 'include',
+        })
+        const noncePayload = (await nonceRes.json()) as { message?: string; error?: string }
+        if (!nonceRes.ok || !noncePayload.message) {
+          return { success: false, error: noncePayload.error || 'Failed to initialize sign message.' }
+        }
+
+        const signature = await signer.signMessage(noncePayload.message)
+
+        const verifyRes = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            address: signerAddress,
+            signature,
+            action,
+            username: username?.trim() || '',
+          }),
+        })
+
+        const verifyPayload = (await verifyRes.json()) as {
+          user?: AuthUser
+          error?: string
+        }
+
+        if (!verifyRes.ok || !verifyPayload.user) {
+          return { success: false, error: verifyPayload.error || 'Authentication failed.' }
+        }
+
+        setAuthUser(verifyPayload.user)
+        setStatusMessage('success', action === 'signup' ? 'Account created successfully.' : 'Signed in successfully.')
+        return { success: true }
+      } catch (error) {
+        return { success: false, error: toErrorMessage(error) }
+      } finally {
+        setBusyAction(null)
+      }
+    },
+    [account, requireProvider, setStatusMessage]
+  )
+
+  const logoutUser = useCallback(async () => {
+    setBusyAction('auth-logout')
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch {
+      // ignore
+    }
+    setAuthUser(null)
+    await disconnectWallet()
+    setBusyAction(null)
+  }, [disconnectWallet])
 
   const switchActiveNetwork = useCallback(async () => {
     setBusyAction('switch-network')
@@ -473,6 +578,17 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }
     })()
   }, [refreshWalletState])
+
+  useEffect(() => {
+    void refreshAuthSession()
+  }, [refreshAuthSession])
+
+  useEffect(() => {
+    if (!account) return
+    if (!authUser) return
+    if (authUser.address.toLowerCase() === account.toLowerCase()) return
+    setAuthUser(null)
+  }, [account, authUser])
 
   // Provider event listeners
   useEffect(() => {
@@ -518,6 +634,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setStatus,
         setStatusMessage,
         setBusyAction,
+        authUser,
+        authLoading,
+        isAuthenticated,
         addAdminAddress,
         removeAdminAddress,
         connectInjectedWallet,
@@ -525,6 +644,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         setExternalProvider,
         disconnectWallet,
         switchAccount,
+        refreshAuthSession,
+        signWithWalletAuth,
+        logoutUser,
         switchActiveNetwork,
         refreshWalletState,
         getEffectiveProvider,

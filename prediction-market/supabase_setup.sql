@@ -212,3 +212,20 @@ CREATE POLICY "Allow upsert user_profiles"
 CREATE POLICY "Allow update user_profiles"
   ON user_profiles FOR UPDATE USING (true);
 
+-- Optional hardening for wallet-signup usernames:
+-- 1) Only allow 4-20 alphanumeric usernames.
+-- 2) Enforce case-insensitive uniqueness.
+ALTER TABLE user_profiles
+  DROP CONSTRAINT IF EXISTS user_profiles_display_name_format;
+
+ALTER TABLE user_profiles
+  ADD CONSTRAINT user_profiles_display_name_format
+  CHECK (
+    display_name IS NULL
+    OR display_name ~ '^[A-Za-z0-9]{4,20}$'
+  );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_display_name_unique
+  ON user_profiles (lower(display_name))
+  WHERE display_name IS NOT NULL;
+

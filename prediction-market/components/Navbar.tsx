@@ -1,13 +1,11 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { RiSettings3Line, RiTwitterXLine, RiTelegramLine, RiDiscordLine } from 'react-icons/ri'
 import { useWallet } from '../context/WalletContext'
-import { shortenAddress } from '../lib/utils'
 import { CHAIN_ID } from '../lib/contract'
-import { getUserProfile } from '../lib/supabase'
 import styles from './Navbar.module.css'
 
 const SOCIAL_LINKS = [
@@ -37,25 +35,46 @@ export default function Navbar() {
     setShowWalletModal,
     setShowAdminPortal,
     switchActiveNetwork,
+    authUser,
+    isAuthenticated,
+    logoutUser,
   } = useWallet()
-  const [profileName, setProfileName] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [hidden, setHidden] = useState(false)
+  const lastY = useRef(0)
+  const ticking = useRef(false)
 
   useEffect(() => {
-    if (!account) return
+    if (!menuOpen) return
+    const close = () => setMenuOpen(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menuOpen])
 
-    let cancelled = false
-    const timer = setTimeout(() => {
-      void getUserProfile(account).then((profile) => {
-        if (cancelled) return
-        setProfileName(profile?.display_name?.trim() || '')
+  useEffect(() => {
+    const onScroll = () => {
+      if (ticking.current) return
+      ticking.current = true
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY
+        const delta = y - lastY.current
+
+        if (y < 24 || delta < -10) {
+          setHidden(false)
+        } else if (delta > 10) {
+          setHidden(true)
+          setMenuOpen(false)
+        }
+
+        lastY.current = y
+        ticking.current = false
       })
-    }, 0)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
     }
-  }, [account])
+
+    lastY.current = window.scrollY
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const networkLabel =
     activeChainId === null ? 'Unknown'
@@ -63,7 +82,7 @@ export default function Navbar() {
     : 'Wrong Network'
 
   return (
-    <header className={styles.header}>
+    <header className={`${styles.header} ${hidden ? styles.headerHidden : ''}`}>
       <div className={styles.controlsRow}>
         <div className={styles.pageNavLeft}>
           <Link href="/" className={styles.backToHome}>← PredictFi</Link>
@@ -106,21 +125,16 @@ export default function Navbar() {
               <RiSettings3Line className={styles.adminIcon} /> ADMIN
             </button>
           )}
-          {!account ? (
+          {!isAuthenticated ? (
             <button
               className={styles.connectBtn}
               onClick={() => setShowWalletModal(true)}
               disabled={isBusy && busyAction?.startsWith('connect')}
             >
-              {isBusy && busyAction?.startsWith('connect') ? 'Connecting...' : 'Connect Wallet'}
+              {isBusy && busyAction?.startsWith('connect') ? 'Connecting...' : 'Login / Signup'}
             </button>
           ) : (
             <div className={styles.accountGroup}>
-              {profileName && (
-                <Link href={`/profile/${account}`} className={styles.profileNamePill}>
-                  {profileName}
-                </Link>
-              )}
               {isWrongNetwork ? (
                 <button
                   className={styles.switchNetBtn}
@@ -135,10 +149,45 @@ export default function Navbar() {
                   {networkLabel}
                 </div>
               )}
-              <button className={styles.accountPill} onClick={() => setShowWalletModal(true)}>
-                {shortenAddress(account)}
-                <span className={styles.chevron}>v</span>
-              </button>
+              <div className={styles.userMenuWrap}>
+                <button
+                  className={styles.accountPill}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setMenuOpen((open) => !open)
+                  }}
+                >
+                  {authUser?.username || 'Account'}
+                  <span className={styles.chevron}>v</span>
+                </button>
+                {menuOpen && (
+                  <div className={styles.userMenu} onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/profile/${authUser?.address || account}`} className={styles.userMenuItem}>
+                      View Profile
+                    </Link>
+                    <button
+                      className={styles.userMenuItem}
+                      onClick={() => {
+                        const code = authUser?.username || 'predictfi'
+                        const url = `${window.location.origin}/?ref=${encodeURIComponent(code)}`
+                        void navigator.clipboard.writeText(url)
+                        setMenuOpen(false)
+                      }}
+                    >
+                      Refer Friend
+                    </button>
+                    <button
+                      className={`${styles.userMenuItem} ${styles.userMenuDanger}`}
+                      onClick={() => {
+                        void logoutUser()
+                        setMenuOpen(false)
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

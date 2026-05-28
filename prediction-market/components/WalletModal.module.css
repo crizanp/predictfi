@@ -318,6 +318,127 @@
   padding: 20px;
 }
 
+.authTabs {
+  margin: 12px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.authTabBtn {
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.authTabActive {
+  color: #f4e9ff;
+  border-color: rgba(192, 132, 252, 0.45);
+  background: rgba(192, 132, 252, 0.14);
+}
+
+.authPanel {
+  margin-top: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+}
+
+.authWalletRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.authWalletRow strong {
+  color: var(--text-main);
+  font-family: monospace;
+}
+
+.authLabel {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.authInputRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+}
+
+.authInput {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 8, 12, 0.92);
+  color: #f4f4f8;
+  font-size: 14px;
+  padding: 0 10px;
+}
+
+.authInput:focus {
+  outline: none;
+  border-color: rgba(192, 132, 252, 0.45);
+}
+
+.inlineBtn {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: rgba(192, 132, 252, 0.1);
+  color: var(--accent-light);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inlineBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.authHintOk {
+  margin-top: 8px;
+  color: #74e3a5;
+  font-size: 12px;
+}
+
+.authHintErr {
+  margin-top: 8px;
+  color: #ff8aa8;
+  font-size: 12px;
+}
+
+.primaryAuthBtn {
+  width: 100%;
+  margin-top: 10px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #a855f7, #c084fc);
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.primaryAuthBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .subtitle {
   font-size: 14px;
   color: var(--text-muted);

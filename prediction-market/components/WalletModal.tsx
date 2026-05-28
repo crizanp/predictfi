@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useWallet } from '../context/WalletContext'
 import { shortenAddress } from '../lib/utils'
 import { CHAIN_ID } from '../lib/contract'
@@ -20,12 +20,19 @@ export default function WalletModal() {
     connectInjectedWallet,
     connectWalletConnect,
     disconnectWallet,
-    switchAccount,
+    signWithWalletAuth,
+    authUser,
+    isAuthenticated,
     switchActiveNetwork,
     isWrongNetwork,
   } = useWallet()
 
   const [copied, setCopied] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
+  const [username, setUsername] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [checkingName, setCheckingName] = useState(false)
+  const [nameAvailable, setNameAvailable] = useState<boolean | null>(null)
 
   const handleCopy = useCallback(async () => {
     if (!account) return
@@ -39,6 +46,55 @@ export default function WalletModal() {
     setShowWalletModal(false)
   }, [disconnectWallet, setShowWalletModal])
 
+  const normalizedUsername = username.trim()
+  const usernameValid = useMemo(() => /^[a-zA-Z0-9]{4,20}$/.test(normalizedUsername), [normalizedUsername])
+
+  const generateUsername = useCallback(() => {
+    const suffix = account ? account.slice(2, 8).toLowerCase() : Math.random().toString(36).slice(2, 8)
+    setUsername(`user${suffix}`)
+    setNameAvailable(null)
+    setAuthError('')
+  }, [account])
+
+  const checkAvailability = useCallback(async () => {
+    if (!usernameValid) {
+      setNameAvailable(false)
+      return
+    }
+    setCheckingName(true)
+    try {
+      const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(normalizedUsername)}`)
+      const payload = (await res.json()) as { available?: boolean; reason?: string }
+      setNameAvailable(Boolean(payload.available))
+      if (!payload.available) setAuthError(payload.reason || 'Username is not available.')
+      else setAuthError('')
+    } catch {
+      setNameAvailable(null)
+    } finally {
+      setCheckingName(false)
+    }
+  }, [normalizedUsername, usernameValid])
+
+  const handleAuth = useCallback(async () => {
+    setAuthError('')
+    if (!account) {
+      setAuthError('Connect wallet first.')
+      return
+    }
+    if (authMode === 'signup' && !usernameValid) {
+      setAuthError('Username must be 4-20 letters or numbers only.')
+      return
+    }
+
+    const result = await signWithWalletAuth(authMode, normalizedUsername)
+    if (!result.success) {
+      setAuthError(result.error || 'Could not authenticate.')
+      return
+    }
+
+    setShowWalletModal(false)
+  }, [account, authMode, normalizedUsername, setShowWalletModal, signWithWalletAuth, usernameValid])
+
   if (!showWalletModal) return null
 
   const isConnected = Boolean(account)
@@ -50,7 +106,6 @@ export default function WalletModal() {
         : 'Unknown'
 
   const initials = account ? account.slice(2, 4).toUpperCase() : '??'
-  const canSwitchAccount = connectionType === 'injected'
 
   return (
     <div className={styles.backdrop} onClick={() => setShowWalletModal(false)}>
@@ -61,7 +116,7 @@ export default function WalletModal() {
           <button className={styles.closeBtn} onClick={() => setShowWalletModal(false)} aria-label="Close">✕</button>
         </div>
 
-        {isConnected ? (
+        {isConnected && isAuthenticated ? (
           <div className={styles.connectedView}>
             {/* Avatar */}
             <div className={styles.avatarWrap}>
@@ -73,7 +128,7 @@ export default function WalletModal() {
 
             {/* Address */}
             <div className={styles.addressBlock}>
-              <span className={styles.address}>{shortenAddress(account)}</span>
+              <span className={styles.address}>{authUser?.username || shortenAddress(account)}</span>
               <button
                 className={`${styles.copyBtn} ${copied ? styles.copyBtnSuccess : ''}`}
                 onClick={() => { void handleCopy() }}
@@ -118,17 +173,6 @@ export default function WalletModal() {
                     : 'On BSC Testnet'}
               </button>
 
-              {canSwitchAccount && (
-                <button
-                  className={styles.switchAccBtn}
-                  onClick={() => { void switchAccount() }}
-                  disabled={isBusy}
-                  title="Open wallet account picker"
-                >
-                  {busyAction === 'switch-account' ? 'Opening picker...' : '⇄ Switch Address'}
-                </button>
-              )}
-
               <button
                 className={styles.disconnectBtn}
                 onClick={() => { void handleDisconnect() }}
@@ -140,15 +184,33 @@ export default function WalletModal() {
           </div>
         ) : (
           <div className={styles.connectView}>
-            <p className={styles.subtitle}>
-              Connect your wallet to trade on prediction markets
-            </p>
+            <p className={styles.subtitle}>Connect wallet, then sign to {authMode === 'signup' ? 'create account' : 'log in'}.</p>
+
+            <div className={styles.authTabs}>
+              <button
+                className={`${styles.authTabBtn} ${authMode === 'login' ? styles.authTabActive : ''}`}
+                onClick={() => {
+                  setAuthMode('login')
+                  setAuthError('')
+                }}
+              >
+                Login
+              </button>
+              <button
+                className={`${styles.authTabBtn} ${authMode === 'signup' ? styles.authTabActive : ''}`}
+                onClick={() => {
+                  setAuthMode('signup')
+                  setAuthError('')
+                }}
+              >
+                Signup
+              </button>
+            </div>
 
             <div className={styles.options}>
               <button
                 className={styles.optionBtn}
                 onClick={() => {
-                  setShowWalletModal(false)
                   void connectInjectedWallet()
                 }}
                 disabled={isBusy || !injectedAvailable}
@@ -166,7 +228,6 @@ export default function WalletModal() {
               <button
                 className={styles.optionBtn}
                 onClick={() => {
-                  setShowWalletModal(false)
                   void connectWalletConnect()
                 }}
                 disabled={isBusy}
@@ -179,6 +240,62 @@ export default function WalletModal() {
                 <span className={styles.optionChevron}>›</span>
               </button>
             </div>
+
+            {isConnected && (
+              <div className={styles.authPanel}>
+                <div className={styles.authWalletRow}>
+                  <span>Connected:</span>
+                  <strong>{shortenAddress(account)}</strong>
+                </div>
+
+                {authMode === 'signup' && (
+                  <>
+                    <label className={styles.authLabel} htmlFor="signup-username">
+                      Username (4-20 letters/numbers)
+                    </label>
+                    <div className={styles.authInputRow}>
+                      <input
+                        id="signup-username"
+                        className={styles.authInput}
+                        value={username}
+                        onChange={(e) => {
+                          setUsername(e.target.value)
+                          setNameAvailable(null)
+                          setAuthError('')
+                        }}
+                        placeholder="Enter username"
+                        autoComplete="off"
+                        maxLength={20}
+                      />
+                      <button className={styles.inlineBtn} type="button" onClick={generateUsername}>
+                        Auto
+                      </button>
+                      <button className={styles.inlineBtn} type="button" onClick={() => { void checkAvailability() }} disabled={checkingName || !usernameValid}>
+                        {checkingName ? 'Checking...' : 'Check'}
+                      </button>
+                    </div>
+                    {nameAvailable === true && <p className={styles.authHintOk}>Username available.</p>}
+                    {nameAvailable === false && <p className={styles.authHintErr}>Username unavailable.</p>}
+                  </>
+                )}
+
+                {authError && <p className={styles.authHintErr}>{authError}</p>}
+
+                <button
+                  className={styles.primaryAuthBtn}
+                  onClick={() => {
+                    void handleAuth()
+                  }}
+                  disabled={isBusy || (authMode === 'signup' && !usernameValid)}
+                >
+                  {busyAction === 'auth-login' || busyAction === 'auth-signup'
+                    ? 'Awaiting Wallet Signature...'
+                    : authMode === 'signup'
+                      ? 'Sign & Create Account'
+                      : 'Sign & Login'}
+                </button>
+              </div>
+            )}
 
             <p className={styles.footer}>
               By connecting you agree to our Terms of Service

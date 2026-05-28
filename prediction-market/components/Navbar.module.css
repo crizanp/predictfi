@@ -6,6 +6,12 @@
   background: rgba(7,6,14,0.96);
   backdrop-filter: blur(24px) saturate(160%);
   border-bottom: 1px solid rgba(255,255,255,0.055);
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.headerHidden {
+  transform: translateY(calc(-100% - 2px));
 }
 
 /* ── Controls row ──────────────────────────────────────────── */
@@ -255,6 +261,43 @@
 
 /* Account */
 .accountGroup { display: flex; align-items: center; gap: 8px; }
+
+.userMenuWrap {
+  position: relative;
+}
+
+.userMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 180px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 8, 16, 0.97);
+  overflow: hidden;
+  z-index: 1200;
+}
+
+.userMenuItem {
+  width: 100%;
+  text-align: left;
+  display: block;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: #e5def0;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.userMenuItem:hover {
+  background: rgba(192, 132, 252, 0.12);
+}
+
+.userMenuDanger {
+  color: #ff8aa8;
+}
 
 .profileNamePill {
   display: inline-flex;
