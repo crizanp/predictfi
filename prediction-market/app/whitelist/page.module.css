@@ -474,6 +474,41 @@
   font-weight: 800;
 }
 
+.feedPager {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedPagerBtn {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(192, 132, 252, 0.32);
+  background: rgba(192, 132, 252, 0.1);
+  color: #d8b4fe;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.feedPagerBtn:hover:not(:disabled) {
+  background: rgba(192, 132, 252, 0.2);
+}
+
+.feedPagerBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.feedPagerMeta {
+  color: #a9a4c8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 @media (max-width: 1024px) {
   .contentArea {
     grid-template-columns: 1fr;
@@ -500,5 +535,10 @@
   .feedAddress,
   .feedStatus {
     justify-self: start;
+  }
+
+  .feedPager {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

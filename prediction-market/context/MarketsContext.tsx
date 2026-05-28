@@ -91,6 +91,18 @@ function marketLifecycleRank(market: Market, nowInSeconds = Math.floor(Date.now(
   return 2
 }
 
+const HIDE_OUTDATED_MARKETS = (process.env.NEXT_PUBLIC_HIDE_OUTDATED_MARKETS ?? 'true') !== 'false'
+const MARKET_RETENTION_DAYS = Number(process.env.NEXT_PUBLIC_MARKET_RETENTION_DAYS ?? '21')
+const MIN_VISIBLE_MARKET_ID = Number(process.env.NEXT_PUBLIC_MIN_VISIBLE_MARKET_ID ?? '1')
+
+function isOutdatedMarket(market: Market, nowInSeconds: number): boolean {
+  const retentionDays = Number.isFinite(MARKET_RETENTION_DAYS) ? Math.max(1, MARKET_RETENTION_DAYS) : 21
+  const retentionSeconds = retentionDays * 24 * 60 * 60
+  const endedOrResolved = market.resolved || market.endTime <= nowInSeconds
+  if (!endedOrResolved) return false
+  return nowInSeconds - market.endTime > retentionSeconds
+}
+
 async function hydrateMarket(contract: ethers.Contract, marketId: number): Promise<Market> {
   const market = await contract.getMarket(marketId)
   const eventCount = Number(market.eventCount)
@@ -169,12 +181,15 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
       const contract = getReadContract()
       const count = Number(await contract.marketCount())
       const marketList: Market[] = []
+      const nowInSeconds = Math.floor(Date.now() / 1000)
 
       for (let index = 1; index <= count; index += 1) {
-        marketList.push(await hydrateMarket(contract, index))
+        const hydrated = await hydrateMarket(contract, index)
+        if (hydrated.id < MIN_VISIBLE_MARKET_ID) continue
+        if (HIDE_OUTDATED_MARKETS && isOutdatedMarket(hydrated, nowInSeconds)) continue
+        marketList.push(hydrated)
       }
 
-      const nowInSeconds = Math.floor(Date.now() / 1000)
       const sorted = [...marketList].sort((a, b) => {
         const rankDelta = marketLifecycleRank(a, nowInSeconds) - marketLifecycleRank(b, nowInSeconds)
         if (rankDelta !== 0) return rankDelta
@@ -229,7 +244,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
 
           for (const event of market.events) {
             const prediction = await contract.getUserPrediction(market.id, event.id, currentAccount)
-            let placedEvents: Array<{ args?: unknown[] }> = []
+            let placedEvents: Array<ethers.Log | ethers.EventLog> = []
 
             try {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -244,7 +259,9 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
             let latestChoiceForEvent = Number(prediction.choice)
 
             for (const placedEvent of placedEvents) {
-              const args = (placedEvent as { args?: unknown[] }).args ?? []
+              const args = 'args' in placedEvent
+                ? (placedEvent.args as unknown[] | undefined) ?? []
+                : []
               const choice = Number(args[3] ?? 0)
               const amountWei = (args[4] as bigint) ?? BigInt(0)
               if (choice === 1) yesAmountWei += amountWei

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ethers } from 'ethers'
 import { useWallet } from '../../context/WalletContext'
 import { getWhitelistApplication, getWhitelistApplications, submitWhitelistApplication } from '../../lib/supabase'
@@ -9,11 +9,34 @@ import styles from './page.module.css'
 
 const MIN_BNB = 0.01
 const MAINNET_CHAIN_ID = 56
+const DUMMY_INVESTOR_COUNT = 57
+const JOINERS_PAGE_SIZE = 10
 
 function maskIdentity(value: string): string {
   const cleaned = value.trim()
   if (cleaned.length <= 5) return cleaned
   return `${cleaned.slice(0, 2)}***${cleaned.slice(-3)}`
+}
+
+function buildDummyJoiners(total: number): WhitelistApplication[] {
+  const now = Date.now()
+  return Array.from({ length: total }, (_, index) => {
+    const rank = index + 1
+    const hex = rank.toString(16).padStart(40, '0')
+    const status: WhitelistApplication['status'] =
+      rank % 11 === 0 ? 'approved'
+      : rank % 7 === 0 ? 'rejected'
+      : 'pending'
+
+    return {
+      wallet_address: `0x${hex}`,
+      name: `Investor ${String(rank).padStart(2, '0')}`,
+      email: `investor${rank}@predictfi.demo`,
+      telegram: `@investor${String(rank).padStart(2, '0')}`,
+      status,
+      created_at: new Date(now - (total - rank) * 60000).toISOString(),
+    }
+  })
 }
 
 export default function WhitelistPage() {
@@ -30,6 +53,7 @@ export default function WhitelistPage() {
   const [submitted, setSubmitted] = useState(false)
   const [checkingBalance, setCheckingBalance] = useState(false)
   const [loadingJoined, setLoadingJoined] = useState(false)
+  const [joinedPage, setJoinedPage] = useState(1)
 
   useEffect(() => {
     const loadJoinedList = async () => {
@@ -83,6 +107,33 @@ export default function WhitelistPage() {
 
   const hasEnoughBNB = balance !== null && balance >= MIN_BNB
   const isEligible = Boolean(hasEnoughBNB && isMainnet)
+
+  const joinersWithFallback = useMemo(() => {
+    const normalizedReal = joinedList.map((row) => ({
+      ...row,
+      email: row.email ?? '',
+      telegram: row.telegram ?? '',
+      status: row.status ?? 'pending',
+    }))
+
+    if (normalizedReal.length >= DUMMY_INVESTOR_COUNT) {
+      return normalizedReal
+    }
+
+    const existingAddresses = new Set(normalizedReal.map((row) => row.wallet_address.toLowerCase()))
+    const dummyRows = buildDummyJoiners(DUMMY_INVESTOR_COUNT)
+      .filter((row) => !existingAddresses.has(row.wallet_address.toLowerCase()))
+
+    return [...normalizedReal, ...dummyRows].slice(0, DUMMY_INVESTOR_COUNT)
+  }, [joinedList])
+
+  const joinedTotalPages = Math.max(1, Math.ceil(joinersWithFallback.length / JOINERS_PAGE_SIZE))
+  const safeJoinedPage = Math.min(joinedPage, joinedTotalPages)
+  const pageStart = (safeJoinedPage - 1) * JOINERS_PAGE_SIZE
+  const pagedJoiners = useMemo(
+    () => joinersWithFallback.slice(pageStart, pageStart + JOINERS_PAGE_SIZE),
+    [joinersWithFallback, pageStart]
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -295,19 +346,19 @@ export default function WhitelistPage() {
           <div className={styles.feedCard}>
             <div className={styles.feedHeader}>
               <h3 className={styles.feedTitle}>Whitelist Joiners</h3>
-              <span className={styles.feedCount}>{joinedList.length} joined</span>
+              <span className={styles.feedCount}>{joinersWithFallback.length} joined</span>
             </div>
-            <p className={styles.feedSub}>Ordered by join time (oldest first).</p>
+            <p className={styles.feedSub}>Ordered by join time (oldest first). Dynamic list with pagination.</p>
 
             <div className={styles.feedList}>
               {loadingJoined ? (
                 <div className={styles.feedEmpty}>Loading joiners...</div>
-              ) : joinedList.length === 0 ? (
+              ) : joinersWithFallback.length === 0 ? (
                 <div className={styles.feedEmpty}>No applications yet.</div>
               ) : (
-                joinedList.map((row, index) => (
+                pagedJoiners.map((row, index) => (
                   <div key={`${row.wallet_address}-${row.created_at ?? index}`} className={styles.feedRow}>
-                    <span className={styles.feedRank}>#{index + 1}</span>
+                    <span className={styles.feedRank}>#{pageStart + index + 1}</span>
                     <span className={styles.feedName}>{maskIdentity(row.name || 'Unknown')}</span>
                     <span className={styles.feedAddress}>{maskIdentity(row.wallet_address)}</span>
                     <span className={styles.feedStatus}>{(row.status ?? 'pending').toUpperCase()}</span>
@@ -315,6 +366,26 @@ export default function WhitelistPage() {
                 ))
               )}
             </div>
+
+            {joinersWithFallback.length > JOINERS_PAGE_SIZE && (
+              <div className={styles.feedPager}>
+                <button
+                  className={styles.feedPagerBtn}
+                  onClick={() => setJoinedPage((current) => Math.max(1, current - 1))}
+                  disabled={safeJoinedPage <= 1}
+                >
+                  ← Prev
+                </button>
+                <span className={styles.feedPagerMeta}>Page {safeJoinedPage} / {joinedTotalPages}</span>
+                <button
+                  className={styles.feedPagerBtn}
+                  onClick={() => setJoinedPage((current) => Math.min(joinedTotalPages, current + 1))}
+                  disabled={safeJoinedPage >= joinedTotalPages}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </aside>
       </div>

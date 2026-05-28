@@ -28,6 +28,11 @@
   --radius-xl: 24px;
   --nav-h: 60px;
   --banner-h: 36px;
+  --w3m-accent: #c084fc;
+  --w3m-color-mix: #120c23;
+  --w3m-color-mix-strength: 24;
+  --w3m-border-radius-master: 18px;
+  --w3m-font-family: Space Grotesk, Segoe UI, sans-serif;
 }
 
 /* ── Reset ─────────────────────────────────────────────────── */
@@ -198,6 +203,20 @@ body.banner-hidden {
 a { color: inherit; text-decoration: none; }
 button { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; cursor: pointer; }
 input, textarea, select { font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif; }
+
+/* Reown AppKit modal polish */
+w3m-modal {
+  --w3m-accent: #c084fc;
+  --w3m-color-mix: #120c23;
+  --w3m-color-mix-strength: 24;
+  --w3m-border-radius-master: 18px;
+  --w3m-font-family: Space Grotesk, Segoe UI, sans-serif;
+}
+
+w3m-modal::part(backdrop) {
+  background: rgba(4, 2, 10, 0.78);
+  backdrop-filter: blur(12px);
+}
 
 /* ── Scrollbar ─────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }

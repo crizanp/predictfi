@@ -37,10 +37,13 @@ export const appKit = createAppKit({
   },
   themeMode: 'dark',
   themeVariables: {
-    '--w3m-color-mix': '#8b5cf6',
-    '--w3m-color-mix-strength': 40,
-    '--w3m-accent': '#8b5cf6',
-    '--w3m-border-radius-master': '12px',
+    '--w3m-color-mix': '#120c23',
+    '--w3m-color-mix-strength': 24,
+    '--w3m-accent': '#c084fc',
+    '--w3m-border-radius-master': '18px',
+    '--w3m-font-family': 'Space Grotesk, Segoe UI, sans-serif',
+    '--w3m-font-size-master': '10px',
+    '--w3m-z-index': 2200,
   },
 })
 

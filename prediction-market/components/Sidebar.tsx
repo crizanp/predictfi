@@ -168,9 +168,7 @@ export default function Sidebar({ docsOnly = false }: { docsOnly?: boolean }) {
               </div>
             )}
 
-            <div className={styles.avatarRow}>
-              <div className={styles.avatar}>{account ? account.slice(2, 3).toUpperCase() : 'N'}</div>
-            </div>
+          
 
             <div className={styles.mobileSocialRow}>
               {SOCIAL_LINKS.map(({ Icon, href, label }) => (
