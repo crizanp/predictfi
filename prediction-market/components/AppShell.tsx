@@ -20,6 +20,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   if (isDocsRoute(pathname)) {
     return (
       <div className="appShell appShellDocs">
+        <Sidebar docsOnly />
         <div className="appMain appMainDocs">
           <Navbar />
           {children}

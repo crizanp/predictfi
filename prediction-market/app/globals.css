@@ -101,6 +101,7 @@ body.banner-hidden {
 
 .appShellDocs {
   display: block;
+  --banner-h: 0px;
 }
 
 .appMain {
@@ -112,7 +113,6 @@ body.banner-hidden {
 }
 
 .appMainDocs {
-  --banner-h: 0px;
   margin-left: 0;
   min-height: 100vh;
   overflow: hidden;

@@ -11,6 +11,10 @@
   z-index: 900;
 }
 
+.sidebarDocs {
+  display: none;
+}
+
 /* ── Logo ──────────────────────────────────── */
 .logoWrap {
   display: flex;
@@ -226,6 +230,10 @@
   padding: 0;
 }
 
+.hamburgerDocs {
+  display: none;
+}
+
 .hamburger svg {
   width: 20px;
   height: 20px;
@@ -252,6 +260,10 @@
     display: flex;
   }
 
+  .hamburgerDocs {
+    display: flex;
+  }
+
   .sidebar {
     top: var(--banner-h);
     height: calc(100dvh - var(--banner-h));
@@ -275,5 +287,9 @@
     gap: 8px;
     margin-top: auto;
     padding-top: 6px;
+  }
+
+  .sidebarDocs {
+    display: flex;
   }
 }

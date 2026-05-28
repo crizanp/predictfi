@@ -105,11 +105,11 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <div className={styles.mobileCenterBrand}>
+        <Link href="/" className={styles.mobileCenterBrand}>
           <span className={styles.brandPredict}>Predict</span>
           <span className={styles.brandDot}>•</span>
           <span className={styles.brandFi}>Fi</span>
-        </div>
+        </Link>
 
         <div className={styles.right}>
           <div className={styles.socialLinks}>

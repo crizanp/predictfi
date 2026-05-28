@@ -347,6 +347,7 @@ export default function PortfolioPage() {
               if (!pos) return null
               const hasClaimable = pos.events.some((e) => e.canClaim)
               const hasClaimed = pos.events.some((e) => e.hasClaimed)
+              const hasPartialClaimState = hasClaimed && hasClaimable
               const resolvedAll = pos.events.length > 0 && pos.events.every((e) => e.event.resolved)
               const wonAny = pos.events.some((e) => e.winningStake > 0 && e.event.resolved)
               const lostAll = resolvedAll && !wonAny
@@ -396,8 +397,11 @@ export default function PortfolioPage() {
                           void claimWinnings(pos.id, firstClaimable.event.id)
                         }}
                       >
-                        Claim Next
+                        {hasPartialClaimState ? 'Claim Remaining' : 'Claim Next'}
                       </button>
+                    )}
+                    {!hasClaimable && hasClaimed && (
+                      <span className={`${styles.claimBtn} ${styles.claimBtnDisabled}`}>Claimed</span>
                     )}
                     <button className={styles.expandBtn} onClick={() => setActiveMarketId(pos.id)}>
                       Show Details <RiArrowRightSLine className={styles.expandIcon} />

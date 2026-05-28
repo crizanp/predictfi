@@ -385,6 +385,14 @@
   box-shadow: 0 4px 14px rgba(245,158,11,0.3);
 }
 
+.claimBtnDisabled {
+  background: rgba(34,197,94,0.16);
+  color: #86efac;
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+}
+
 .expandBtn {
   margin-left: auto;
   padding: 8px 12px;
