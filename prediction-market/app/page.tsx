@@ -26,13 +26,13 @@ const tokenUseCases = [
     Icon: RiPercentLine,
     color: '#ddbbff',
     title: 'Fee Discounts',
-    desc: 'Hold or spend PRFI to reduce your platform fees by up to 50%. The discount scales with your PRFI balance — the more you hold, the less you pay on every winning trade. Keep more of your profits where they belong: in your wallet.',
+    desc: 'Hold or spend PRFI to reduce your platform fees by up to 50%. The discount scales with your PRFI balance  the more you hold, the less you pay on every winning trade. Keep more of your profits where they belong: in your wallet.',
   },
   {
     Icon: RiStackLine,
     color: '#8ddfff',
     title: 'Staking Rewards',
-    desc: 'Lock your PRFI in the staking module to earn a direct share of PredictFi\'s protocol revenue, paid out in BNB. The longer you stake and the more you commit, the higher your yield tier — turning passive holding into a steady income stream.',
+    desc: 'Lock your PRFI in the staking module to earn a direct share of PredictFi\'s protocol revenue, paid out in BNB. The longer you stake and the more you commit, the higher your yield tier  turning passive holding into a steady income stream.',
   },
   {
     Icon: RiGovernmentLine,
@@ -44,7 +44,7 @@ const tokenUseCases = [
     Icon: RiVipCrownLine,
     color: '#f59e0b',
     title: 'Priority Access',
-    desc: 'PRFI holders skip the queue. When high-volume markets launch — major sports finals, election nights, crypto milestones — token holders gain entry before the public window opens, securing positions at the most favourable early odds.',
+    desc: 'PRFI holders skip the queue. When high-volume markets launch  major sports finals, election nights, crypto milestones  token holders gain entry before the public window opens, securing positions at the most favourable early odds.',
   },
   {
     Icon: RiGiftLine,
@@ -56,7 +56,7 @@ const tokenUseCases = [
     Icon: RiDiamondLine,
     color: '#f596ff',
     title: 'Premium Markets',
-    desc: 'Unlock exclusive high-stakes market rooms gated behind a PRFI holding threshold. These rooms feature larger pool caps, elevated payout potential, and curated events not available in public markets — reserved for committed protocol participants.',
+    desc: 'Unlock exclusive high-stakes market rooms gated behind a PRFI holding threshold. These rooms feature larger pool caps, elevated payout potential, and curated events not available in public markets  reserved for committed protocol participants.',
   },
 ]
 
@@ -393,7 +393,8 @@ export default function HomePage() {
     </button>
   ))}
 </div>
-        </div>  {/* Tokenomics + Presale row */}
+        </div>  
+        {/* Tokenomics + Presale row */}
         <div className={styles.prfiRow}>
 
           {/* Tokenomics */}

@@ -557,6 +557,7 @@
   opacity: 0.7;
 }
 /* ── Tokenomics + Presale ─────────────────────────────────── */
+/* ── PRFI Row ── */
 .prfiRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -564,507 +565,444 @@
   padding: 18px;
 }
 
-.tokenomicsCard {
-  padding: 34px 30px;
-  background: #ffffff;
-  border: 1px solid rgba(17,24,39,0.08);
-  border-radius: 16px;
-  position: relative;
-}
-
-.tokenomicsDownloadBtn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(17,24,39,0.18);
-  background: #ffffff;
-  color: #111827;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.tokenomicsDownloadBtn:hover {
-  background: #f8fafc;
-  border-color: rgba(17,24,39,0.35);
-}
-
+/* ── Shared card base ── */
+.tokenomicsCard,
 .presaleCard {
-  padding: 34px 30px;
-  background: #d4c0ff;
-  border: 1px solid rgba(124,58,237,0.18);
-  border-radius: 16px;
+  border-radius: 20px;
+  padding: 28px;
   position: relative;
+  overflow: hidden;
+  border: none;
 }
 
+/* ── Tokenomics Card ── */
+.tokenomicsCard {
+  background: #ddffe9;
+}
+
+/* ── Presale Card ── */
+.presaleCard {
+  background: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card Label ── */
 .cardLabel {
-   font-size: 11px;
-  color: #000000;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #111827;
+  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 2px;
 }
 
-
+/* ── Total Supply ── */
 .totalSupply {
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 900;
-  color: #0f172a;
-  margin-bottom: 4px;
-  letter-spacing: -0.03em;
-  font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  color: #111827;
+  margin-bottom: 16px;
+  line-height: 1.2;
 }
 
 .totalSupply span {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  color: #c084fc;
-  margin-left: 6px;
+  color: #111827;
+  margin-left: 4px;
 }
 
-.supplySubtitle {
-  font-size: 12px;
-  color: #475569;
-  margin-bottom: 16px;
-}
-
+/* ── Donut ── */
 .donutWrap {
   display: flex;
   justify-content: center;
-  margin: 12px 0 20px;
+  margin-bottom: 18px;
 }
+
 .donut {
-  width: 220px;
-  height: 220px;
-  filter: drop-shadow(0 0 16px rgba(124,58,237,0.22));
+  width: 170px;
+  height: 170px;
+}
+
+.donutSlice {
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+  transform-origin: 80px 80px;
+  outline: none;
+}
+
+.donutSlice:hover {
+  opacity: 0.8;
+  transform: scale(1.04);
 }
 
 .donutSlice path {
-  transition: opacity 0.15s, transform 0.15s;
-  transform-origin: 80px 80px;
-}
-
-.donutSlice:focus {
-  outline: none;
-}
-
-.donutSlice:focus-visible {
-  outline: none;
-}
-
-.donutSlice:hover path {
-  opacity: 1;
-  transform: scale(1.02);
+  stroke: none !important;
 }
 
 .donutSliceActive path {
-  opacity: 1;
-  transform: scale(1.035);
+  stroke: none !important;
 }
 
+.donutSliceActive {
+  transform: scale(1.06);
+}
+
+/* ── Allocation List ── */
 .allocationList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 6px;
 }
 
 .allocRow {
-  width: 100%;
-  border: 1px solid rgba(17,24,39,0.1);
-  background: #ffffff;
-  border-radius: 11px;
-  padding: 10px 12px;
   display: flex;
   align-items: center;
   gap: 10px;
+  background: rgb(195, 213, 255);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+  width: 100%;
   text-align: left;
-  color: inherit;
-  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  outline: none;
 }
 
 .allocRow:hover {
-  border-color: rgba(192,132,252,0.36);
-  transform: translateY(-1px);
+  background: rgba(0,0,0,0.08);
+  transform: translateX(3px);
 }
 
 .allocRowActive {
-  border-color: rgba(124,58,237,0.55);
-  background: #faf5ff;
-  box-shadow: 0 0 0 1px rgba(124,58,237,0.16) inset;
+  background: rgba(0,0,0,0.08);
 }
 
 .allocDot {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(124,58,237,0.35);
 }
 
 .allocLabelWrap {
-  width: 180px;
+  flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
 }
 
 .allocLabel {
   font-size: 12px;
-  color: #0f172a;
   font-weight: 700;
-}
-
-.allocHint {
-  font-size: 10px;
-  color: #64748b;
+  color: #111827;
 }
 
 .allocBarWrap {
-  flex: 1;
-  height: 6px;
-  background: rgba(15,23,42,0.08);
-  border-radius: 999px;
+  width: 70px;
+  height: 5px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 99px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .allocBar {
   height: 100%;
-  border-radius: 999px;
-  opacity: 0.85;
-  transition: width 0.6s ease;
+  border-radius: 99px;
+  transition: width 0.4s ease;
 }
 
 .allocPct {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  color: #1f2937;
-  width: 38px;
+  color: #111827;
+  width: 32px;
   text-align: right;
   flex-shrink: 0;
 }
 
-.tokenModalHint {
-  margin-top: 14px;
-  border: 1px dashed rgba(124,58,237,0.35);
-  border-radius: 12px;
-  background: #faf5ff;
-  color: #5b21b6;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  padding: 10px 12px;
-  line-height: 1.5;
+/* ── Download Btn ── */
+.tokenomicsDownloadBtn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.18s;
+  z-index: 1;
 }
 
-.allocInsight {
-  margin-top: 14px;
-  border: 1px solid rgba(192,132,252,0.24);
-  border-radius: 14px;
-  padding: 16px;
-  background: rgba(12,14,24,0.9);
+.tokenomicsDownloadBtn:hover {
+  background: rgba(0,0,0,0.14);
 }
 
-.allocInsightBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(192,132,252,0.14);
-  color: #d8b4fe;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.allocInsightTitle {
-  margin-top: 10px;
-  font-size: 20px;
-  color: #eff2fb;
-  letter-spacing: -0.02em;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.allocInsightTitle span {
-  font-size: 15px;
-  color: #c084fc;
-  font-weight: 800;
-}
-
-.allocInsightWhy {
-  margin-top: 8px;
-  color: #bac1d2;
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-.allocInsightPlan {
-  margin-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  padding-top: 10px;
-}
-
-.allocInsightPlanLabel {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #a78bfa;
-  margin-bottom: 6px;
-}
-
-.allocInsightPlan p {
-  font-size: 12px;
-  color: #9ea7bc;
-  line-height: 1.6;
-}
-
-/* ── Presale card improvements ────────────────────────────── */
+/* ── Presale Platform ── */
 .presalePlatform {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 6px;
-}
-
-.moonIcon {
-  font-size: 44px;
-  line-height: 1;
-  filter: drop-shadow(0 0 14px rgba(255,200,50,0.48));
+  gap: 12px;
 }
 
 .presalePlatformName {
-  font-size: 11px;
-  color: #000000;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0.1em;
+  color: #111827;
+  text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .presalePlatformBig {
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 900;
-  color: #000000;
-  letter-spacing: -0.02em;
+  color: #111827;
   text-decoration: none;
-  transition: opacity 0.15s;
+  letter-spacing: -0.02em;
+  transition: opacity 0.18s;
 }
-.presalePlatformBig:hover { opacity: 0.75; text-decoration: underline; }
 
+.presalePlatformBig:hover {
+  opacity: 0.6;
+}
+
+/* ── Divider ── */
 .presaleDivider {
   height: 1px;
-  background: rgba(163, 109, 255, 0.15);
-  margin: 20px 0;
+  background: rgba(0,0,0,0.08);
 }
 
+/* ── Presale Details Grid ── */
 .presaleDetails {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 22px;
+  gap: 10px;
 }
 
 .presaleDetail {
+  background: rgba(0,0,0,0.04);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 12px;
-  background: rgba(124,58,237,0.06);
-  border: 1px solid rgba(124,58,237,0.14);
-  border-radius: 10px;
+  gap: 3px;
 }
 
 .detailLabel {
-  font-size: 13px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.07em;
-  color: #000000;
+  letter-spacing: 0.1em;
+  color: #6b7280;
   text-transform: uppercase;
 }
 
 .detailValue {
-  font-size: 15px;
-  color: #000000;
-  letter-spacing: -0.01em;
-}
-
-.presalePurpose {
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 12px;  font-size: 12px;
-
-}
-
-.presalePurposeLabel {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #000000;
-  margin-bottom: 6px;
+  color: #111827;
+}
+
+/* ── Presale Purpose ── */
+.presalePurpose {
+  background: rgba(0,0,0,0.04);
+  border-radius: 10px;
+  padding: 10px 14px;
 }
 
 .presalePurpose p {
-  font-size: 14px;
-  color: #000000;
+  font-size: 12px;
+  color: #374151;
   line-height: 1.6;
+  margin: 0;
 }
 
+/* ── Roadmap Steps ── */
 .presaleRoadmap {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
 }
 
 .presaleRoadmapItem {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 14px;
-  color: #000000;
-  line-height: 1.45;
+  gap: 10px;
+  font-size: 12px;
+  color: #111827;
+  font-weight: 600;
 }
 
 .presaleRoadmapDot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #7c3aed;
+  background: #111827;
   flex-shrink: 0;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
-/* Fundraising progress bar */
+/* ── Progress ── */
 .presaleProgressWrap {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .presaleProgressLabel {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #111827;
 }
-.presaleProgressLabel span:first-child { color: #c084fc; }
-.presaleProgressLabel span:first-child { color: #000000; }
-.presaleProgressLabel span:last-child  { color: #000000; }
 
 .presaleProgressBar {
-  height: 10px;
-  background: rgba(124,58,237,0.12);
-  border: 1px solid rgba(124,58,237,0.2);
-  border-radius: 999px;
+  height: 7px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 99px;
   overflow: hidden;
 }
 
 .presaleProgressFill {
   height: 100%;
-  background: #7c3aed;
-  border-radius: 999px;
-  transition: width 0.8s ease;
-  min-width: 3px;
+  background: #111827;
+  border-radius: 99px;
+  transition: width 0.5s ease;
 }
 
 .presaleProgressSub {
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #64748b;
-  margin-top: 5px;
+  color: #6b7280;
+  font-weight: 600;
 }
 
+/* ── Waitlist Btn ── */
 .waitlistBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding: 13px 0;
-  background: #ffffff;
-    border: 1px solid rgb(0, 0, 0);
-
-  color: #000000;
-  font-size: 14px;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  font-size: 13px;
   font-weight: 800;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  letter-spacing: 0.03em;
-  text-align: center;
   text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: opacity 0.2s, transform 0.18s;
+  border: none;
+  margin-top: auto;
 }
+
 .waitlistBtn:hover {
-  background: #e5e5e8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(124,58,237,0.35);
+  opacity: 0.8;
+  transform: translateY(-2px);
 }
 
-.waitlistSub {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 11px;
-  color: #6d28d9;
-}
-
-/* ── Features bar ─────────────────────────────────────────── */
-.features {
-  display: flex;
-  gap: 0;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  background: rgba(255,255,255,0.01);
-}
-
-.feature {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 24px 28px;
-  border-right: 1px solid rgba(255,255,255,0.05);
-}
-
-.feature:last-child { border-right: none; }
-
-.featureIcon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
+/* ── Tokenomics Modal ── */
+.tokenomicsModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #4b5563;
+  z-index: 1000;
+  padding: 20px;
 }
 
-.featureIcon svg {
-  width: 22px;
-  height: 22px;
-  stroke: currentColor;
+.tokenomicsModal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 24px 60px rgba(15,23,42,0.12);
+  position: relative;
+  border: none;
 }
 
-.featureTitle {
-  font-size: 13px;
-  font-weight: 700;
-  color: #d1d5db;
-  margin-bottom: 4px;
-}
-
-.featureSub {
+.tokenomicsModalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
   font-size: 11px;
-  color: #374151;
-  line-height: 1.5;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: none;
+  background: #f3f4f6;
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.18s;
 }
 
+.tokenomicsModalClose:hover {
+  background: #e5e7eb;
+}
+
+.tokenomicsModalHead {
+  margin-bottom: 20px;
+}
+
+.tokenomicsModalTitle {
+  font-size: 20px;
+  font-weight: 900;
+  color: #111827;
+  margin: 0 0 6px;
+}
+
+.tokenomicsModalTitle span {
+  color: #6b7280;
+}
+
+.tokenomicsModalSubtitle {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tokenomicsModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tokenomicsModalCard {
+  background: #f5f5f5;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.tokenomicsModalCard p {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tokenomicsModalCardLabel {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
 /* ── Whitepaper Section ───────────────────────────────────── */
 .whitepaperSection {
   position: relative;
@@ -1095,7 +1033,7 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 900;
-  color: #d8b4fe;
+  color: #ffffff;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-bottom: 16px;
@@ -1131,9 +1069,9 @@
 
 .docLink {
   padding: 11px 26px;
-  border: 1.5px solid rgba(192,132,252,0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.525);
   border-radius: 999px;
-  color: #d8b4fe;
+  color: #ffffff;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
@@ -1144,7 +1082,6 @@
 
 .docLink:hover {
   border-color: rgba(192,132,252,0.65);
-  background: rgba(192,132,252,0.1);
   color: #f0e6ff;
   transform: translateY(-1px);
 }
@@ -1426,10 +1363,10 @@
     font-size: 25px;
   }
 
-  .donut {
-    width: 190px;
-    height: 190px;
-  }
+.donut {
+  width: 110px;
+  height: 110px;
+}
 
   .allocRow {
     padding: 12px 12px;
