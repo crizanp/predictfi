@@ -107,6 +107,10 @@ body.banner-hidden {
   flex-direction: column;
 }
 
+.appMainDocs {
+  margin-left: 0;
+}
+
 .globalPageBannerWrap {
   padding: 16px 28px 6px;
 }

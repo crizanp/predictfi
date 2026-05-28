@@ -18,7 +18,15 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
 
   if (isDocsRoute(pathname)) {
-    return <>{children}</>
+    return (
+      <>
+        <TopAnnouncement />
+        <div className="appMain appMainDocs">
+          <Navbar />
+          {children}
+        </div>
+      </>
+    )
   }
 
   return (
