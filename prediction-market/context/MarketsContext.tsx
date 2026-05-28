@@ -228,11 +228,16 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
           let aggregateNo = 0
 
           for (const event of market.events) {
-            const [prediction, placedEvents] = await Promise.all([
-              contract.getUserPrediction(market.id, event.id, currentAccount),
+            const prediction = await contract.getUserPrediction(market.id, event.id, currentAccount)
+            let placedEvents: Array<{ args?: unknown[] }> = []
+
+            try {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              contract.queryFilter((contract.filters as any).PredictionPlaced(market.id, event.id, currentAccount)),
-            ])
+              placedEvents = await contract.queryFilter((contract.filters as any).PredictionPlaced(market.id, event.id, currentAccount))
+            } catch (error) {
+              const message = toErrorMessage(error)
+              console.warn(`PredictionPlaced history fallback for market ${market.id} event ${event.id}:`, message)
+            }
 
             let yesAmountWei = BigInt(0)
             let noAmountWei = BigInt(0)
@@ -411,6 +416,8 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
           return
         }
         if (claimed) {
+          const loadedMarkets = await loadMarkets()
+          if (account) await loadUserPredictions(account, loadedMarkets)
           setStatusMessage('error', 'Winnings already claimed.')
           return
         }

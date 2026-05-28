@@ -347,7 +347,6 @@ export default function PortfolioPage() {
               if (!pos) return null
               const hasClaimable = pos.events.some((e) => e.canClaim)
               const hasClaimed = pos.events.some((e) => e.hasClaimed)
-              const hasPartialClaimState = hasClaimed && hasClaimable
               const resolvedAll = pos.events.length > 0 && pos.events.every((e) => e.event.resolved)
               const wonAny = pos.events.some((e) => e.winningStake > 0 && e.event.resolved)
               const lostAll = resolvedAll && !wonAny
@@ -388,7 +387,7 @@ export default function PortfolioPage() {
                       <span className={styles.posAmountLabel}>Claimable</span>
                       <span className={styles.posAmountValGreen}>{pos.marketClaimable.toFixed(4)} tBNB</span>
                     </div>
-                    {hasClaimable && (
+                    {!hasClaimed && hasClaimable && (
                       <button
                         className={styles.claimBtn}
                         onClick={() => {
@@ -397,10 +396,10 @@ export default function PortfolioPage() {
                           void claimWinnings(pos.id, firstClaimable.event.id)
                         }}
                       >
-                        {hasPartialClaimState ? 'Claim Remaining' : 'Claim Next'}
+                        Claim Next
                       </button>
                     )}
-                    {!hasClaimable && hasClaimed && (
+                    {hasClaimed && (
                       <span className={`${styles.claimBtn} ${styles.claimBtnDisabled}`}>Claimed</span>
                     )}
                     <button className={styles.expandBtn} onClick={() => setActiveMarketId(pos.id)}>
@@ -433,7 +432,7 @@ export default function PortfolioPage() {
                         <span className={styles.eventState}>
                           {eventRow.event.resolved
                             ? eventRow.winningStake > 0
-                              ? eventRow.hasClaimed ? 'Won and Claimed' : 'Won'
+                              ? eventRow.hasClaimed ? 'Won and Claimed' : 'Won - Not Claimed Yet'
                               : 'Lost'
                             : 'Open'}
                         </span>
