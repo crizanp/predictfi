@@ -354,3 +354,17 @@
 .tickerItem.buy    { color: #c084fc; }
 .tickerItem.sell   { color: #fb7185; }
 .tickerItem.neutral { color: #60a5fa; }
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .controlsRow { padding: 0 12px 0 56px; height: 44px; gap: 6px; }
+  .homeNav { display: none; }
+  .pageNavLeft { gap: 6px; }
+  .backToHome { font-size: 11px; }
+  .socialLinks { display: none; }
+  .adsPill { display: none; }
+}
+
+@media (max-width: 480px) {
+  .controlsRow { padding: 0 8px 0 52px; }
+}

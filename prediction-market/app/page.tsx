@@ -112,11 +112,11 @@ const tokenAllocations = [
 ]
 
 const DOC_LINKS = [
-  { label: 'Whitepaper', href: '#' },
-  { label: 'Pitchdeck', href: '#' },
-  { label: 'Download PDF Outline', href: '#' },
+  { label: 'Whitepaper', href: '/whitepaper' },
+  { label: 'Pitchdeck', href: '/pitchdeck' },
+  { label: 'Tokenomics', href: '/tokonomics' },
+  { label: 'Roadmap', href: '/roadmap' },
   { label: 'Audit', href: '#' },
-  { label: 'Roadmap', href: '#' },
 ]
 
 export default function HomePage() {

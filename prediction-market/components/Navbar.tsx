@@ -18,9 +18,10 @@ const SOCIAL_LINKS = [
 
 const HOME_NAV = [
   { label: 'PRFI Token', href: '#prfi' },
-  { label: 'Whitepaper', href: '#whitepaper' },
+  { label: 'Whitepaper', href: '/whitepaper' },
+  { label: 'Pitchdeck', href: '/pitchdeck' },
+  { label: 'Roadmap', href: '/roadmap' },
   { label: 'Whitelist', href: '/whitelist' },
-  { label: 'Partnership', href: '#partnership' },
   { label: 'Social', href: '#social' },
 ]
 

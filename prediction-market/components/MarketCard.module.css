@@ -409,3 +409,9 @@
   .btnYes, .btnNo { font-size: 11px; }
   .eventRow { grid-template-columns: 22px minmax(0,1fr) 40px auto auto; }
 }
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .card { padding: 12px 12px 10px; gap: 10px; border-radius: 14px; }
+  .question { font-size: 13px; }
+  .media { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 9px; }
+}

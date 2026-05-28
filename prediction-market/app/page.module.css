@@ -1641,3 +1641,41 @@
     font-size: 22px;
   }
 }
+
+/* ══ RESPONSIVE — Homepage ═══════════════════════════════════ */
+@media (max-width: 1024px) {
+  .statsBar { flex-wrap: wrap; gap: 8px; padding: 16px 20px; }
+  .stat { padding: 0 16px 0 0; }
+  .sparklineWrap { width: 150px; }
+  .heroBannerHeadline { font-size: 26px; }
+  .heroBannerInner { padding: 0 28px; }
+}
+
+@media (max-width: 768px) {
+  .statsBar { padding: 12px 14px; gap: 6px; }
+  .stat { padding: 0 12px 0 0; }
+  .statBig { font-size: 18px; }
+  .statDivider { height: 30px; margin: 0 12px 0 0; }
+  .sparklineWrap { display: none; }
+
+  .hero { padding: 16px 14px 8px; }
+  .heroTitle { font-size: 26px; }
+
+  .heroBannerWrap { padding: 10px 14px 14px; }
+  .heroBanner { height: auto; min-height: 120px; }
+  .heroBannerInner { flex-direction: column; align-items: flex-start; padding: 20px 18px; gap: 14px; }
+  .heroBannerHeadline { font-size: 22px; }
+  .heroBannerSub { font-size: 12px; }
+  .heroBannerRight { display: none; }
+  .heroBannerOrb { display: none; }
+}
+
+@media (max-width: 480px) {
+  .hero { padding: 12px 12px 6px; }
+  .heroTitle { font-size: 22px; }
+  .heroBannerWrap { padding: 8px 10px 10px; }
+  .heroBannerInner { padding: 14px 14px; gap: 10px; }
+  .heroBannerHeadline { font-size: 18px; }
+  .heroBannerTag { font-size: 9px; }
+  .heroBannerBtn { padding: 8px 16px; font-size: 12px; }
+}
