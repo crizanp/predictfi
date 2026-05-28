@@ -16,6 +16,14 @@ const NAV = [
   { href: '/whitelist', label: 'Whitelist', d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
 ]
 
+const MENU_LINKS = [
+  { href: '/#prfi', label: 'PRFI Token' },
+  { href: '/whitepaper', label: 'Whitepaper' },
+  { href: '/pitchdeck', label: 'Pitchdeck' },
+  { href: '/roadmap', label: 'Roadmap' },
+  { href: '/#social', label: 'Social' },
+]
+
 export default function Sidebar() {
   const pathname = usePathname()
   const { account, getEffectiveProvider } = useWallet()
@@ -99,6 +107,19 @@ export default function Sidebar() {
                   <path key={i} d={`M${seg}`} />
                 ))}
               </svg>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+
+          <div className={styles.navDivider} />
+
+          {MENU_LINKS.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={styles.navItem}
+            >
+              <span className={styles.icon} aria-hidden>•</span>
               <span>{item.label}</span>
             </Link>
           ))}

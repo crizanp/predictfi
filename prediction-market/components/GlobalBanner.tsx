@@ -40,10 +40,6 @@ export default function GlobalBanner() {
     pathname.startsWith('/tokonomics') ||
     pathname.startsWith('/roadmap')
 
-  if (hideBannerOnDocs) {
-    return null
-  }
-
   useEffect(() => {
     const key = pageKey(pathname)
     const now = new Date().toISOString()
@@ -76,6 +72,10 @@ export default function GlobalBanner() {
 
   // reset image state whenever the ad changes
   useEffect(() => { setImgState('loading') }, [ad])
+
+  if (hideBannerOnDocs) {
+    return null
+  }
 
   // no active ad — show default placeholder banner
   if (ad === null) {
