@@ -24,39 +24,39 @@ type UseCase = typeof tokenUseCases[number]
 const tokenUseCases = [
   {
     Icon: RiPercentLine,
-    color: '#c084fc',
+    color: '#ddbbff',
     title: 'Fee Discounts',
-    desc: 'Pay platform fees in PRFI and unlock up to 50% discount on trading costs.',
+    desc: 'Hold or spend PRFI to reduce your platform fees by up to 50%. The discount scales with your PRFI balance — the more you hold, the less you pay on every winning trade. Keep more of your profits where they belong: in your wallet.',
   },
   {
     Icon: RiStackLine,
-    color: '#a855f7',
+    color: '#8ddfff',
     title: 'Staking Rewards',
-    desc: 'Stake PRFI to earn a portion of protocol fees and long-term yield incentives.',
+    desc: 'Lock your PRFI in the staking module to earn a direct share of PredictFi\'s protocol revenue, paid out in BNB. The longer you stake and the more you commit, the higher your yield tier — turning passive holding into a steady income stream.',
   },
   {
     Icon: RiGovernmentLine,
-    color: '#3b82f6',
+    color: '#95ffc7',
     title: 'Governance',
-    desc: 'Vote on proposals, market listings, and key protocol upgrade decisions.',
+    desc: 'Own your protocol. Any wallet holding ≥ 10,000 PRFI can submit on-chain proposals covering fee parameters, market categories, treasury allocations, and contract upgrades. Proposals are open to a 7-day community vote with a 5% quorum threshold.',
   },
   {
     Icon: RiVipCrownLine,
     color: '#f59e0b',
     title: 'Priority Access',
-    desc: 'PRFI holders get early entry into high-volume markets and new launches.',
+    desc: 'PRFI holders skip the queue. When high-volume markets launch — major sports finals, election nights, crypto milestones — token holders gain entry before the public window opens, securing positions at the most favourable early odds.',
   },
   {
     Icon: RiGiftLine,
-    color: '#06b6d4',
+    color: '#ff9e9e',
     title: 'Airdrop Rewards',
-    desc: 'Top predictors receive campaign airdrops based on performance and activity.',
+    desc: 'Accuracy pays. PredictFi runs seasonal airdrop campaigns that distribute PRFI to top-ranked predictors based on win rate, total volume, and cumulative BNB earned. Anti-sybil filtering ensures rewards go to genuine, active participants.',
   },
   {
     Icon: RiDiamondLine,
-    color: '#ff3366',
+    color: '#f596ff',
     title: 'Premium Markets',
-    desc: 'Unlock exclusive high-stakes market rooms available to PRFI participants.',
+    desc: 'Unlock exclusive high-stakes market rooms gated behind a PRFI holding threshold. These rooms feature larger pool caps, elevated payout potential, and curated events not available in public markets — reserved for committed protocol participants.',
   },
 ]
 
@@ -337,13 +337,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {markets.length > 6 && (
-          <div className={styles.viewAllWrap}>
-            <Link href="/markets" className={styles.viewAllBig}>
-              Explore all {markets.length} markets →
-            </Link>
-          </div>
-        )}
+        
       </div>
 
       {/* ── PRFI Token Section ──────────────────────────── */}
@@ -373,20 +367,32 @@ export default function HomePage() {
           </div> */}
         </div>
 
-        {/* Use Cases Grid */}
-        <div className={styles.useCasesGrid}>
-          {tokenUseCases.map((item) => (
-            <button
-              key={item.title}
-              type="button"
-              className={styles.useCase}
-              onClick={() => setActiveUseCase(item)}
-            >
-              <div className={styles.useCaseTitle}>{item.title}</div>
-              <div className={styles.useCaseDesc}>{item.desc}</div>
-            </button>
-          ))}
-        </div>
+   <div className={styles.useCasesGrid}>
+  {tokenUseCases.map((item) => (
+    <button
+      key={item.title}
+      type="button"
+      className={styles.useCase}
+      onClick={() => setActiveUseCase(item)}
+    >
+      <item.Icon className={styles.useCaseIcon} style={{ color: 'black' }} />
+      <div className={styles.useCaseBottom}>
+        <div className={styles.useCaseTitle}>{item.title}</div>
+        <button
+          type="button"
+          className={styles.useCaseBtn}
+          style={{ borderColor: 'black', color: 'black' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveUseCase(item);
+          }}
+        >
+          Learn more
+        </button>
+      </div>
+    </button>
+  ))}
+</div>
         </div>  {/* Tokenomics + Presale row */}
         <div className={styles.prfiRow}>
 
