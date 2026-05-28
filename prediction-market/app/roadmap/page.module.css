@@ -1,0 +1,197 @@
+.pageWrap {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% 6%, rgba(192, 132, 252, 0.15), transparent 34%),
+    radial-gradient(circle at 12% 90%, rgba(168, 85, 247, 0.1), transparent 40%),
+    linear-gradient(180deg, #08070f 0%, #0a0913 100%);
+  padding-bottom: 48px;
+}
+
+.hero {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 38px 26px 20px;
+}
+
+.kicker {
+  display: inline-block;
+  color: #eddcfd;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  background: rgba(192, 132, 252, 0.1);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.hero h1 {
+  margin-top: 12px;
+  font-size: clamp(34px, 4.8vw, 54px);
+  color: #f7ecff;
+}
+
+.hero p {
+  margin-top: 12px;
+  max-width: 860px;
+  color: #d5cae8;
+  font-size: 16px;
+  line-height: 1.72;
+}
+
+.phaseGrid {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 0 26px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.phaseCard {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(12, 11, 20, 0.92);
+  padding: 16px;
+}
+
+.phaseTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.phaseTop h2 {
+  font-size: 22px;
+  color: #f3e8ff;
+  line-height: 1.2;
+}
+
+.phaseTop span {
+  color: #dac7f5;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.status {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  color: #f0dfff;
+  background: rgba(192, 132, 252, 0.12);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phaseCard ul {
+  margin-top: 12px;
+  padding-left: 20px;
+  color: #d8cee9;
+  line-height: 1.68;
+}
+
+.phaseCard li {
+  margin-top: 7px;
+}
+
+.trackSection,
+.kpiSection {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 26px 26px 0;
+}
+
+.trackSection h2,
+.kpiSection h2 {
+  font-size: clamp(24px, 3.2vw, 34px);
+  color: #f5eaff;
+}
+
+.trackGrid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.trackCard {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(12, 11, 19, 0.9);
+  padding: 14px;
+}
+
+.trackCard h3 {
+  color: #ecdcff;
+  font-size: 18px;
+}
+
+.trackCard p {
+  color: #d2c4e7;
+  margin-top: 8px;
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.tableWrap {
+  margin-top: 14px;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.tableWrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.tableWrap th,
+.tableWrap td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  padding: 10px 12px;
+  color: #e0d2f1;
+}
+
+.tableWrap th {
+  background: rgba(192, 132, 252, 0.12);
+  color: #f7eeff;
+}
+
+.tableWrap tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (max-width: 960px) {
+  .phaseGrid,
+  .trackGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 26px 16px 14px;
+  }
+
+  .phaseGrid,
+  .trackSection,
+  .kpiSection {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero p,
+  .phaseCard li,
+  .trackCard p,
+  .tableWrap td,
+  .tableWrap th {
+    font-size: 14px;
+  }
+}

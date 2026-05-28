@@ -1,0 +1,224 @@
+.pageWrap {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 2% 8%, rgba(192, 132, 252, 0.14), transparent 32%),
+    radial-gradient(circle at 94% 88%, rgba(168, 85, 247, 0.12), transparent 36%),
+    linear-gradient(180deg, #08070f 0%, #090812 100%);
+  padding-bottom: 48px;
+}
+
+.hero {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 38px 26px 20px;
+}
+
+.kicker {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 999px;
+  background: rgba(192, 132, 252, 0.1);
+  color: #eedcff;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.hero h1 {
+  margin-top: 12px;
+  font-size: clamp(34px, 4.8vw, 54px);
+  color: #f7eeff;
+}
+
+.hero p {
+  margin-top: 12px;
+  max-width: 880px;
+  color: #d7cbe7;
+  line-height: 1.72;
+  font-size: 16px;
+}
+
+.allocationSection,
+.utilitySection,
+.vestingSection,
+.policySection {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 20px 26px 0;
+}
+
+.allocationSection h2,
+.utilitySection h2,
+.vestingSection h2,
+.policySection h2 {
+  font-size: clamp(24px, 3.2vw, 34px);
+  color: #f4e9ff;
+}
+
+.lead {
+  margin-top: 9px;
+  color: #d7cce7;
+}
+
+.allocGrid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.allocCard {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(11, 10, 18, 0.92);
+  padding: 14px;
+}
+
+.allocTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.allocTop h3 {
+  font-size: 18px;
+  color: #f2e7ff;
+}
+
+.allocTop span {
+  color: #f6e8ff;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.amount {
+  margin-top: 6px;
+  color: #dfcff1;
+  font-size: 13px;
+}
+
+.allocCard p {
+  margin-top: 7px;
+  color: #d2c5e7;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.barTrack {
+  margin-top: 11px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  background: linear-gradient(90deg, #a855f7, #d8b4fe);
+}
+
+.utilityGrid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.utilityCard {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(11, 10, 18, 0.92);
+  padding: 14px;
+}
+
+.utilityCard h3 {
+  color: #f4e9ff;
+  font-size: 18px;
+}
+
+.utilityCard ul {
+  margin-top: 10px;
+  padding-left: 20px;
+  color: #d9cde8;
+  line-height: 1.7;
+}
+
+.utilityCard li {
+  margin-top: 6px;
+}
+
+.tableWrap {
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.tableWrap table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.tableWrap th,
+.tableWrap td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  padding: 10px 12px;
+  color: #e0d2f1;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.tableWrap th {
+  background: rgba(192, 132, 252, 0.12);
+  color: #f6edff;
+}
+
+.tableWrap tr:last-child td {
+  border-bottom: 0;
+}
+
+.policySection ul {
+  margin-top: 12px;
+  padding-left: 20px;
+  color: #d8cce9;
+  line-height: 1.75;
+}
+
+.policySection li {
+  margin-top: 7px;
+}
+
+@media (max-width: 980px) {
+  .allocGrid,
+  .utilityGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 26px 16px 14px;
+  }
+
+  .allocationSection,
+  .utilitySection,
+  .vestingSection,
+  .policySection {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero p,
+  .allocCard p,
+  .utilityCard li,
+  .policySection li,
+  .tableWrap td,
+  .tableWrap th {
+    font-size: 14px;
+  }
+}
