@@ -1,39 +1,535 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PredictFi Roadmap</title>
-  <meta name="description" content="PredictFi roadmap and milestone timeline.">
-  <style>
-    :root {
-      --bg: #06050d;
-      --panel: #100f1d;
-      --text: #f4f2fb;
-      --muted: #b8aecb;
-      --accent: #c084fc;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
-    .wrap { width: min(980px, 100%); margin: 0 auto; background: var(--panel); border-radius: 16px; border: 1px solid rgba(192,132,252,0.2); padding: 26px; }
-    h1 { margin: 0 0 10px; font-size: clamp(25px, 4vw, 38px); }
-    .timeline { margin-top: 20px; display: grid; gap: 12px; }
-    .item { border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; background: rgba(255,255,255,0.02); }
-    .phase { color: var(--accent); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
-    .title { margin-top: 6px; font-size: 18px; font-weight: 700; }
-    .desc { margin-top: 8px; color: var(--muted); font-size: 14px; }
-    @media (max-width: 620px) { body { padding: 12px; } .wrap { padding: 16px; } }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PredictFi Roadmap</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{--black:#0a0a0a;--white:#fff;--gray:#999;--light:#f5f5f5;--border:rgba(10,10,10,.1)}
+
+body{
+  font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;
+  background:var(--white);
+  color:var(--black);
+  overflow-x:hidden;
+}
+
+/* ─── LEFT SCROLL BAR ─────────────────────────────── */
+#scrollbar{
+  position:fixed;left:0;top:0;
+  width:3px;height:100vh;
+  background:#e8e8e8;z-index:200;
+}
+#scrollfill{
+  position:absolute;left:0;top:0;width:100%;height:0%;
+  background:var(--black);
+  transition:height .08s linear;
+}
+
+/* ─── RIGHT NAV DOTS ──────────────────────────────── */
+.nav-dots{
+  position:fixed;right:28px;top:50%;
+  transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:14px;
+  z-index:200;
+}
+.ndot{
+  width:7px;height:7px;border-radius:50%;
+  border:1.5px solid var(--black);
+  background:transparent;cursor:pointer;
+  transition:background .3s,transform .3s,border-color .3s;
+}
+.ndot.on{background:var(--black);transform:scale(1.55)}
+.ndot:hover{background:rgba(10,10,10,.3)}
+
+/* ─── HERO ────────────────────────────────────────── */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  justify-content:flex-end;
+  padding:60px 80px 72px 88px;
+  position:relative;overflow:hidden;
+  border-bottom:1px solid var(--border);
+}
+
+/* ghosted big "26" behind */
+.hero-ghost{
+  position:absolute;right:-4vw;bottom:-6vw;
+  font-size:52vw;font-weight:700;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(10,10,10,.035);
+  line-height:1;pointer-events:none;user-select:none;
+}
+
+.hero-meta{
+  font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gray);
+  margin-bottom:28px;
+  opacity:0;transform:translateY(16px);
+  animation:up .55s ease forwards .15s;
+}
+
+.hero-title{
+  font-size:clamp(64px,13vw,168px);
+  font-weight:700;line-height:.88;
+  letter-spacing:-.04em;
+  overflow:hidden;
+}
+.hl{
+  display:block;overflow:hidden;
+}
+.hl span{
+  display:block;
+  opacity:0;transform:translateY(105%);
+  animation:slide .68s cubic-bezier(.22,.61,.36,1) forwards;
+}
+.hl:nth-child(1) span{animation-delay:.25s}
+.hl:nth-child(2) span{animation-delay:.38s}
+.hl:nth-child(3) span{animation-delay:.51s}
+
+.hero-sub{
+  font-size:14px;color:var(--gray);
+  margin-top:32px;max-width:420px;
+  line-height:1.7;
+  opacity:0;animation:up .55s ease forwards .75s;
+}
+
+.hero-stats{
+  display:flex;gap:0;
+  margin-top:56px;
+  border-top:1px solid var(--black);
+  opacity:0;animation:up .55s ease forwards .9s;
+}
+.hstat{
+  padding:18px 32px 0 0;margin-right:32px;
+  border-right:1px solid var(--border);
+}
+.hstat:last-child{border-right:none}
+.hstat-label{
+  font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gray);
+  margin-bottom:5px;
+}
+.hstat-val{
+  font-size:17px;font-weight:700;
+}
+
+/* animated scroll hint */
+.scroll-hint{
+  position:absolute;left:88px;bottom:32px;
+  display:flex;align-items:center;gap:14px;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gray);
+  opacity:0;animation:up .55s ease forwards 1.3s;
+}
+.sh-line{
+  width:48px;height:1px;background:#ccc;
+  position:relative;overflow:hidden;
+}
+.sh-line::after{
+  content:'';position:absolute;
+  top:0;left:-100%;width:100%;height:100%;
+  background:var(--black);
+  animation:scanx 1.8s ease-in-out infinite 1.8s;
+}
+@keyframes scanx{0%{left:-100%}100%{left:100%}}
+
+/* ─── MAIN LAYOUT ─────────────────────────────────── */
+.wrap{position:relative;padding-left:80px}
+
+/* the vertical timeline line */
+.tline{
+  position:absolute;
+  left:38px;top:0;bottom:0;
+  width:1px;background:#e0e0e0;
+}
+.tline-fill{
+  position:absolute;left:0;top:0;width:100%;height:0;
+  background:var(--black);
+  transition:height .15s ease;
+}
+
+/* ─── PHASE ───────────────────────────────────────── */
+.phase{
+  padding:80px 80px 80px 80px;
+  border-top:1px solid var(--border);
+  position:relative;
+  opacity:0;transform:translateY(56px);
+  transition:opacity .8s ease,transform .8s cubic-bezier(.22,.61,.36,1);
+}
+.phase.vis{opacity:1;transform:translateY(0)}
+
+/* timeline dot */
+.tdot{
+  position:absolute;
+  left:calc(38px - 8px);top:80px;
+  width:15px;height:15px;
+  border-radius:50%;
+  border:2px solid var(--black);
+  background:var(--white);
+  z-index:5;
+  transition:background .5s ease;
+}
+.phase.done .tdot{background:var(--black)}
+.phase.current .tdot{
+  background:var(--black);
+  animation:ring 2.2s ease infinite;
+}
+@keyframes ring{
+  0%,100%{box-shadow:0 0 0 0 rgba(10,10,10,.5)}
+  55%{box-shadow:0 0 0 10px rgba(10,10,10,0)}
+}
+
+/* huge phase number */
+.phead{
+  display:flex;align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:36px;
+}
+.pnum{
+  font-size:clamp(72px,13vw,190px);
+  font-weight:700;line-height:.82;
+  letter-spacing:-.05em;
+  color:transparent;
+  -webkit-text-stroke:2px var(--black);
+  transition:
+    color .6s cubic-bezier(.22,.61,.36,1),
+    -webkit-text-stroke .6s ease;
+}
+.phase.done .pnum{
+  color:var(--black);
+  -webkit-text-stroke:2px transparent;
+}
+.phase.current .pnum{
+  color:var(--black);
+  -webkit-text-stroke:2px transparent;
+}
+
+.pmeta{text-align:right;padding-top:10px}
+
+.pstatus{
+  display:inline-block;
+  font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;
+  padding:5px 13px;
+  border:1.5px solid var(--black);
+  color:var(--black);
+  background:transparent;
+  margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.pstatus.done{background:var(--black);color:var(--white)}
+.pstatus.upcoming{
+  animation:borderflash 2.4s ease infinite;
+}
+@keyframes borderflash{
+  0%,100%{border-color:var(--black)}
+  50%{border-color:rgba(10,10,10,.18)}
+}
+
+.pperiod{
+  display:block;font-size:11px;
+  color:var(--gray);letter-spacing:.06em;
+  margin-top:4px;
+}
+
+.ptitle{
+  font-size:clamp(18px,2.5vw,30px);
+  font-weight:700;letter-spacing:-.02em;
+  margin-bottom:28px;
+}
+
+/* items grid */
+.pitems{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:0;
+}
+.pitem{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px 14px 0;
+  border-bottom:1px solid var(--border);
+  opacity:0;transform:translateX(-18px);
+  transition:opacity .45s ease,transform .45s ease;
+}
+.phase.vis .pitem{opacity:1;transform:translateX(0)}
+/* stagger via nth-child */
+.phase.vis .pitem:nth-child(1){transition-delay:.08s}
+.phase.vis .pitem:nth-child(2){transition-delay:.14s}
+.phase.vis .pitem:nth-child(3){transition-delay:.20s}
+.phase.vis .pitem:nth-child(4){transition-delay:.26s}
+.phase.vis .pitem:nth-child(5){transition-delay:.32s}
+.phase.vis .pitem:nth-child(6){transition-delay:.38s}
+.phase.vis .pitem:nth-child(7){transition-delay:.44s}
+
+/* checkbox */
+.chk{
+  width:15px;height:15px;flex-shrink:0;
+  border:1.5px solid var(--black);
+  position:relative;margin-top:2px;
+  background:transparent;
+  transition:background .3s ease;
+}
+.chk.done{background:var(--black)}
+.chk.done::before{
+  content:'';position:absolute;
+  left:2px;top:6px;
+  width:5px;height:3px;
+  border-left:2px solid var(--white);
+  border-bottom:2px solid var(--white);
+  transform:rotate(-45deg);
+}
+
+.itext{
+  font-size:13.5px;line-height:1.5;
+  color:var(--black);
+}
+.itext.dim{color:var(--gray)}
+
+/* hover shimmer on items */
+.pitem:hover .itext{color:var(--black)}
+.pitem{cursor:default;transition:opacity .45s ease,transform .45s ease,background .2s}
+.pitem:hover{background:rgba(10,10,10,.025)}
+
+/* ─── CONNECTOR between phases ─────────────────────── */
+.connector{
+  display:flex;align-items:center;
+  padding:0 80px 0 80px;
+  height:1px;
+  /* just the border-top is the connector */
+}
+
+/* ─── FOOTER ──────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--black);
+  padding:40px 80px;
+  display:flex;justify-content:space-between;align-items:center;
+  opacity:0;transform:translateY(20px);
+  transition:opacity .8s ease,transform .8s ease;
+}
+footer.vis{opacity:1;transform:translateY(0)}
+.ft-brand{font-size:12px;font-weight:700;letter-spacing:.08em}
+.ft-note{font-size:10px;color:var(--gray);letter-spacing:.06em}
+
+/* ─── KEYFRAMES ───────────────────────────────────── */
+@keyframes up{to{opacity:1;transform:translateY(0)}}
+@keyframes slide{to{opacity:1;transform:translateY(0)}}
+
+/* ─── RESPONSIVE ──────────────────────────────────── */
+@media(max-width:768px){
+  .hero{padding:40px 24px 60px 64px}
+  .hero-ghost{display:none}
+  .hero-stats{flex-wrap:wrap;gap:0}
+  .hstat{padding:16px 20px 0 0;margin-right:20px;margin-bottom:16px}
+  .scroll-hint{left:64px}
+  .wrap{padding-left:52px}
+  .tline{left:24px}
+  .tdot{left:calc(24px - 8px)}
+  .phase{padding:60px 24px 60px 52px}
+  footer{flex-direction:column;gap:10px;align-items:flex-start;padding:32px 24px}
+  .nav-dots{display:none}
+}
+@media(max-width:420px){
+  .pnum{font-size:clamp(56px,20vw,90px)}
+  .pitems{grid-template-columns:1fr}
+}
+</style>
 </head>
 <body>
-  <main class="wrap">
-    <h1>Roadmap</h1>
-    <div class="timeline">
-      <article class="item"><div class="phase">Phase 1</div><div class="title">Core Launch</div><div class="desc">Market creation, wallet flows, and initial liquidity bootstrap.</div></article>
-      <article class="item"><div class="phase">Phase 2</div><div class="title">Growth Layer</div><div class="desc">Referral systems, leaderboard expansion, and campaign tooling.</div></article>
-      <article class="item"><div class="phase">Phase 3</div><div class="title">Governance</div><div class="desc">PRFI staking, voting, and parameter upgrades through governance.</div></article>
-      <article class="item"><div class="phase">Phase 4</div><div class="title">Ecosystem</div><div class="desc">Multi-chain support and external integrations.</div></article>
+
+<!-- scroll progress bar -->
+<div id="scrollbar"><div id="scrollfill"></div></div>
+
+<!-- right nav dots -->
+<nav class="nav-dots" aria-label="Phase navigation">
+  <div class="ndot on"  data-id="p1" onclick="goto('p1')" title="Phase 1 Foundation"></div>
+  <div class="ndot"     data-id="p2" onclick="goto('p2')" title="Phase 2 Mainnet Launch"></div>
+  <div class="ndot"     data-id="p3" onclick="goto('p3')" title="Phase 3 Ecosystem Growth"></div>
+  <div class="ndot"     data-id="p4" onclick="goto('p4')" title="Phase 4 Full Decentralisation"></div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<header class="hero">
+  <div class="hero-ghost" aria-hidden="true">26</div>
+
+
+  <h1 class="hero-title" aria-label="PredictFi Roadmap">
+    <span class="hl"><span>PREDICT</span></span>
+    <span class="hl"><span>FI&nbsp;ROAD</span></span>
+    <span class="hl"><span>MAP.</span></span>
+  </h1>
+
+  <p class="hero-sub">Four phases of development from testnet deployment to full community governance on BNB Chain.</p>
+
+  <div class="hero-stats">
+    <div class="hstat">
+      <div class="hstat-label">Active Phase</div>
+      <div class="hstat-val">02 Mainnet</div>
     </div>
-  </main>
+    <div class="hstat">
+      <div class="hstat-label">Timeline</div>
+      <div class="hstat-val">Q1 2026 – 2027</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Phases Complete</div>
+      <div class="hstat-val">1 of 4</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-label">Network</div>
+      <div class="hstat-val">BNB Chain</div>
+    </div>
+  </div>
+
+  
+</header>
+
+<!-- ─── PHASES ─── -->
+<main class="wrap">
+  <div class="tline"><div class="tline-fill" id="tlinefill"></div></div>
+
+  <!-- Phase 1 -->
+  <section class="phase done" id="p1">
+    <div class="tdot"></div>
+    <div class="phead">
+      <div class="pnum">01</div>
+      <div class="pmeta">
+        <span class="pstatus done">Complete</span>
+        <span class="pperiod">Q1 – Q2 2026</span>
+      </div>
+    </div>
+    <h2 class="ptitle">Foundation</h2>
+    <div class="pitems">
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Smart contract development and deployment on BSC Testnet</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Core prediction UI market browse, detail, trade panel</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Wallet integration MetaMask &amp; WalletConnect</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Admin portal for market creation and resolution</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Leaderboard and portfolio tracking</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">Whitelist registration system</span></div>
+      <div class="pitem"><div class="chk done"></div><span class="itext dim">PRFI presale launch on moonsale.app June 1–7, 2026</span></div>
+    </div>
+  </section>
+
+  <!-- Phase 2 -->
+  <section class="phase current" id="p2">
+    <div class="tdot"></div>
+    <div class="phead">
+      <div class="pnum">02</div>
+      <div class="pmeta">
+        <span class="pstatus upcoming">Upcoming</span>
+        <span class="pperiod">Q3 2026</span>
+      </div>
+    </div>
+    <h2 class="ptitle">Mainnet Launch</h2>
+    <div class="pitems">
+      <div class="pitem"><div class="chk"></div><span class="itext">BSC Mainnet smart contract deployment</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">PRFI token deployment and PancakeSwap V3 listing</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Staking module stake PRFI, earn BNB revenue share</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Governance module on-chain proposals and voting</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Mobile-responsive progressive web app</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Security audit by a top-tier firm</span></div>
+    </div>
+  </section>
+
+  <!-- Phase 3 -->
+  <section class="phase" id="p3">
+    <div class="tdot"></div>
+    <div class="phead">
+      <div class="pnum">03</div>
+      <div class="pmeta">
+        <span class="pstatus">Planned</span>
+        <span class="pperiod">Q4 2026</span>
+      </div>
+    </div>
+    <h2 class="ptitle">Ecosystem Growth</h2>
+    <div class="pitems">
+      <div class="pitem"><div class="chk"></div><span class="itext">Multi-category markets sports, crypto, politics, entertainment</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Market creation by whitelisted community members</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">PRFI fee discount system</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Partnership integrations data oracles, DeFi protocols</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Cross-chain expansion Ethereum &amp; Arbitrum</span></div>
+    </div>
+  </section>
+
+  <!-- Phase 4 -->
+  <section class="phase" id="p4">
+    <div class="tdot"></div>
+    <div class="phead">
+      <div class="pnum">04</div>
+      <div class="pmeta">
+        <span class="pstatus">Planned</span>
+        <span class="pperiod">2027</span>
+      </div>
+    </div>
+    <h2 class="ptitle">Full Decentralisation</h2>
+    <div class="pitems">
+      <div class="pitem"><div class="chk"></div><span class="itext">Full governance handover to PRFI token holders</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Oracle-verified auto-resolution of markets</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">Layer-2 deployment for lower gas fees</span></div>
+      <div class="pitem"><div class="chk"></div><span class="itext">API access for third-party integrations</span></div>
+    </div>
+  </section>
+</main>
+
+
+
+<script>
+(function(){
+  const fill    = document.getElementById('scrollfill');
+  const tfill   = document.getElementById('tlinefill');
+  const phases  = document.querySelectorAll('.phase');
+  const ndots   = document.querySelectorAll('.ndot');
+  const wrap    = document.querySelector('.wrap');
+  const foot    = document.getElementById('footer');
+
+  /* scroll progress bar */
+  function onScroll(){
+    const scrolled = window.scrollY;
+    const total    = document.documentElement.scrollHeight - window.innerHeight;
+    fill.style.height = Math.min(100, (scrolled / total) * 100) + '%';
+
+    /* timeline line fill */
+    const ct  = wrap.offsetTop;
+    const ch  = wrap.offsetHeight;
+    const pct = Math.min(100, Math.max(0,
+      (scrolled + window.innerHeight * .6 - ct) / ch * 100
+    ));
+    tfill.style.height = pct + '%';
+  }
+
+  /* intersection: phases */
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(!e.isIntersecting) return;
+      e.target.classList.add('vis');
+      const idx = [...phases].indexOf(e.target);
+      ndots.forEach((d,i) => d.classList.toggle('on', i === idx));
+    });
+  },{ threshold:.12, rootMargin:'-60px 0px -20% 0px' });
+
+  phases.forEach(p => obs.observe(p));
+
+  /* intersection: footer */
+  new IntersectionObserver(entries => {
+    if(entries[0].isIntersecting) foot.classList.add('vis');
+  },{ threshold:.3 }).observe(foot);
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  /* initial check */
+  onScroll();
+  setTimeout(()=>{
+    phases.forEach(p=>{
+      if(p.getBoundingClientRect().top < window.innerHeight * .9)
+        p.classList.add('vis');
+    });
+  }, 300);
+})();
+
+function goto(id){
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
 </body>
 </html>

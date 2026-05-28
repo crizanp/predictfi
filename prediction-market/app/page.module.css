@@ -401,9 +401,9 @@
 /* ── PRFI Token Section ───────────────────────────────────── */
 .prfiSection {
   margin: 0 28px 36px;
-  border: 1px solid rgba(17,24,39,0.08);
+  border: 1px solid rgba(192, 208, 241, 0.795);
   border-radius: 20px;
-  background: #e8ffe2;
+  background: #aeb6ff;
   position: relative;
   box-shadow: 0 14px 34px rgba(15,23,42,0.08);
 }
