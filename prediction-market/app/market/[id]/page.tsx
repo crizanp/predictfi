@@ -92,6 +92,21 @@ export default function MarketDetailPage() {
   // Initial load
   useEffect(() => {
     if (!marketId || Number.isNaN(marketId)) { router.replace('/'); return }
+
+    // Hard reset per-market UI state to avoid leaking previous market data.
+    setMarket(null)
+    setMeta(null)
+    setSelectedEventKey('1')
+    setActiveTab('discussion')
+    setRawComments([])
+    setCommentLoading(true)
+    setCommentInput('')
+    setReplyUI({})
+    setLikedIds(new Set())
+    setActivity([])
+    setActivityLoaded(false)
+    setActivityLoading(true)
+
     const timer = window.setTimeout(() => {
       setLoading(true)
       fetchMarket(marketId).then(m => { setMarket(m); setLoading(false) })
@@ -167,13 +182,13 @@ export default function MarketDetailPage() {
 
   // Load activity immediately so holders/activity stay fresh without tab switching
   useEffect(() => {
-    if (!marketId || activityLoaded || activityLoading) return
+    if (!marketId || activityLoading) return
     const timer = window.setTimeout(() => {
       setActivityLoading(true)
       getActivity(marketId).then(data => { setActivity(data); setActivityLoaded(true); setActivityLoading(false) })
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [activityLoaded, activityLoading, marketId])
+  }, [activityLoading, marketId])
 
   // Subscribe for new activity rows (new bets placed by anyone)
   useEffect(() => {
@@ -368,6 +383,8 @@ export default function MarketDetailPage() {
     () => marketEvents.find((event) => event.key === selectedEventKey) ?? marketEvents[0],
     [marketEvents, selectedEventKey]
   )
+  const showCommentLoading = commentLoading && rawComments.length === 0
+  const showActivityLoading = activityLoading && activity.length === 0
   const selectedYesLabel = selectedEvent?.yesLabel ?? yesLabel
   const selectedNoLabel = selectedEvent?.noLabel ?? noLabel
 
@@ -557,7 +574,7 @@ export default function MarketDetailPage() {
           {/* ── Discussion ── */}
           {activeTab === 'discussion' && (
             <div className={styles.discussionTab}>
-              {commentLoading ? (
+              {showCommentLoading ? (
                 <div className={styles.tabLoading}><div className={styles.spinner} /></div>
               ) : (
                 <>
@@ -657,7 +674,7 @@ export default function MarketDetailPage() {
           {/* ── Holders ── */}
           {activeTab === 'holders' && (
             <div className={styles.discussionTab}>
-              {activityLoading ? (
+              {showActivityLoading ? (
                 <div className={styles.tabLoading}><div className={styles.spinner} /></div>
               ) : holders.length === 0 ? (
                 <div className={styles.emptyState}>No positions placed yet.</div>
@@ -684,7 +701,7 @@ export default function MarketDetailPage() {
           {/* ── Activity ── */}
           {activeTab === 'activity' && (
             <div className={styles.discussionTab}>
-              {activityLoading ? (
+              {showActivityLoading ? (
                 <div className={styles.tabLoading}><div className={styles.spinner} /></div>
               ) : activity.length === 0 ? (
                 <div className={styles.emptyState}>No activity yet.</div>

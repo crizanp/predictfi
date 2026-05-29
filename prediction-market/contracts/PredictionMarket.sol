@@ -1,10 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+/*
+Fee model:
+- A platform fee is charged only when winners claim, in basis points via platformFeeBps.
+- Fees are accumulated in collectedFees and can be withdrawn only by owner via withdrawFees.
+- withdrawFees never uses address(this).balance, so user liquidity is not sweepable as protocol fees.
+
+Share model:
+- Users buy YES or NO shares per event using BNB.
+- Shares are minted pro-rata versus existing side shares:
+  shares = amount * totalSideShares / sidePool (or 1:1 when side is empty).
+- This removes entry/exit price tracking entirely and avoids per-position bookkeeping.
+
+claimWinnings math:
+- After resolve, only winning-side shares are redeemable.
+- grossPayout = userWinningShares * totalPool / totalWinningShares.
+- fee = grossPayout * platformFeeBps / 10000, netPayout = grossPayout - fee.
+*/
 contract PredictionMarket {
     address public owner;
 
-    enum Outcome { NONE, YES, NO }
+    uint256 private _status = 1;
+
+    enum Outcome {
+        NONE,
+        YES,
+        NO
+    }
 
     struct Market {
         uint256 id;
@@ -16,462 +39,295 @@ contract PredictionMarket {
     struct MarketEvent {
         uint256 id;
         string name;
-        bool resolved;
-        Outcome result;
+    }
+
+    struct EventPool {
         uint256 yesPool;
         uint256 noPool;
         uint256 totalPool;
-    }
-
-    struct Prediction {
-        Outcome choice;
-        uint256 amount;
-        bool claimed;
-    }
-
-    struct Position {
-        Outcome choice;
-        uint256 amount;
-        uint256 entryPriceBps;
-        bool claimed;
-    }
-
-    struct SellQuoteData {
-        uint256 exitPriceBps;
-        uint256 grossPayout;
-        uint256 fee;
-        uint256 netPayout;
+        uint256 totalYesShares;
+        uint256 totalNoShares;
+        bool resolved;
+        Outcome result;
     }
 
     uint256 public marketCount;
-    uint256 public platformFee = 5; // 5%
-    uint256 public sellFeeBps = 200; // 2%
+    uint256 public collectedFees;
+    uint256 public platformFeeBps = 300;
+    uint256 public constant RESOLVE_BUFFER = 0;
 
     mapping(uint256 => Market) public markets;
-    mapping(uint256 => mapping(uint256 => MarketEvent)) private marketEvents;
-    mapping(uint256 => mapping(uint256 => mapping(address => Position[]))) private positions;
+    mapping(uint256 => mapping(uint256 => MarketEvent)) public marketEvents;
+    mapping(uint256 => mapping(uint256 => EventPool)) public eventPools;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public userYesShares;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256))) public userNoShares;
 
     event MarketCreated(uint256 indexed id, string question, uint256 endTime, uint256 eventCount);
-    event MarketEventCreated(uint256 indexed marketId, uint256 indexed eventId, string name);
-    event PredictionPlaced(uint256 indexed marketId, uint256 indexed eventId, address indexed user, Outcome choice, uint256 amount);
-    event PredictionSold(
+    event EventCreated(uint256 indexed marketId, uint256 indexed eventId, string name);
+    event PredictionPlaced(
         uint256 indexed marketId,
         uint256 indexed eventId,
         address indexed user,
         Outcome choice,
         uint256 amount,
-        uint256 grossPayout,
-        uint256 fee,
-        uint256 netPayout,
-        uint256 exitPriceBps
+        uint256 sharesReceived
     );
     event EventResolved(uint256 indexed marketId, uint256 indexed eventId, Outcome result);
     event WinningsClaimed(uint256 indexed marketId, uint256 indexed eventId, address indexed user, uint256 amount);
+    event FeesWithdrawn(address indexed owner, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
     }
 
+    modifier nonReentrant() {
+        require(_status == 1, "Reentrant call");
+        _status = 2;
+        _;
+        _status = 1;
+    }
+
     constructor() {
         owner = msg.sender;
     }
 
-    function _clampPriceBps(uint256 _priceBps) private pure returns (uint256) {
-        if (_priceBps < 1) return 1;
-        if (_priceBps > 9999) return 9999;
-        return _priceBps;
-    }
-
-    function _eventPriceBps(MarketEvent storage _eventMarket, Outcome _choice) private view returns (uint256) {
-        if (_eventMarket.totalPool == 0) {
-            return 5000;
-        }
-        uint256 raw = _choice == Outcome.YES
-            ? (_eventMarket.yesPool * 10000) / _eventMarket.totalPool
-            : (_eventMarket.noPool * 10000) / _eventMarket.totalPool;
-        return _clampPriceBps(raw);
-    }
-
-    function _postSellPriceBps(MarketEvent storage _eventMarket, Outcome _choice, uint256 _amount) private view returns (uint256) {
-        require(_amount > 0, "Amount must be > 0");
-        require(_eventMarket.totalPool >= _amount, "Pool underflow");
-
-        uint256 nextTotal = _eventMarket.totalPool - _amount;
-        if (nextTotal == 0) {
-            return 5000;
-        }
-
-        if (_choice == Outcome.YES) {
-            require(_eventMarket.yesPool >= _amount, "Pool underflow");
-            uint256 nextYes = _eventMarket.yesPool - _amount;
-            return _clampPriceBps((nextYes * 10000) / nextTotal);
-        }
-
-        require(_eventMarket.noPool >= _amount, "Pool underflow");
-        uint256 nextNo = _eventMarket.noPool - _amount;
-        return _clampPriceBps((nextNo * 10000) / nextTotal);
-    }
-
-    function _quoteSellFromPositions(
-        Position[] storage _userPositions,
-        Outcome _choice,
-        uint256 _amount,
-        uint256 _exitPriceBps
-    ) private view returns (uint256 grossPayout, uint256 availableAmount) {
-        uint256 remaining = _amount;
-
-        for (uint256 i = 0; i < _userPositions.length; i++) {
-            Position storage position = _userPositions[i];
-            if (position.claimed || position.choice != _choice || position.amount == 0) {
-                continue;
-            }
-
-            availableAmount += position.amount;
-            if (remaining == 0) {
-                continue;
-            }
-
-            uint256 chunk = position.amount <= remaining ? position.amount : remaining;
-            uint256 entryPriceBps = _clampPriceBps(position.entryPriceBps == 0 ? 5000 : position.entryPriceBps);
-
-            // Realize PnL linearly from entry -> exit price to avoid unbounded multipliers.
-            // If exit > entry, user gets a premium; if exit < entry, user takes a discount.
-            if (_exitPriceBps >= entryPriceBps) {
-                uint256 premium = (chunk * (_exitPriceBps - entryPriceBps)) / 10000;
-                grossPayout += chunk + premium;
-            } else {
-                uint256 discount = (chunk * (entryPriceBps - _exitPriceBps)) / 10000;
-                grossPayout += chunk > discount ? chunk - discount : 0;
-            }
-            remaining -= chunk;
-        }
-
-        require(availableAmount >= _amount, "Insufficient position");
-    }
-
-    function _quoteSellPredictionForUser(
-        uint256 _marketId,
-        uint256 _eventId,
-        Outcome _choice,
-        address _user,
-        uint256 _amount
-    ) private view returns (SellQuoteData memory quote) {
-        require(_amount > 0, "Amount must be > 0");
-        Market storage market = markets[_marketId];
+    function _validateMarketAndEvent(uint256 marketId, uint256 eventId) private view returns (Market storage market) {
+        market = markets[marketId];
         require(market.id != 0, "Market does not exist");
-        require(_eventId > 0 && _eventId <= market.eventCount, "Event does not exist");
-
-        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
-        require(!eventMarket.resolved, "Event resolved");
-        require(block.timestamp < market.endTime, "Market ended");
-        require(_choice == Outcome.YES || _choice == Outcome.NO, "Invalid choice");
-
-        uint256 spotExitPriceBps = _eventPriceBps(eventMarket, _choice);
-        uint256 postImpactPriceBps = _postSellPriceBps(eventMarket, _choice, _amount);
-        quote.exitPriceBps = (spotExitPriceBps + postImpactPriceBps) / 2;
-        Position[] storage userPositions = positions[_marketId][_eventId][_user];
-        require(userPositions.length > 0, "No prediction found");
-
-        (quote.grossPayout, ) = _quoteSellFromPositions(userPositions, _choice, _amount, quote.exitPriceBps);
-        quote.fee = (quote.grossPayout * sellFeeBps) / 10000;
-        quote.netPayout = quote.grossPayout - quote.fee;
+        require(eventId > 0 && eventId <= market.eventCount, "Event does not exist");
     }
 
-    function quoteSellPredictionForUser(
-        uint256 _marketId,
-        uint256 _eventId,
-        Outcome _choice,
-        address _user,
-        uint256 _amount
-    ) external view returns (uint256 exitPriceBps, uint256 grossPayout, uint256 fee, uint256 netPayout) {
-        SellQuoteData memory quote = _quoteSellPredictionForUser(_marketId, _eventId, _choice, _user, _amount);
-        return (quote.exitPriceBps, quote.grossPayout, quote.fee, quote.netPayout);
-    }
+    /// @notice Creates a new market with one or more named events.
+    /// @param question Human-readable market question (for example: "World Cup 2026 Winner").
+    /// @param eventNames Array of event labels under the market.
+    /// @param durationInMinutes Market open duration in minutes from creation time.
+    function createMarket(
+        string memory question,
+        string[] memory eventNames,
+        uint256 durationInMinutes
+    ) external onlyOwner {
+        require(bytes(question).length > 0, "Question required");
+        require(eventNames.length > 0, "At least one event required");
+        require(eventNames.length <= 50, "Too many events");
+        require(durationInMinutes > 0, "Duration must be > 0");
 
-    function _consumeSellPositions(
-        Position[] storage _userPositions,
-        Outcome _choice,
-        uint256 _amount
-    ) private {
-        uint256 remainingToSell = _amount;
-        for (uint256 i = 0; i < _userPositions.length && remainingToSell > 0; i++) {
-            Position storage position = _userPositions[i];
-            if (position.claimed || position.choice != _choice || position.amount == 0) {
-                continue;
-            }
+        marketCount += 1;
+        uint256 newMarketId = marketCount;
+        uint256 endTime = block.timestamp + (durationInMinutes * 1 minutes);
 
-            if (position.amount <= remainingToSell) {
-                remainingToSell -= position.amount;
-                position.amount = 0;
-            } else {
-                position.amount -= remainingToSell;
-                remainingToSell = 0;
-            }
-        }
-    }
-
-    function _updatePoolsAfterSell(
-        MarketEvent storage _eventMarket,
-        Outcome _choice,
-        uint256 _amount,
-        uint256 _grossPayout
-    ) private {
-        uint256 oppositeDelta = _grossPayout >= _amount ? _grossPayout - _amount : _amount - _grossPayout;
-
-        if (_choice == Outcome.YES) {
-            require(_eventMarket.yesPool >= _amount, "Pool underflow");
-            _eventMarket.yesPool -= _amount;
-            if (_grossPayout >= _amount) {
-                require(_eventMarket.noPool >= oppositeDelta, "Not enough liquidity");
-                _eventMarket.noPool -= oppositeDelta;
-            } else {
-                _eventMarket.noPool += oppositeDelta;
-            }
-        } else {
-            require(_eventMarket.noPool >= _amount, "Pool underflow");
-            _eventMarket.noPool -= _amount;
-            if (_grossPayout >= _amount) {
-                require(_eventMarket.yesPool >= oppositeDelta, "Not enough liquidity");
-                _eventMarket.yesPool -= oppositeDelta;
-            } else {
-                _eventMarket.yesPool += oppositeDelta;
-            }
-        }
-
-        require(_eventMarket.totalPool >= _grossPayout, "Pool underflow");
-        _eventMarket.totalPool -= _grossPayout;
-    }
-
-    function _settleSellPayout(address _seller, uint256 _fee, uint256 _netPayout) private {
-        if (_fee > 0) {
-            payable(owner).transfer(_fee);
-        }
-        payable(_seller).transfer(_netPayout);
-    }
-
-    function createMarket(string memory _question, string[] memory _eventNames, uint256 _durationInMinutes) external onlyOwner {
-        require(bytes(_question).length > 0, "Question required");
-        require(_eventNames.length > 0, "At least one event required");
-        require(_eventNames.length <= 50, "Too many events");
-        marketCount++;
-        markets[marketCount] = Market({
-            id: marketCount,
-            question: _question,
-            endTime: block.timestamp + (_durationInMinutes * 1 minutes),
-            eventCount: _eventNames.length
+        markets[newMarketId] = Market({
+            id: newMarketId,
+            question: question,
+            endTime: endTime,
+            eventCount: eventNames.length
         });
 
-        for (uint256 i = 0; i < _eventNames.length; i++) {
-            require(bytes(_eventNames[i]).length > 0, "Event name empty");
+        for (uint256 i = 0; i < eventNames.length; i++) {
+            require(bytes(eventNames[i]).length > 0, "Event name empty");
             uint256 eventId = i + 1;
-            marketEvents[marketCount][eventId] = MarketEvent({
+
+            marketEvents[newMarketId][eventId] = MarketEvent({
                 id: eventId,
-                name: _eventNames[i],
-                resolved: false,
-                result: Outcome.NONE,
-                yesPool: 0,
-                noPool: 0,
-                totalPool: 0
+                name: eventNames[i]
             });
-            emit MarketEventCreated(marketCount, eventId, _eventNames[i]);
+
+            eventPools[newMarketId][eventId].result = Outcome.NONE;
+            emit EventCreated(newMarketId, eventId, eventNames[i]);
         }
 
-        emit MarketCreated(marketCount, _question, markets[marketCount].endTime, _eventNames.length);
+        emit MarketCreated(newMarketId, question, endTime, eventNames.length);
     }
 
-    function predict(uint256 _marketId, uint256 _eventId, Outcome _choice) external payable {
-        Market storage market = markets[_marketId];
-        require(market.id != 0, "Market does not exist");
-        require(_eventId > 0 && _eventId <= market.eventCount, "Event does not exist");
+    /// @notice Places a YES or NO prediction using BNB and mints side shares.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier within the market.
+    /// @param choice Side to buy shares on: YES or NO.
+    function predict(uint256 marketId, uint256 eventId, Outcome choice) external payable nonReentrant {
+        Market storage market = _validateMarketAndEvent(marketId, eventId);
         require(block.timestamp < market.endTime, "Market ended");
-        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
-        require(!eventMarket.resolved, "Event resolved");
-        require(_choice == Outcome.YES || _choice == Outcome.NO, "Invalid choice");
+        require(choice == Outcome.YES || choice == Outcome.NO, "Invalid choice");
         require(msg.value > 0, "Must send BNB");
 
-        if (_choice == Outcome.YES) {
-            eventMarket.yesPool += msg.value;
+        EventPool storage pool = eventPools[marketId][eventId];
+        require(!pool.resolved, "Event resolved");
+
+        uint256 shares;
+
+        if (choice == Outcome.YES) {
+            shares = (pool.totalYesShares == 0)
+                ? msg.value
+                : (msg.value * pool.totalYesShares) / pool.yesPool;
+            require(shares > 0, "Amount too small");
+
+            pool.yesPool += msg.value;
+            pool.totalPool += msg.value;
+            pool.totalYesShares += shares;
+            userYesShares[marketId][eventId][msg.sender] += shares;
         } else {
-            eventMarket.noPool += msg.value;
+            shares = (pool.totalNoShares == 0)
+                ? msg.value
+                : (msg.value * pool.totalNoShares) / pool.noPool;
+            require(shares > 0, "Amount too small");
+
+            pool.noPool += msg.value;
+            pool.totalPool += msg.value;
+            pool.totalNoShares += shares;
+            userNoShares[marketId][eventId][msg.sender] += shares;
         }
-        eventMarket.totalPool += msg.value;
 
-        // Use post-trade price as entry to avoid immediate self-impact arbitrage.
-        uint256 entryPriceBps = _eventPriceBps(eventMarket, _choice);
-
-        positions[_marketId][_eventId][msg.sender].push(Position({
-            choice: _choice,
-            amount: msg.value,
-            entryPriceBps: entryPriceBps,
-            claimed: false
-        }));
-
-        emit PredictionPlaced(_marketId, _eventId, msg.sender, _choice, msg.value);
+        emit PredictionPlaced(marketId, eventId, msg.sender, choice, msg.value, shares);
     }
 
-    function sellPrediction(uint256 _marketId, uint256 _eventId, Outcome _choice, uint256 _amount) external {
-        SellQuoteData memory quote = _quoteSellPredictionForUser(_marketId, _eventId, _choice, msg.sender, _amount);
+    /// @notice Resolves an event once the market has ended.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier within the market.
+    /// @param result Final result side: YES or NO.
+    function resolveEvent(uint256 marketId, uint256 eventId, Outcome result) external onlyOwner {
+        Market storage market = _validateMarketAndEvent(marketId, eventId);
+        require(block.timestamp >= market.endTime + RESOLVE_BUFFER, "Market not ended");
+        require(result == Outcome.YES || result == Outcome.NO, "Invalid result");
 
-        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
-        Position[] storage userPositions = positions[_marketId][_eventId][msg.sender];
-        _consumeSellPositions(userPositions, _choice, _amount);
-        _updatePoolsAfterSell(eventMarket, _choice, _amount, quote.grossPayout);
-        _settleSellPayout(msg.sender, quote.fee, quote.netPayout);
+        EventPool storage pool = eventPools[marketId][eventId];
+        require(!pool.resolved, "Already resolved");
 
-        emit PredictionSold(
-            _marketId,
-            _eventId,
-            msg.sender,
-            _choice,
-            _amount,
-            quote.grossPayout,
-            quote.fee,
-            quote.netPayout,
-            quote.exitPriceBps
+        pool.resolved = true;
+        pool.result = result;
+
+        emit EventResolved(marketId, eventId, result);
+    }
+
+    /// @notice Claims resolved winnings for caller from one market event.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier within the market.
+    function claimWinnings(uint256 marketId, uint256 eventId) external nonReentrant {
+        _validateMarketAndEvent(marketId, eventId);
+        EventPool storage pool = eventPools[marketId][eventId];
+        require(pool.resolved, "Not resolved");
+
+        uint256 userShares;
+        uint256 totalWinningShares;
+
+        if (pool.result == Outcome.YES) {
+            userShares = userYesShares[marketId][eventId][msg.sender];
+            totalWinningShares = pool.totalYesShares;
+            userYesShares[marketId][eventId][msg.sender] = 0;
+        } else {
+            userShares = userNoShares[marketId][eventId][msg.sender];
+            totalWinningShares = pool.totalNoShares;
+            userNoShares[marketId][eventId][msg.sender] = 0;
+        }
+
+        require(userShares > 0, "No winning position");
+        require(totalWinningShares > 0, "No winners");
+
+        uint256 grossPayout = (userShares * pool.totalPool) / totalWinningShares;
+        uint256 fee = (grossPayout * platformFeeBps) / 10000;
+        uint256 netPayout = grossPayout - fee;
+
+        collectedFees += fee;
+        (bool payoutOk, ) = payable(msg.sender).call{value: netPayout}("");
+        require(payoutOk, "Payout failed");
+
+        emit WinningsClaimed(marketId, eventId, msg.sender, netPayout);
+    }
+
+    /// @notice Withdraws only accumulated protocol fees.
+    function withdrawFees() external onlyOwner {
+        uint256 amount = collectedFees;
+        require(amount > 0, "Nothing to withdraw");
+
+        collectedFees = 0;
+        (bool withdrawalOk, ) = payable(owner).call{value: amount}("");
+        require(withdrawalOk, "Withdraw failed");
+
+        emit FeesWithdrawn(owner, amount);
+    }
+
+    /// @notice Returns market metadata by id.
+    /// @param marketId Market identifier.
+    /// @return Market struct for the requested market.
+    function getMarket(uint256 marketId) external view returns (Market memory) {
+        return markets[marketId];
+    }
+
+    /// @notice Returns event metadata by market and event id.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier.
+    /// @return MarketEvent struct for the requested event.
+    function getEvent(uint256 marketId, uint256 eventId) external view returns (MarketEvent memory) {
+        return marketEvents[marketId][eventId];
+    }
+
+    /// @notice Returns current implied YES probability in basis points.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier.
+    /// @return yesPriceBps Current YES price in bps, where 10000 = 100%.
+    function getYesPriceBps(uint256 marketId, uint256 eventId) external view returns (uint256 yesPriceBps) {
+        EventPool storage pool = eventPools[marketId][eventId];
+        if (pool.totalPool == 0) {
+            return 5000;
+        }
+        return (pool.yesPool * 10000) / pool.totalPool;
+    }
+
+    /// @notice Returns a user's YES and NO shares for one event.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier.
+    /// @param user User address to query.
+    /// @return yesShares User YES shares.
+    /// @return noShares User NO shares.
+    function getUserShares(uint256 marketId, uint256 eventId, address user)
+        external
+        view
+        returns (uint256 yesShares, uint256 noShares)
+    {
+        return (
+            userYesShares[marketId][eventId][user],
+            userNoShares[marketId][eventId][user]
         );
     }
 
-    function resolveEvent(uint256 _marketId, uint256 _eventId, Outcome _result) external onlyOwner {
-        Market storage market = markets[_marketId];
-        require(market.id != 0, "Market does not exist");
-        require(_eventId > 0 && _eventId <= market.eventCount, "Event does not exist");
-        require(block.timestamp >= market.endTime, "Market not ended yet");
-        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
-        require(!eventMarket.resolved, "Already resolved");
-        require(_result == Outcome.YES || _result == Outcome.NO, "Invalid result");
+    /// @notice Estimates the caller-selected side payout after fee if that side wins.
+    /// @param marketId Market identifier.
+    /// @param eventId Event identifier.
+    /// @param user User address to estimate for.
+    /// @param side Side to estimate against, YES or NO.
+    /// @return netPayout Estimated payout after platform fee.
+    function estimatePayout(uint256 marketId, uint256 eventId, address user, Outcome side)
+        external
+        view
+        returns (uint256 netPayout)
+    {
+        EventPool storage pool = eventPools[marketId][eventId];
+        uint256 shares = side == Outcome.YES
+            ? userYesShares[marketId][eventId][user]
+            : userNoShares[marketId][eventId][user];
+        uint256 totalShares = side == Outcome.YES ? pool.totalYesShares : pool.totalNoShares;
 
-        eventMarket.resolved = true;
-        eventMarket.result = _result;
-
-        emit EventResolved(_marketId, _eventId, _result);
-    }
-
-    function claimWinnings(uint256 _marketId, uint256 _eventId) external {
-        Market storage market = markets[_marketId];
-        require(market.id != 0, "Market does not exist");
-        require(_eventId > 0 && _eventId <= market.eventCount, "Event does not exist");
-        MarketEvent storage eventMarket = marketEvents[_marketId][_eventId];
-        require(eventMarket.resolved, "Not resolved yet");
-
-        Position[] storage userPositions = positions[_marketId][_eventId][msg.sender];
-        require(userPositions.length > 0, "No prediction found");
-
-        uint256 winningAmount = 0;
-        bool hasActivePosition = false;
-
-        for (uint256 i = 0; i < userPositions.length; i++) {
-            Position storage position = userPositions[i];
-            if (position.amount == 0) {
-                continue;
-            }
-            require(!position.claimed, "Already claimed");
-            hasActivePosition = true;
-
-            if (position.choice == eventMarket.result) {
-                winningAmount += position.amount;
-            }
+        if (shares == 0 || totalShares == 0) {
+            return 0;
         }
 
-        require(hasActivePosition, "No active prediction found");
-        require(winningAmount > 0, "You lost");
-
-        for (uint256 i = 0; i < userPositions.length; i++) {
-            if (userPositions[i].amount == 0) {
-                continue;
-            }
-            userPositions[i].claimed = true;
-        }
-
-        uint256 winningPool = eventMarket.result == Outcome.YES ? eventMarket.yesPool : eventMarket.noPool;
-        uint256 losingPool = eventMarket.result == Outcome.YES ? eventMarket.noPool : eventMarket.yesPool;
-        require(winningPool > 0, "No winning pool");
-
-        // Fee is proportional to this user's share of the losing pool.
-        // This ensures total fees across ALL claimants = exactly platformFee% of losingPool,
-        // so the contract never runs short regardless of how many winners there are.
-        uint256 userLosingShare = (losingPool * winningAmount) / winningPool;
-        uint256 fee = (userLosingShare * platformFee) / 100;
-        uint256 winnings = winningAmount + userLosingShare - fee;
-
-        if (fee > 0) {
-            payable(owner).transfer(fee);
-        }
-        payable(msg.sender).transfer(winnings);
-
-        emit WinningsClaimed(_marketId, _eventId, msg.sender, winnings);
-    }
-
-    function getMarket(uint256 _marketId) external view returns (Market memory) {
-        return markets[_marketId];
-    }
-
-    function getEvent(uint256 _marketId, uint256 _eventId) external view returns (MarketEvent memory) {
-        return marketEvents[_marketId][_eventId];
-    }
-
-    function getUserPrediction(uint256 _marketId, uint256 _eventId, address _user) external view returns (Prediction memory) {
-        Position[] storage userPositions = positions[_marketId][_eventId][_user];
-        if (userPositions.length == 0) {
-            return Prediction({ choice: Outcome.NONE, amount: 0, claimed: false });
-        }
-
-        uint256 totalAmount = 0;
-        Outcome latestChoice = Outcome.NONE;
-        bool hasActivePosition = false;
-        bool allClaimed = true;
-
-        for (uint256 i = 0; i < userPositions.length; i++) {
-            Position storage position = userPositions[i];
-            if (position.amount == 0) {
-                continue;
-            }
-            hasActivePosition = true;
-            totalAmount += position.amount;
-            latestChoice = position.choice;
-            allClaimed = allClaimed && position.claimed;
-        }
-
-        if (!hasActivePosition) {
-            return Prediction({ choice: Outcome.NONE, amount: 0, claimed: false });
-        }
-
-        return Prediction({ choice: latestChoice, amount: totalAmount, claimed: allClaimed });
-    }
-
-    function getUserPositionBreakdown(uint256 _marketId, uint256 _eventId, address _user) external view returns (uint256 yesAmount, uint256 noAmount, bool allClaimed) {
-        Position[] storage userPositions = positions[_marketId][_eventId][_user];
-        if (userPositions.length == 0) {
-            return (0, 0, false);
-        }
-
-        bool hasActivePosition = false;
-        uint256 yes = 0;
-        uint256 no = 0;
-        bool claimed = true;
-
-        for (uint256 i = 0; i < userPositions.length; i++) {
-            Position storage position = userPositions[i];
-            if (position.amount == 0) {
-                continue;
-            }
-            hasActivePosition = true;
-            if (position.choice == Outcome.YES) {
-                yes += position.amount;
-            } else if (position.choice == Outcome.NO) {
-                no += position.amount;
-            }
-            claimed = claimed && position.claimed;
-        }
-
-        if (!hasActivePosition) {
-            return (0, 0, false);
-        }
-
-        return (yes, no, claimed);
-    }
-
-    function withdrawFees() external onlyOwner {
-        payable(owner).transfer(address(this).balance);
+        uint256 gross = (shares * pool.totalPool) / totalShares;
+        uint256 fee = (gross * platformFeeBps) / 10000;
+        return gross - fee;
     }
 }
+
+/*
+Test scenario (exact numbers):
+1) Alice predicts YES with 0.1 BNB.
+   - YES pool = 0.1, NO pool = 0, totalPool = 0.1
+   - Alice YES shares = 0.1
+2) Bob predicts NO with 0.2 BNB.
+   - YES pool = 0.1, NO pool = 0.2, totalPool = 0.3
+   - Bob NO shares = 0.2
+3) Owner resolves event as YES once endTime is reached.
+4) Alice claims:
+   - userShares = 0.1, totalWinningShares = 0.1
+   - grossPayout = 0.1 * 0.3 / 0.1 = 0.3 BNB
+   - fee = 0.3 * 300 / 10000 = 0.009 BNB
+   - netPayout = 0.291 BNB
+   - collectedFees increases by 0.009 BNB
+*/

@@ -33,7 +33,6 @@ export default function Navbar() {
     isBusy,
     busyAction,
     setShowWalletModal,
-    setShowAdminPortal,
     switchActiveNetwork,
     authUser,
     isAuthenticated,
@@ -121,9 +120,9 @@ export default function Navbar() {
             ))}
           </div>
           {isAdmin && (
-            <button className={styles.adminBtn} onClick={() => setShowAdminPortal(true)}>
+            <Link href="/admin" className={styles.adminBtn}>
               <RiSettings3Line className={styles.adminIcon} /> ADMIN
-            </button>
+            </Link>
           )}
           {!isAuthenticated ? (
             <button

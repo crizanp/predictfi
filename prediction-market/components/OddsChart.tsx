@@ -469,7 +469,7 @@ export default function OddsChart({
     setActivityHistory([])
     supabaseSynced.current = false
     lastSnapshotBucket.current = {}
-  }, [marketId, chartKey])
+  }, [marketId, chartKey, eventId])
 
   useEffect(() => {
     if (supabaseSynced.current) return

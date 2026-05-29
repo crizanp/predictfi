@@ -5,6 +5,7 @@ import { useWallet } from '../context/WalletContext'
 import { useMarkets } from '../context/MarketsContext'
 import { Market, UserPrediction } from '../context/MarketsContext'
 import { formatToken, computePoolMetrics, resultLabel } from '../lib/utils'
+import { CONTRACT_OWNER } from '../lib/contract'
 import { useToast } from '../context/ToastContext'
 import type { MarketMeta } from '../lib/supabase'
 import styles from './TradePanel.module.css'
@@ -27,17 +28,9 @@ interface Props {
   onSelectedEventKeyChange?: (eventKey: string) => void
 }
 
-function formatInputAmount(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return ''
-  return value
-    .toFixed(6)
-    .replace(/\.0+$/, '')
-    .replace(/(\.\d*?)0+$/, '$1')
-}
-
 export default function TradePanel({ market, nowInSeconds, meta, selectedEventKey: selectedEventKeyProp, onSelectedEventKeyChange }: Props) {
   const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured, isAuthenticated } = useWallet()
-  const { getEventUserPrediction, placePrediction, sellPrediction, quoteSellPrediction, resolveMarket, claimWinnings } = useMarkets()
+  const { getEventUserPrediction, placePrediction, resolveMarket, claimWinnings } = useMarkets()
   const { addToast } = useToast()
 
   const eventOptions = useMemo<MarketEventOption[]>(() => {
@@ -128,18 +121,9 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   const hasMixedPosition = userYesAmount > 0 && userNoAmount > 0
 
   const [selectedOutcome, setSelectedOutcome] = useState<1 | 2>(1)
-  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy')
   const activeOutcome = selectedOutcome
 
   const [amount, setAmount] = useState('0.01')
-  const [sellAmount, setSellAmount] = useState('')
-  const [sellQuote, setSellQuote] = useState({
-    exitPriceBps: 0,
-    grossPayout: 0,
-    fee: 0,
-    netPayout: 0,
-  })
-  const [isSellQuoteLoading, setIsSellQuoteLoading] = useState(false)
   const [flashBtn, setFlashBtn] = useState<'yes' | 'no' | null>(null)
   const [floats, setFloats] = useState<FloatLabel[]>([])
   const floatIdRef = useRef(0)
@@ -156,25 +140,27 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   const isEventResolved = selectedEventState?.resolved ?? false
   const isMarketClosed = isEventResolved || isEnded
   const isBuyingThis = busyAction === `predict-${market.id}-${selectedEventId}-${activeOutcome}`
-  const isSellingThis = busyAction === `sell-${market.id}-${selectedEventId}-${activeOutcome}`
   const isResolving  = busyAction?.startsWith(`resolve-${market.id}-${selectedEventId}-`)
   const isClaiming   = busyAction === `claim-${market.id}-${selectedEventId}`
 
   const canBuy = isContractConfigured && isAuthenticated && account !== null && !isMarketClosed && !isBusy
-  const sellableAmount = activeOutcome === 1 ? userYesAmount : userNoAmount
-  const canSell = isContractConfigured && isAuthenticated && account !== null && !isMarketClosed && !isBusy && sellableAmount > 0
 
   const estimatedPayout = useMemo(() => {
     const amt = Number.parseFloat(amount || '0')
     if (!Number.isFinite(amt) || amt <= 0) return 0
+
     const currentYes = Number.parseFloat(selectedEventState?.yesPool ?? '0')
     const currentNo = Number.parseFloat(selectedEventState?.noPool ?? '0')
-    const winningPool = activeOutcome === 1 ? currentYes + amt : currentNo + amt
-    const losingPool = activeOutcome === 1 ? currentNo : currentYes
-    if (winningPool <= 0) return 0
-    const userLosingShare = (losingPool * amt) / winningPool
-    const fee = userLosingShare * 0.05
-    return amt + userLosingShare - fee
+
+    const currentWinningPool = activeOutcome === 1 ? currentYes : currentNo
+    const currentTotalPool = currentYes + currentNo
+    const postWinningPool = currentWinningPool + amt
+    const postTotalPool = currentTotalPool + amt
+    if (postWinningPool <= 0) return 0
+
+    const grossPayout = (amt * postTotalPool) / postWinningPool
+    const fee = grossPayout * 0.03
+    return Math.max(0, grossPayout - fee)
   }, [amount, activeOutcome, selectedEventState])
 
   const handleBuy = useCallback(async () => {
@@ -196,81 +182,15 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     }
   }, [account, amount, market.id, placePrediction, selectedEventId, activeOutcome, setShowWalletModal, addToast, yesLabel, noLabel, selectedEvent, isAuthenticated])
 
-  const handleSell = useCallback(async () => {
-    if (!account || !isAuthenticated) { setShowWalletModal(true); return }
-    const parsed = Number.parseFloat(sellAmount || '0')
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      addToast('Enter a valid sell amount.', 'error')
-      return
-    }
-    if (parsed > sellableAmount) {
-      addToast('Sell amount exceeds your position.', 'error')
-      return
-    }
-
-    try {
-      await sellPrediction(market.id, selectedEventId, activeOutcome, sellAmount)
-      setSellAmount('')
-      addToast(
-        `Sold ${activeOutcome === 1 ? yesLabel : noLabel} — ${sellAmount} tBNB on ${selectedEvent?.name ?? 'Main Event'} (market #${market.id})`,
-        'info'
-      )
-    } catch {
-      addToast('Sell failed. Check your wallet and try again.', 'error')
-    }
-  }, [account, isAuthenticated, sellAmount, sellableAmount, sellPrediction, market.id, selectedEventId, activeOutcome, addToast, yesLabel, noLabel, selectedEvent, setShowWalletModal])
-
-  useEffect(() => {
-    const parsed = Number.parseFloat(sellAmount || '0')
-    if (!Number.isFinite(parsed) || parsed <= sellableAmount) return
-    setSellAmount(formatInputAmount(sellableAmount))
-  }, [sellAmount, sellableAmount])
-
-  useEffect(() => {
-    if (activeTab !== 'sell' || isMarketClosed || !account || !isAuthenticated) {
-      setSellQuote({ exitPriceBps: 0, grossPayout: 0, fee: 0, netPayout: 0 })
-      setIsSellQuoteLoading(false)
-      return
-    }
-
-    const parsed = Number.parseFloat(sellAmount || '0')
-    if (!Number.isFinite(parsed) || parsed <= 0 || sellableAmount <= 0) {
-      setSellQuote({ exitPriceBps: 0, grossPayout: 0, fee: 0, netPayout: 0 })
-      setIsSellQuoteLoading(false)
-      return
-    }
-
-    let cancelled = false
-    setIsSellQuoteLoading(true)
-    const requestedAmount = Math.min(parsed, sellableAmount)
-    const timer = setTimeout(() => {
-      void quoteSellPrediction(market.id, selectedEventId, activeOutcome, formatInputAmount(requestedAmount)).then((quote) => {
-        if (cancelled) return
-        setSellQuote({
-          exitPriceBps: quote.exitPriceBps,
-          grossPayout: Number.parseFloat(quote.grossPayout || '0') || 0,
-          fee: Number.parseFloat(quote.fee || '0') || 0,
-          netPayout: Number.parseFloat(quote.netPayout || '0') || 0,
-        })
-        setIsSellQuoteLoading(false)
-      })
-    }, 120)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [account, activeOutcome, activeTab, isAuthenticated, isMarketClosed, market.id, quoteSellPrediction, selectedEventId, sellAmount, sellableAmount])
-
   const canClaimWinnings =
     isAuthenticated &&
     isEventResolved &&
     (selectedEventState?.result ?? 0) !== 0 &&
     userPrediction &&
-    ((selectedEventState?.result ?? 0) === 1 ? userYesAmount : userNoAmount) > 0 &&
-    !userPrediction.claimed
+    ((selectedEventState?.result ?? 0) === 1 ? userYesAmount : userNoAmount) > 0
 
   const canResolve = isOwner && !isEventResolved && isEnded
+  const showResolveSection = isOwner && !isEventResolved && isEnded
   const currentLabel = activeOutcome === 1 ? yesLabel : noLabel
 
   return (
@@ -290,25 +210,6 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   <span className={styles.panelTitle}>Predict</span>
   <span className={styles.orderType}>Market Order</span>
 </div>
-
-{/* -- Buy / Sell tabs -------------------------- */}
-{!isMarketClosed && (
-  <div className={styles.tradeTabs}>
-    <button
-      className={activeTab === 'buy' ? styles.tradeTabBuyActive : styles.tradeTab}
-      onClick={() => setActiveTab('buy')}
-    >
-      Buy
-    </button>
-    <button
-      className={activeTab === 'sell' ? styles.tradeTabSellActive : styles.tradeTab}
-      onClick={() => setActiveTab('sell')}
-      disabled={!userPrediction}
-    >
-      Sell
-    </button>
-  </div>
-)}
 
       {eventOptions.length > 1 ? (
         <div className={styles.eventSelectWrap}>
@@ -338,9 +239,8 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     </div>
   )}
 
-  {/* ── BUY TAB ───────────────────────────────── */}
-  {(activeTab === 'buy' || isMarketClosed) && (
-    <>
+  {/* ── BUY FLOW ──────────────────────────────── */}
+  <>
       {/* Outcome selector */}
       {!isMarketClosed && (
         <div className={styles.outcomeSelect}>
@@ -405,7 +305,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
               <span className={styles.priceHintWrap}>
                 <span className={styles.priceHintTrigger} tabIndex={0}>i</span>
                 <span className={styles.priceHintBubble}>
-                  This shows your estimated total payout if the selected side wins. It uses the current pool sizes, your stake, and the 5% platform fee applied to your share of the losing pool.
+                  This shows your estimated total payout if the selected side wins. It uses current pools plus your selected buy amount and the 3% platform fee.
                 </span>
               </span>
             </span>
@@ -428,28 +328,19 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           {hasMixedPosition && (
             <>
               <div className={styles.positionRow}>
-                <span className={styles.positionLabel}>{yesLabel} Staked</span>
-                <span className={styles.positionAmount}>{formatToken(userPrediction.yesAmount ?? '0')} tBNB</span>
+                <span className={styles.positionLabel}>{yesLabel} Shares</span>
+                <span className={styles.positionAmount}>{formatToken(userPrediction.yesAmount ?? '0')}</span>
               </div>
               <div className={styles.positionRow}>
-                <span className={styles.positionLabel}>{noLabel} Staked</span>
-                <span className={styles.positionAmount}>{formatToken(userPrediction.noAmount ?? '0')} tBNB</span>
+                <span className={styles.positionLabel}>{noLabel} Shares</span>
+                <span className={styles.positionAmount}>{formatToken(userPrediction.noAmount ?? '0')}</span>
               </div>
             </>
           )}
           <div className={styles.positionRow}>
-            <span className={styles.positionLabel}>Staked</span>
-            <span className={styles.positionAmount}>{formatToken(userPrediction.amount)} tBNB</span>
+            <span className={styles.positionLabel}>Total Shares</span>
+            <span className={styles.positionAmount}>{formatToken(userPrediction.amount)}</span>
           </div>
-          {isEventResolved && (
-            <div className={styles.positionRow}>
-              <span className={styles.positionLabel}>Claim Status</span>
-              <span className={canClaimWinnings ? styles.win : userPrediction.claimed ? styles.win : styles.lose}>
-                {userPrediction.claimed ? 'CLAIMED' : canClaimWinnings ? 'CAN CLAIM ON-CHAIN' : 'NO CLAIM'}
-              </span>
-            </div>
-          )}
-          {userPrediction.claimed && <div className={styles.claimedBadge}>Payout claimed on-chain</div>}
         </div>
       )}
 
@@ -479,110 +370,7 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           </div>
         </div>
       )}
-    </>
-  )}
-
-  {/* ── SELL TAB ──────────────────────────────── */}
-  {activeTab === 'sell' && !isMarketClosed && (
-    <div className={styles.sellTab}>
-      {/* Outcome selector for sell */}
-      <div className={styles.sellOutcomeSelect}>
-        <button
-          className={activeOutcome === 1 ? styles.sellOutcomeBtnYesActive : styles.sellOutcomeBtn}
-          onClick={() => setSelectedOutcome(1)}
-        >
-          <span className={styles.outcomeLabelText}>{yesLabel}</span>
-          <span className={styles.sellPositionAmt}>
-            {userYesAmount > 0 ? `${userYesAmount.toFixed(4)}` : '0'}
-          </span>
-        </button>
-        <button
-          className={activeOutcome === 2 ? styles.sellOutcomeBtnNoActive : styles.sellOutcomeBtn}
-          onClick={() => setSelectedOutcome(2)}
-        >
-          <span className={styles.outcomeLabelText}>{noLabel}</span>
-          <span className={styles.sellPositionAmt}>
-            {userNoAmount > 0 ? `${userNoAmount.toFixed(4)}` : '0'}
-          </span>
-        </button>
-      </div>
-
-      <div className={styles.sellInfo}>
-        <div className={styles.sellRow}>
-          <span className={styles.sellRowLabel}>Sellable {currentLabel}</span>
-          <strong className={activeOutcome === 1 ? styles.textYes : styles.textNo}>
-            {sellableAmount > 0 ? `${sellableAmount.toFixed(4)} tBNB` : '0.0000 tBNB'}
-          </strong>
-        </div>
-        <p className={styles.sellNote}>
-          Sell a partial amount or use MAX to close your full {currentLabel} position.
-        </p>
-      </div>
-
-      {sellableAmount > 0 ? (
-        <>
-          <div className={styles.amountInputRow}>
-            <span className={styles.amountCurrency}>tBNB</span>
-            <input
-              id="sell-amount"
-              className={styles.amountInput}
-              type="number"
-              min="0"
-              step="0.001"
-              value={sellAmount}
-              onChange={(e) => setSellAmount(e.target.value)}
-              placeholder="0.01"
-            />
-          </div>
-          <div className={styles.presets}>
-            {[0.25, 0.5, 0.75].map((share) => (
-              <button
-                key={share}
-                className={styles.preset}
-                onClick={() => setSellAmount(formatInputAmount(sellableAmount * share))}
-              >
-                {Math.round(share * 100)}%
-              </button>
-            ))}
-            <button
-              className={styles.preset}
-              onClick={() => setSellAmount(formatInputAmount(sellableAmount))}
-            >
-              MAX
-            </button>
-          </div>
-          <button
-            className={`${styles.tradeBtn} ${styles.sellBtn}`}
-            onClick={() => { void handleSell() }}
-            disabled={!canSell || isSellingThis}
-          >
-            {isSellingThis && <span className={styles.btnSpinner} />}
-            {isSellingThis ? `Selling ${currentLabel}...` : `Sell ${currentLabel}`}
-          </button>
-
-          <div className={styles.youGetRow}>
-            <span className={styles.youGetLabel}>You Get (est.)</span>
-            <div className={styles.youGetRight}>
-              <span className={styles.youGetAmount}>
-                {isSellQuoteLoading
-                  ? '...'
-                  : sellQuote.netPayout > 0
-                    ? `${sellQuote.netPayout.toFixed(4)} tBNB`
-                    : '—'}
-              </span>
-              <span className={styles.youGetShares}>
-                {sellQuote.exitPriceBps > 0
-                  ? `exit @ ${(sellQuote.exitPriceBps / 100).toFixed(2)}% • fee ${sellQuote.fee.toFixed(4)} tBNB (2%)`
-                  : 'includes market repricing and 2% sell fee'}
-              </span>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className={styles.noPosition}>No {currentLabel} position available to sell.</div>
-      )}
-    </div>
-  )}
+  </>
 </>
 
       {/* -- Claim Winnings ---------------------------- */}
@@ -597,23 +385,28 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
       )}
 
       {/* -- Admin Resolve ----------------------------- */}
-      {canResolve && (
+      {showResolveSection && (
         <div className={styles.resolveSection}>
           <p className={styles.resolveLabel}>Resolve Market (Owner Only)</p>
+          {!isOwner && (
+            <p className={styles.resolveHint}>
+              Resolve unavailable: connected wallet is not contract owner. Owner: {CONTRACT_OWNER}
+            </p>
+          )}
           <div className={styles.resolveBtns}>
             <button
               className={styles.resolveYesBtn}
               onClick={() => { void resolveMarket(market.id, 1, selectedEventId) }}
-              disabled={isResolving || isBusy}
+              disabled={!canResolve || isResolving || isBusy}
             >
-              {isResolving ? 'Resolving...' : `${yesLabel} Wins`}
+              {isResolving ? 'Resolving...' : !canResolve ? 'Resolve Locked' : `${yesLabel} Wins`}
             </button>
             <button
               className={styles.resolveNoBtn}
               onClick={() => { void resolveMarket(market.id, 2, selectedEventId) }}
-              disabled={isResolving || isBusy}
+              disabled={!canResolve || isResolving || isBusy}
             >
-              {isResolving ? 'Resolving...' : `${noLabel} Wins`}
+              {isResolving ? 'Resolving...' : !canResolve ? 'Resolve Locked' : `${noLabel} Wins`}
             </button>
           </div>
         </div>

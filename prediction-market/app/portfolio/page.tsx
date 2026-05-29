@@ -17,7 +17,7 @@ import { ClaimEvent, useMarkets } from '../../context/MarketsContext'
 import { getActivityByUserAddress, type MarketActivity } from '../../lib/supabase'
 import styles from './page.module.css'
 
-const PLATFORM_FEE_PCT = 5
+const PLATFORM_FEE_PCT = 3
 
 function eventKey(marketId: number, eventId: number): string {
   return `${marketId}:${eventId}`
@@ -137,24 +137,28 @@ export default function PortfolioPage() {
           const investedTotal = investedYes + investedNo
 
           const winnerSide = eventItem.result
-          const winningStake = winnerSide === 1 ? investedYes : winnerSide === 2 ? investedNo : 0
-          const losingStake = investedTotal - winningStake
+          const winningShares = winnerSide === 1 ? predictedYes : winnerSide === 2 ? predictedNo : 0
+          const losingStake = investedTotal - (winnerSide === 1 ? investedYes : winnerSide === 2 ? investedNo : 0)
 
-          const yesPool = parseFloat(eventItem.yesPool) || 0
-          const noPool = parseFloat(eventItem.noPool) || 0
-          const winningPool = winnerSide === 1 ? yesPool : winnerSide === 2 ? noPool : 0
-          const losingPool = winnerSide === 1 ? noPool : winnerSide === 2 ? yesPool : 0
+          const totalPool = parseFloat(eventItem.totalPool) || 0
+          const totalWinningShares = winnerSide === 1
+            ? (parseFloat(eventItem.totalYesShares) || 0)
+            : winnerSide === 2
+              ? (parseFloat(eventItem.totalNoShares) || 0)
+              : 0
 
-          const userLosingShare = winningPool > 0 ? (losingPool * winningStake) / winningPool : 0
-          const platformFee = (userLosingShare * PLATFORM_FEE_PCT) / 100
-          const grossPayout = winningStake + userLosingShare
+          const grossPayout = totalWinningShares > 0
+            ? (winningShares * totalPool) / totalWinningShares
+            : 0
+          const platformFee = (grossPayout * PLATFORM_FEE_PCT) / 100
           const netPayout = grossPayout - platformFee
+          const userLosingShare = Math.max(0, grossPayout - winningShares)
 
-          const hasClaimed = Boolean(prediction?.claimed) || claimedAmount > 0
-          const canClaim = eventItem.resolved && winningStake > 0 && !hasClaimed
+          const hasClaimed = claimedAmount > 0
+          const canClaim = eventItem.resolved && winningShares > 0 && !hasClaimed
           const effectiveClaimedAmount = claimedAmount > 0
             ? claimedAmount
-            : (hasClaimed && winningStake > 0 ? netPayout : 0)
+            : (hasClaimed && winningShares > 0 ? netPayout : 0)
 
           const firstTx = eventActivity[eventActivity.length - 1]
           const lastTx = eventActivity[0]
@@ -164,7 +168,7 @@ export default function PortfolioPage() {
             investedYes,
             investedNo,
             investedTotal,
-            winningStake,
+            winningStake: winningShares,
             losingStake,
             userLosingShare,
             platformFee,
@@ -178,7 +182,7 @@ export default function PortfolioPage() {
             txs: eventActivity,
             claims,
             estimatedProfit: (hasClaimed ? effectiveClaimedAmount : netPayout) - investedTotal,
-            estimatedLoss: winningStake > 0 ? 0 : losingStake,
+            estimatedLoss: winningShares > 0 ? 0 : losingStake,
           }
         }).filter((row): row is NonNullable<typeof row> => row !== null)
 

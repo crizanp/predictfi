@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import { useAppKitProvider, useAppKitAccount } from '@reown/appkit/react'
 import { WalletProvider, useWallet, type Eip1193Provider } from '../context/WalletContext'
 import { MarketsProvider } from '../context/MarketsContext'
-import AdminPortal from './AdminPortal'
 import StatusBanner from './StatusBanner'
 import WalletModal from './WalletModal'
 
@@ -34,7 +33,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <MarketsProvider>
         <ReownSync />
         {children}
-        <AdminPortal />
         <WalletModal />
         <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '600px', padding: '0 20px', zIndex: 300 }}>
           <StatusBanner />

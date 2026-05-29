@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { CONTRACT_ADDRESS } from './contract'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nmaqfkqoeqkblcgqhffw.supabase.co'
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -6,6 +7,23 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 let oddsHistoryEventIdSupported: boolean | null = null
+const CONTRACT_SCOPE = CONTRACT_ADDRESS.toLowerCase()
+const HAS_CONTRACT_SCOPE = /^0x[a-f0-9]{40}$/.test(CONTRACT_SCOPE)
+const DEPLOYED_AT_MS = Number(process.env.NEXT_PUBLIC_CONTRACT_DEPLOYED_AT_MS || '0')
+
+function isMissingColumnError(error: { message?: string } | null | undefined, column: string): boolean {
+  if (!error?.message) return false
+  const msg = error.message.toLowerCase()
+  return msg.includes(column.toLowerCase()) && (msg.includes('column') || msg.includes('schema cache'))
+}
+
+function isAfterDeploy(value: string | undefined | null): boolean {
+  if (!DEPLOYED_AT_MS || DEPLOYED_AT_MS <= 0) return true
+  if (!value) return false
+  const ts = new Date(value).getTime()
+  if (!Number.isFinite(ts)) return false
+  return ts >= DEPLOYED_AT_MS
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,17 +53,51 @@ export interface OddsSnapshot {
 
 export async function getMarketMeta(marketId: number): Promise<MarketMeta | null> {
   if (!supabaseKey) return null
+
+  if (HAS_CONTRACT_SCOPE) {
+    const { data, error } = await supabase
+      .from('market_metadata')
+      .select('*')
+      .eq('market_id', marketId)
+      .eq('contract_address', CONTRACT_SCOPE)
+      .maybeSingle()
+
+    if (!error) return data as MarketMeta | null
+    if (!isMissingColumnError(error, 'contract_address')) return null
+  }
+
   const { data, error } = await supabase
     .from('market_metadata')
     .select('*')
     .eq('market_id', marketId)
     .maybeSingle()
   if (error) return null
-  return data as MarketMeta | null
+  return isAfterDeploy((data as MarketMeta | null)?.updated_at) ? (data as MarketMeta | null) : null
 }
 
 export async function upsertMarketMeta(meta: MarketMeta): Promise<boolean> {
   if (!supabaseKey) return false
+
+  const payload = {
+    ...meta,
+    updated_at: new Date().toISOString(),
+    ...(HAS_CONTRACT_SCOPE ? { contract_address: CONTRACT_SCOPE } : {}),
+  }
+
+  if (HAS_CONTRACT_SCOPE) {
+    const scoped = await supabase
+      .from('market_metadata')
+      .upsert(payload, { onConflict: 'market_id,contract_address' })
+    if (!scoped.error) return true
+    if (!isMissingColumnError(scoped.error, 'contract_address')) {
+      const fallbackScoped = await supabase
+        .from('market_metadata')
+        .upsert(payload, { onConflict: 'market_id' })
+      if (!fallbackScoped.error) return true
+      if (!isMissingColumnError(fallbackScoped.error, 'contract_address')) return false
+    }
+  }
+
   const { error } = await supabase
     .from('market_metadata')
     .upsert({ ...meta, updated_at: new Date().toISOString() }, { onConflict: 'market_id' })
@@ -59,6 +111,7 @@ export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_
   const row = {
     ...snapshot,
     recorded_at: new Date().toISOString(),
+    ...(HAS_CONTRACT_SCOPE ? { contract_address: CONTRACT_SCOPE } : {}),
   }
 
   if (oddsHistoryEventIdSupported === false) {
@@ -82,6 +135,18 @@ export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_
     msg.includes('event_id') &&
     (msg.includes('column') || msg.includes('schema cache'))
 
+  const hasContractScopeSchemaMismatch = isMissingColumnError(error, 'contract_address')
+
+  if (hasContractScopeSchemaMismatch) {
+    const { contract_address, ...legacyContractRow } = row as typeof row & { contract_address?: string }
+    void contract_address
+    const retry = await supabase.from('market_odds_history').insert(legacyContractRow)
+    if (!retry.error) {
+      oddsHistoryEventIdSupported = true
+      return
+    }
+  }
+
   if (hasEventIdSchemaMismatch) {
     oddsHistoryEventIdSupported = false
     const { event_id, ...legacyRow } = row
@@ -98,15 +163,22 @@ export async function recordOddsSnapshot(snapshot: Omit<OddsSnapshot, 'recorded_
 
 export async function getOddsHistory(marketId: number, eventId?: number, limit = 2000): Promise<OddsSnapshot[]> {
   if (!supabaseKey) return []
+
   let query = supabase
     .from('market_odds_history')
     .select('*')
     .eq('market_id', marketId)
     .order('recorded_at', { ascending: false })
     .limit(limit)
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
   if (eventId !== undefined) {
     query = query.eq('event_id', eventId)
   }
+
   const { data, error } = await query
   if (error) {
     const msg = error.message.toLowerCase()
@@ -115,20 +187,34 @@ export async function getOddsHistory(marketId: number, eventId?: number, limit =
       msg.includes('event_id') &&
       (msg.includes('column') || msg.includes('schema cache'))
 
-    if (!hasEventIdSchemaMismatch) return []
+    const hasContractScopeSchemaMismatch = isMissingColumnError(error, 'contract_address')
 
-    const { data: fallbackData, error: fallbackError } = await supabase
+    if (!hasEventIdSchemaMismatch && !hasContractScopeSchemaMismatch) return []
+
+    let fallbackQuery = supabase
       .from('market_odds_history')
       .select('*')
       .eq('market_id', marketId)
       .order('recorded_at', { ascending: false })
       .limit(limit)
 
+    if (eventId !== undefined && !hasEventIdSchemaMismatch) {
+      fallbackQuery = fallbackQuery.eq('event_id', eventId)
+    }
+
+    const { data: fallbackData, error: fallbackError } = await fallbackQuery
+
     if (fallbackError) return []
-    const fallbackOrdered = ((fallbackData as OddsSnapshot[]) ?? []).slice().reverse()
+    const fallbackOrdered = ((fallbackData as OddsSnapshot[]) ?? [])
+      .filter((row) => isAfterDeploy(row.recorded_at))
+      .slice()
+      .reverse()
     return fallbackOrdered
   }
-  const ordered = ((data as OddsSnapshot[]) ?? []).slice().reverse()
+  const ordered = ((data as OddsSnapshot[]) ?? [])
+    .filter((row) => isAfterDeploy(row.recorded_at))
+    .slice()
+    .reverse()
   return ordered
 }
 
@@ -173,11 +259,32 @@ export async function getWhitelistApplications(limit = 250): Promise<WhitelistAp
   if (!supabaseKey) return []
   const { data, error } = await supabase
     .from('whitelist_applications')
-    .select('wallet_address, name, status, created_at')
+    .select('wallet_address, name, email, telegram, status, created_at')
     .order('created_at', { ascending: true })
     .limit(limit)
   if (error) return []
   return (data as WhitelistApplication[]) ?? []
+}
+
+export async function updateWhitelistApplicationStatus(
+  walletAddress: string,
+  status: 'pending' | 'approved' | 'rejected'
+): Promise<{ success: boolean; error?: string }> {
+  if (!supabaseKey) return { success: false, error: 'Supabase not configured' }
+
+  const normalized = walletAddress.trim().toLowerCase()
+  if (!normalized) return { success: false, error: 'Wallet address is required' }
+
+  const { error } = await supabase
+    .from('whitelist_applications')
+    .update({ status })
+    .eq('wallet_address', normalized)
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
 }
 
 // ── Discussion comments ───────────────────────────────────────────────────────
@@ -194,12 +301,28 @@ export interface MarketComment {
 
 export async function getComments(marketId: number): Promise<MarketComment[]> {
   if (!supabaseKey) return []
-  const { data } = await supabase
+
+  let query = supabase
     .from('market_comments')
     .select('*')
     .eq('market_id', marketId)
     .order('created_at', { ascending: true })
-  return (data as MarketComment[]) ?? []
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_comments')
+      .select('*')
+      .eq('market_id', marketId)
+      .order('created_at', { ascending: true })
+    return ((fallback.data as MarketComment[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
+  return ((data as MarketComment[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
 
 export async function postComment(
@@ -209,18 +332,35 @@ export async function postComment(
   parentId?: number
 ): Promise<MarketComment | null> {
   if (!supabaseKey) return null
-  const { data } = await supabase
+
+  const payload = {
+    market_id: marketId,
+    author_address: authorAddress.toLowerCase(),
+    content,
+    parent_id: parentId ?? null,
+    likes: 0,
+    ...(HAS_CONTRACT_SCOPE ? { contract_address: CONTRACT_SCOPE } : {}),
+  }
+
+  const scoped = await supabase
     .from('market_comments')
-    .insert({
-      market_id: marketId,
-      author_address: authorAddress.toLowerCase(),
-      content,
-      parent_id: parentId ?? null,
-      likes: 0,
-    })
+    .insert(payload)
     .select()
     .single()
-  return data as MarketComment | null
+
+  if (!scoped.error) return scoped.data as MarketComment | null
+  if (!isMissingColumnError(scoped.error, 'contract_address')) return null
+
+  const { contract_address, ...legacyPayload } = payload as typeof payload & { contract_address?: string }
+  void contract_address
+
+  const fallback = await supabase
+    .from('market_comments')
+    .insert(legacyPayload)
+    .select()
+    .single()
+
+  return fallback.data as MarketComment | null
 }
 
 export async function incrementCommentLikes(commentId: number): Promise<void> {
@@ -262,36 +402,87 @@ export interface BannerAd {
 
 export async function getActivity(marketId: number): Promise<MarketActivity[]> {
   if (!supabaseKey) return []
-  const { data } = await supabase
+
+  let query = supabase
     .from('market_activity')
     .select('*')
     .eq('market_id', marketId)
     .order('id', { ascending: false })
     .order('created_at', { ascending: false })
-  return (data as MarketActivity[]) ?? []
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_activity')
+      .select('*')
+      .eq('market_id', marketId)
+      .order('id', { ascending: false })
+      .order('created_at', { ascending: false })
+    return ((fallback.data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
+  return ((data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
 
 export async function getActivityByUserAddress(userAddress: string): Promise<MarketActivity[]> {
   if (!supabaseKey) return []
   const normalizedAddress = userAddress.trim()
-  const { data } = await supabase
+
+  let query = supabase
     .from('market_activity')
     .select('*')
     .ilike('user_address', normalizedAddress)
     .order('id', { ascending: false })
     .order('created_at', { ascending: false })
-  return (data as MarketActivity[]) ?? []
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_activity')
+      .select('*')
+      .ilike('user_address', normalizedAddress)
+      .order('id', { ascending: false })
+      .order('created_at', { ascending: false })
+    return ((fallback.data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
+  return ((data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
 
 export async function getRecentActivity(limit = 5000): Promise<MarketActivity[]> {
   if (!supabaseKey) return []
-  const { data, error } = await supabase
+
+  let query = supabase
     .from('market_activity')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_activity')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (fallback.error) return []
+    return ((fallback.data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
   if (error) return []
-  return (data as MarketActivity[]) ?? []
+  return ((data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
 
 export async function recordActivity(
@@ -311,6 +502,7 @@ export async function recordActivity(
     amount_eth: amountEth,
     tx_hash: txHash,
     block_number: blockNumber ?? null,
+    ...(HAS_CONTRACT_SCOPE ? { contract_address: CONTRACT_SCOPE } : {}),
   }
 
   const withEvent = { ...baseRow, event_id: eventId ?? null }
@@ -325,10 +517,27 @@ export async function recordActivity(
     msg.includes('event_id') &&
     (msg.includes('column') || msg.includes('schema cache'))
 
+  const hasContractScopeSchemaMismatch = isMissingColumnError(upsertError, 'contract_address')
+
+  if (hasContractScopeSchemaMismatch) {
+    const { contract_address, ...legacyBaseRow } = baseRow as typeof baseRow & { contract_address?: string }
+    void contract_address
+
+    const legacyWithEvent = { ...legacyBaseRow, event_id: eventId ?? null }
+    const scopedRetry = await supabase
+      .from('market_activity')
+      .upsert(legacyWithEvent, { onConflict: 'tx_hash' })
+
+    if (!scopedRetry.error) return
+  }
+
   if (hasEventIdSchemaMismatch) {
+    const { event_id, ...legacyBaseRow } = baseRow as typeof baseRow & { event_id?: number | null }
+    void event_id
+
     const { error: fallbackError } = await supabase
       .from('market_activity')
-      .upsert(baseRow, { onConflict: 'tx_hash' })
+      .upsert(legacyBaseRow, { onConflict: 'tx_hash' })
     if (!fallbackError) return
     console.warn('recordActivity fallback insert failed:', fallbackError.message)
     return
@@ -407,18 +616,38 @@ export async function getUserContributionSummary(address: string): Promise<UserC
   }
   const normalized = address.toLowerCase()
 
-  const [{ data: activityData }, { count: commentsCount }] = await Promise.all([
-    supabase.from('market_activity').select('market_id, amount_eth').eq('user_address', normalized),
-    supabase.from('market_comments').select('id', { count: 'exact', head: true }).eq('author_address', normalized),
+  const activityQuery = HAS_CONTRACT_SCOPE
+    ? supabase.from('market_activity').select('market_id, amount_eth, created_at').eq('user_address', normalized).eq('contract_address', CONTRACT_SCOPE)
+    : supabase.from('market_activity').select('market_id, amount_eth, created_at').eq('user_address', normalized)
+
+  const commentsQuery = HAS_CONTRACT_SCOPE
+    ? supabase.from('market_comments').select('id', { count: 'exact', head: true }).eq('author_address', normalized).eq('contract_address', CONTRACT_SCOPE)
+    : supabase.from('market_comments').select('id', { count: 'exact', head: true }).eq('author_address', normalized)
+
+  const [{ data: activityData, error: activityError }, { count: commentsCount, error: commentsError }] = await Promise.all([
+    activityQuery,
+    commentsQuery,
   ])
 
-  const activity = (activityData as Array<{ market_id: number; amount_eth: string }> | null) ?? []
+  let fallbackActivityData = activityData
+  let fallbackCommentsCount = commentsCount
+  if (activityError && isMissingColumnError(activityError, 'contract_address')) {
+    const fallback = await supabase.from('market_activity').select('market_id, amount_eth, created_at').eq('user_address', normalized)
+    fallbackActivityData = fallback.data
+  }
+  if (commentsError && isMissingColumnError(commentsError, 'contract_address')) {
+    const fallback = await supabase.from('market_comments').select('id', { count: 'exact', head: true }).eq('author_address', normalized)
+    fallbackCommentsCount = fallback.count
+  }
+
+  const activity = ((fallbackActivityData as Array<{ market_id: number; amount_eth: string; created_at?: string }> | null) ?? [])
+    .filter((row) => isAfterDeploy(row.created_at))
   const uniqueMarkets = new Set(activity.map(a => a.market_id)).size
   const totalStaked = activity.reduce((sum, row) => sum + (parseFloat(row.amount_eth) || 0), 0)
 
   return {
     predictions: activity.length,
-    comments: commentsCount ?? 0,
+    comments: fallbackCommentsCount ?? 0,
     markets_participated: uniqueMarkets,
     total_staked_tbnb: totalStaked,
   }
@@ -426,24 +655,60 @@ export async function getUserContributionSummary(address: string): Promise<UserC
 
 export async function getUserRecentComments(address: string, limit = 20): Promise<MarketComment[]> {
   if (!supabaseKey) return []
-  const { data, error } = await supabase
+
+  let query = supabase
     .from('market_comments')
     .select('*')
     .eq('author_address', address.toLowerCase())
     .order('created_at', { ascending: false })
     .limit(limit)
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_comments')
+      .select('*')
+      .eq('author_address', address.toLowerCase())
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (fallback.error) return []
+    return ((fallback.data as MarketComment[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
   if (error) return []
-  return (data as MarketComment[]) ?? []
+  return ((data as MarketComment[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
 
 export async function getUserRecentActivity(address: string, limit = 20): Promise<MarketActivity[]> {
   if (!supabaseKey) return []
-  const { data, error } = await supabase
+
+  let query = supabase
     .from('market_activity')
     .select('*')
     .eq('user_address', address.toLowerCase())
     .order('created_at', { ascending: false })
     .limit(limit)
+
+  if (HAS_CONTRACT_SCOPE) {
+    query = query.eq('contract_address', CONTRACT_SCOPE)
+  }
+
+  const { data, error } = await query
+  if (error && isMissingColumnError(error, 'contract_address')) {
+    const fallback = await supabase
+      .from('market_activity')
+      .select('*')
+      .eq('user_address', address.toLowerCase())
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (fallback.error) return []
+    return ((fallback.data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
+  }
+
   if (error) return []
-  return (data as MarketActivity[]) ?? []
+  return ((data as MarketActivity[]) ?? []).filter((row) => isAfterDeploy(row.created_at))
 }
