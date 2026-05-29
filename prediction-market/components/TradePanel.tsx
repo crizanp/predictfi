@@ -37,7 +37,7 @@ function formatInputAmount(value: number): string {
 
 export default function TradePanel({ market, nowInSeconds, meta, selectedEventKey: selectedEventKeyProp, onSelectedEventKeyChange }: Props) {
   const { account, isOwner, isBusy, busyAction, setShowWalletModal, isContractConfigured, isAuthenticated } = useWallet()
-  const { getEventUserPrediction, placePrediction, sellPrediction, resolveMarket, claimWinnings } = useMarkets()
+  const { getEventUserPrediction, placePrediction, sellPrediction, quoteSellPrediction, resolveMarket, claimWinnings } = useMarkets()
   const { addToast } = useToast()
 
   const eventOptions = useMemo<MarketEventOption[]>(() => {
@@ -133,6 +133,13 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
 
   const [amount, setAmount] = useState('0.01')
   const [sellAmount, setSellAmount] = useState('')
+  const [sellQuote, setSellQuote] = useState({
+    exitPriceBps: 0,
+    grossPayout: 0,
+    fee: 0,
+    netPayout: 0,
+  })
+  const [isSellQuoteLoading, setIsSellQuoteLoading] = useState(false)
   const [flashBtn, setFlashBtn] = useState<'yes' | 'no' | null>(null)
   const [floats, setFloats] = useState<FloatLabel[]>([])
   const floatIdRef = useRef(0)
@@ -156,12 +163,6 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
   const canBuy = isContractConfigured && isAuthenticated && account !== null && !isMarketClosed && !isBusy
   const sellableAmount = activeOutcome === 1 ? userYesAmount : userNoAmount
   const canSell = isContractConfigured && isAuthenticated && account !== null && !isMarketClosed && !isBusy && sellableAmount > 0
-
-  const estimatedSellPayout = useMemo(() => {
-    const parsed = Number.parseFloat(sellAmount || '0')
-    if (!Number.isFinite(parsed) || parsed <= 0) return 0
-    return Math.min(parsed, sellableAmount)
-  }, [sellAmount, sellableAmount])
 
   const estimatedPayout = useMemo(() => {
     const amt = Number.parseFloat(amount || '0')
@@ -224,6 +225,42 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
     if (!Number.isFinite(parsed) || parsed <= sellableAmount) return
     setSellAmount(formatInputAmount(sellableAmount))
   }, [sellAmount, sellableAmount])
+
+  useEffect(() => {
+    if (activeTab !== 'sell' || isMarketClosed || !account || !isAuthenticated) {
+      setSellQuote({ exitPriceBps: 0, grossPayout: 0, fee: 0, netPayout: 0 })
+      setIsSellQuoteLoading(false)
+      return
+    }
+
+    const parsed = Number.parseFloat(sellAmount || '0')
+    if (!Number.isFinite(parsed) || parsed <= 0 || sellableAmount <= 0) {
+      setSellQuote({ exitPriceBps: 0, grossPayout: 0, fee: 0, netPayout: 0 })
+      setIsSellQuoteLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setIsSellQuoteLoading(true)
+    const requestedAmount = Math.min(parsed, sellableAmount)
+    const timer = setTimeout(() => {
+      void quoteSellPrediction(market.id, selectedEventId, activeOutcome, formatInputAmount(requestedAmount)).then((quote) => {
+        if (cancelled) return
+        setSellQuote({
+          exitPriceBps: quote.exitPriceBps,
+          grossPayout: Number.parseFloat(quote.grossPayout || '0') || 0,
+          fee: Number.parseFloat(quote.fee || '0') || 0,
+          netPayout: Number.parseFloat(quote.netPayout || '0') || 0,
+        })
+        setIsSellQuoteLoading(false)
+      })
+    }, 120)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [account, activeOutcome, activeTab, isAuthenticated, isMarketClosed, market.id, quoteSellPrediction, selectedEventId, sellAmount, sellableAmount])
 
   const canClaimWinnings =
     isAuthenticated &&
@@ -526,8 +563,18 @@ export default function TradePanel({ market, nowInSeconds, meta, selectedEventKe
           <div className={styles.youGetRow}>
             <span className={styles.youGetLabel}>You Get (est.)</span>
             <div className={styles.youGetRight}>
-              <span className={styles.youGetAmount}>{estimatedSellPayout > 0 ? `${estimatedSellPayout.toFixed(4)} tBNB` : '—'}</span>
-              <span className={styles.youGetShares}>estimated return from this sell</span>
+              <span className={styles.youGetAmount}>
+                {isSellQuoteLoading
+                  ? '...'
+                  : sellQuote.netPayout > 0
+                    ? `${sellQuote.netPayout.toFixed(4)} tBNB`
+                    : '—'}
+              </span>
+              <span className={styles.youGetShares}>
+                {sellQuote.exitPriceBps > 0
+                  ? `exit @ ${(sellQuote.exitPriceBps / 100).toFixed(2)}% • fee ${sellQuote.fee.toFixed(4)} tBNB (2%)`
+                  : 'includes market repricing and 2% sell fee'}
+              </span>
             </div>
           </div>
         </>

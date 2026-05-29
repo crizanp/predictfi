@@ -57,6 +57,13 @@ export interface ClaimEvent {
   claimedAt?: string
 }
 
+export interface SellQuote {
+  exitPriceBps: number
+  grossPayout: string
+  fee: string
+  netPayout: string
+}
+
 export interface MarketsContextValue {
   markets: Market[]
   userPredictions: Record<number, UserPrediction>
@@ -70,6 +77,7 @@ export interface MarketsContextValue {
   getEventUserPrediction: (marketId: number, eventId: number) => UserPrediction | undefined
   placePrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<void>
   sellPrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<void>
+  quoteSellPrediction: (marketId: number, eventId: number, choice: number, amount: string) => Promise<SellQuote>
   resolveMarket: (marketId: number, result: number, eventId?: number) => Promise<void>
   claimWinnings: (marketId: number, eventId?: number) => Promise<void>
   createMarket: (question: string, durationMinutes: number, eventNames: string[]) => Promise<void>
@@ -460,6 +468,44 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
     [account, getPreparedWriteContract, loadMarkets, loadUserPredictions, setStatusMessage, setBusyAction]
   )
 
+  const quoteSellPrediction = useCallback(
+    async (marketId: number, eventId: number, choice: number, amountInput: string): Promise<SellQuote> => {
+      if (!account || !isContractConfigured) {
+        return { exitPriceBps: 0, grossPayout: '0', fee: '0', netPayout: '0' }
+      }
+
+      const amount = amountInput.trim()
+      if (!amount) {
+        return { exitPriceBps: 0, grossPayout: '0', fee: '0', netPayout: '0' }
+      }
+
+      let parsedAmount: bigint
+      try {
+        parsedAmount = ethers.parseEther(amount)
+      } catch {
+        return { exitPriceBps: 0, grossPayout: '0', fee: '0', netPayout: '0' }
+      }
+
+      if (parsedAmount <= BigInt(0)) {
+        return { exitPriceBps: 0, grossPayout: '0', fee: '0', netPayout: '0' }
+      }
+
+      try {
+        const contract = getReadContract()
+        const quoted = await contract.quoteSellPredictionForUser(marketId, eventId, choice, account, parsedAmount)
+        return {
+          exitPriceBps: Number(quoted[0] ?? 0),
+          grossPayout: ethers.formatEther((quoted[1] as bigint) ?? BigInt(0)),
+          fee: ethers.formatEther((quoted[2] as bigint) ?? BigInt(0)),
+          netPayout: ethers.formatEther((quoted[3] as bigint) ?? BigInt(0)),
+        }
+      } catch {
+        return { exitPriceBps: 0, grossPayout: '0', fee: '0', netPayout: '0' }
+      }
+    },
+    [account, getReadContract, isContractConfigured]
+  )
+
   const resolveMarket = useCallback(
     async (marketId: number, result: number, eventId = 1) => {
       if (!isOwner) {
@@ -733,6 +779,7 @@ export function MarketsProvider({ children }: { children: React.ReactNode }) {
         getEventUserPrediction,
         placePrediction,
         sellPrediction,
+        quoteSellPrediction,
         resolveMarket,
         claimWinnings,
         createMarket,
