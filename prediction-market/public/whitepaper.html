@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PredictFi Whitepaper — Version 1.0</title>
+<title>predictwin Whitepaper — Version 1.0</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -603,7 +603,7 @@
 
 <!-- Mobile Header -->
 <div class="mobile-header">
-  <span>PredictFi · Whitepaper</span>
+  <span>predictwin · Whitepaper</span>
   <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
     <span></span><span></span><span></span>
   </button>
@@ -614,19 +614,19 @@
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-top">
-      <strong>PredictFi</strong>
+      <strong>predictwin</strong>
       <small>WHITEPAPER · V1.0 · MAY 2026</small>
     </div>
     <div class="toc-label">Contents</div>
     <ul class="toc-list" id="toc">
       <li><a href="#s1"><span class="toc-num">01</span>Executive Summary</a></li>
       <li><a href="#s2"><span class="toc-num">02</span>Vision &amp; Mission</a></li>
-      <li><a href="#s3"><span class="toc-num">03</span>How PredictFi Works</a></li>
+      <li><a href="#s3"><span class="toc-num">03</span>How predictwin Works</a></li>
       <li><a href="#s4"><span class="toc-num">04</span>Market Architecture</a></li>
       <li><a href="#s5"><span class="toc-num">05</span>Prediction Mechanics</a></li>
       <li><a href="#s6"><span class="toc-num">06</span>Winner Calculation</a></li>
       <li><a href="#s7"><span class="toc-num">07</span>Smart Contract</a></li>
-      <li><a href="#s8"><span class="toc-num">08</span>PRFI Token</a></li>
+      <li><a href="#s8"><span class="toc-num">08</span>PWIN Token</a></li>
       <li><a href="#s9"><span class="toc-num">09</span>Tokenomics</a></li>
       <li><a href="#s10"><span class="toc-num">10</span>Fee Structure</a></li>
       <li><a href="#s11"><span class="toc-num">11</span>Leaderboard</a></li>
@@ -645,7 +645,7 @@
     <!-- HERO -->
     <div class="hero" id="top">
       <div class="hero-meta">Version 1.0 &nbsp;·&nbsp; May 2026 &nbsp;·&nbsp; BNB Smart Chain</div>
-      <h1>PredictFi<br>Whitepaper</h1>
+      <h1>predictwin<br>Whitepaper</h1>
       <p class="hero-tagline">A fully on-chain, non-custodial prediction market protocol — where real-world probability is priced transparently by the crowd.</p>
       <div class="hero-stats">
         <div class="hero-stat">
@@ -654,7 +654,7 @@
         </div>
         <div class="hero-stat">
           <div class="hero-stat-label">Token Supply</div>
-          <div class="hero-stat-value">1B PRFI</div>
+          <div class="hero-stat-value">1B PWIN</div>
         </div>
         <div class="hero-stat">
           <div class="hero-stat-label">Platform Fee</div>
@@ -674,7 +674,7 @@
         <h2 class="section-title">Executive Summary</h2>
       </div>
 
-      <p>PredictFi is a fully on-chain, non-custodial prediction market protocol deployed on BNB Smart Chain (BSC). It enables anyone to trade outcome shares (YES / NO) on real-world events using BNB as collateral, with instant payouts settled directly by the smart contract — no intermediary, no delay, no trust required.</p>
+      <p>predictwin is a fully on-chain, non-custodial prediction market protocol deployed on BNB Smart Chain (BSC). It enables anyone to trade outcome shares (YES / NO) on real-world events using BNB as collateral, with instant payouts settled directly by the smart contract — no intermediary, no delay, no trust required.</p>
 
       <div class="card-grid">
         <div class="card">
@@ -686,7 +686,7 @@
           <div class="card-desc">All pool sizes are on-chain and visible to every participant at all times.</div>
         </div>
         <div class="card">
-          <div class="card-title">PRFI Incentives</div>
+          <div class="card-title">PWIN Incentives</div>
           <div class="card-desc">Utility and governance token rewarding accurate predictors, stakers, and active community members.</div>
         </div>
         <div class="card">
@@ -700,7 +700,7 @@
         <span class="address-val">0xA789688f1ce8CF64f49c62798aF2259D73B598CC</span>
         <button class="address-copy" onclick="copyAddr(this,'0xA789688f1ce8CF64f49c62798aF2259D73B598CC')">Copy</button>
       </div>
-      <p style="font-size:13px;color:var(--text3)">Mainnet launch follows the PRFI presale and token distribution.</p>
+      <p style="font-size:13px;color:var(--text3)">Mainnet launch follows the PWIN presale and token distribution.</p>
     </section>
 
     <!-- §2 -->
@@ -715,16 +715,16 @@
       </div>
       <div class="callout">
         <div class="callout-label">Mission</div>
-        <p>Build the most accessible, lowest-friction decentralised prediction market on BNB Chain — combining the speed and liquidity of BNB with the incentive power of PRFI.</p>
+        <p>Build the most accessible, lowest-friction decentralised prediction market on BNB Chain — combining the speed and liquidity of BNB with the incentive power of PWIN.</p>
       </div>
-      <p>Prediction markets are arguably the most efficient mechanism for aggregating dispersed beliefs into a single probabilistic price. PredictFi combines this with the transparency guarantees of a public blockchain, making every bet, every pool size, and every payout verifiable by anyone at any time.</p>
+      <p>Prediction markets are arguably the most efficient mechanism for aggregating dispersed beliefs into a single probabilistic price. predictwin combines this with the transparency guarantees of a public blockchain, making every bet, every pool size, and every payout verifiable by anyone at any time.</p>
     </section>
 
     <!-- §3 -->
     <section class="section" id="s3">
       <div class="section-header">
         <span class="section-number">03</span>
-        <h2 class="section-title">How PredictFi Works</h2>
+        <h2 class="section-title">How predictwin Works</h2>
       </div>
 
       <h3>High-Level Flow</h3>
@@ -742,7 +742,7 @@
         <table>
           <thead><tr><th>Role</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td>Admin (Owner)</td><td>Creates markets, sets event names, resolves outcomes. Currently the PredictFi team; governance transitions to PRFI holders post-mainnet.</td></tr>
+            <tr><td>Admin (Owner)</td><td>Creates markets, sets event names, resolves outcomes. Currently the predictwin team; governance transitions to PWIN holders post-mainnet.</td></tr>
             <tr><td>Predictors</td><td>Any wallet that sends BNB to place a YES or NO position before closing time.</td></tr>
             <tr><td>Winners</td><td>Predictors whose chosen outcome matches the resolved result — receive stake back plus proportional share of the losing pool.</td></tr>
             <tr><td>Losers</td><td>Predictors on the wrong side. Their BNB is redistributed to winners minus the platform fee.</td></tr>
@@ -837,7 +837,7 @@
 
       <div class="callout">
         <div class="callout-label">Core Model</div>
-        <p>PredictFi uses a <strong>parimutuel-style</strong> settlement model. There is no house liquidity — the losers' pool is entirely redistributed to winners, minus the platform fee.</p>
+        <p>predictwin uses a <strong>parimutuel-style</strong> settlement model. There is no house liquidity — the losers' pool is entirely redistributed to winners, minus the platform fee.</p>
       </div>
 
       <h3>Step-by-Step Calculation</h3>
@@ -965,20 +965,20 @@ winningAmount = sum of all the user's correct positions</code></pre>
     <section class="section" id="s8">
       <div class="section-header">
         <span class="section-number">08</span>
-        <h2 class="section-title">PRFI Token</h2>
+        <h2 class="section-title">PWIN Token</h2>
       </div>
 
-      <p>PRFI is the native utility and governance token of PredictFi — a BEP-20 token on BNB Smart Chain with a <strong>fixed supply of 1,000,000,000 PRFI</strong> (1 billion). No additional tokens can ever be minted.</p>
+      <p>PWIN is the native utility and governance token of predictwin — a BEP-20 token on BNB Smart Chain with a <strong>fixed supply of 1,000,000,000 PWIN</strong> (1 billion). No additional tokens can ever be minted.</p>
 
       <h3>Token Utility</h3>
       <div class="card-grid">
         <div class="card">
           <div class="card-title">Fee Discounts</div>
-          <div class="card-desc">Pay platform fees in PRFI for up to 50% discount on trading costs.</div>
+          <div class="card-desc">Pay platform fees in PWIN for up to 50% discount on trading costs.</div>
         </div>
         <div class="card">
           <div class="card-title">Staking Rewards</div>
-          <div class="card-desc">Stake PRFI to earn a share of protocol revenue in BNB.</div>
+          <div class="card-desc">Stake PWIN to earn a share of protocol revenue in BNB.</div>
         </div>
         <div class="card">
           <div class="card-title">Governance</div>
@@ -986,11 +986,11 @@ winningAmount = sum of all the user's correct positions</code></pre>
         </div>
         <div class="card">
           <div class="card-title">Priority Access</div>
-          <div class="card-desc">PRFI holders get early entry to high-volume markets before general public.</div>
+          <div class="card-desc">PWIN holders get early entry to high-volume markets before general public.</div>
         </div>
         <div class="card">
           <div class="card-title">Airdrop Rewards</div>
-          <div class="card-desc">Top predictors receive PRFI airdrops based on activity and win rate.</div>
+          <div class="card-desc">Top predictors receive PWIN airdrops based on activity and win rate.</div>
         </div>
         <div class="card">
           <div class="card-title">Premium Markets</div>
@@ -1020,7 +1020,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
         <h2 class="section-title">Tokenomics</h2>
       </div>
 
-      <p>Total fixed supply: <strong>1,000,000,000 PRFI</strong>. The allocation maximises community ownership, funds long-term protocol growth, and aligns all contributors with multi-year execution.</p>
+      <p>Total fixed supply: <strong>1,000,000,000 PWIN</strong>. The allocation maximises community ownership, funds long-term protocol growth, and aligns all contributors with multi-year execution.</p>
 
       <div class="alloc-bars" id="alloc-bars">
         <div class="alloc-row"><span class="alloc-name">Public Sale</span><div class="alloc-bar-wrap"><div class="alloc-bar" data-pct="40"></div></div><span class="alloc-pct">40%</span></div>
@@ -1035,12 +1035,12 @@ winningAmount = sum of all the user's correct positions</code></pre>
         <table>
           <thead><tr><th>Category</th><th>Allocation</th><th>Amount</th><th>Vesting</th></tr></thead>
           <tbody>
-            <tr><td>Public Sale</td><td>40%</td><td>400M PRFI</td><td>Unlocked at TGE</td></tr>
-            <tr><td>Ecosystem &amp; Rewards</td><td>20%</td><td>200M PRFI</td><td>Streamed by season tied to protocol activity</td></tr>
-            <tr><td>Team</td><td>15%</td><td>150M PRFI</td><td>3-year vesting with 6-month cliff</td></tr>
-            <tr><td>Reserve</td><td>10%</td><td>100M PRFI</td><td>Governance-approved deployment only</td></tr>
-            <tr><td>Advisors</td><td>10%</td><td>100M PRFI</td><td>Milestone-unlocked buckets</td></tr>
-            <tr><td>Airdrop</td><td>5%</td><td>50M PRFI</td><td>Campaign waves with anti-sybil filtering</td></tr>
+            <tr><td>Public Sale</td><td>40%</td><td>400M PWIN</td><td>Unlocked at TGE</td></tr>
+            <tr><td>Ecosystem &amp; Rewards</td><td>20%</td><td>200M PWIN</td><td>Streamed by season tied to protocol activity</td></tr>
+            <tr><td>Team</td><td>15%</td><td>150M PWIN</td><td>3-year vesting with 6-month cliff</td></tr>
+            <tr><td>Reserve</td><td>10%</td><td>100M PWIN</td><td>Governance-approved deployment only</td></tr>
+            <tr><td>Advisors</td><td>10%</td><td>100M PWIN</td><td>Milestone-unlocked buckets</td></tr>
+            <tr><td>Airdrop</td><td>5%</td><td>50M PWIN</td><td>Campaign waves with anti-sybil filtering</td></tr>
           </tbody>
         </table>
       </div>
@@ -1083,7 +1083,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
         <h2 class="section-title">Leaderboard &amp; Reputation</h2>
       </div>
 
-      <p>PredictFi maintains an on-chain-derived public leaderboard. Data is indexed off-chain via Supabase from contract event logs and updated after each market resolution.</p>
+      <p>predictwin maintains an on-chain-derived public leaderboard. Data is indexed off-chain via Supabase from contract event logs and updated after each market resolution.</p>
 
       <div class="table-wrap">
         <table>
@@ -1099,7 +1099,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
 
       <div class="callout">
         <div class="callout-label">Airdrop Eligibility</div>
-        <p>Top performers are automatically eligible for PRFI airdrop campaigns. Rankings are derived purely from on-chain event logs — no self-reporting, no manipulation.</p>
+        <p>Top performers are automatically eligible for PWIN airdrop campaigns. Rankings are derived purely from on-chain event logs — no self-reporting, no manipulation.</p>
       </div>
     </section>
 
@@ -1110,19 +1110,19 @@ winningAmount = sum of all the user's correct positions</code></pre>
         <h2 class="section-title">Whitelist &amp; Presale</h2>
       </div>
 
-      <p>The PredictFi whitelist grants early access to presale participants before the public window opens. Whitelist snapshot is taken <strong>48 hours</strong> before presale opens on June 1, 2026.</p>
+      <p>The predictwin whitelist grants early access to presale participants before the public window opens. Whitelist snapshot is taken <strong>48 hours</strong> before presale opens on June 1, 2026.</p>
 
       <h3>Whitelist Benefits</h3>
       <div class="security-list">
         <li><span class="security-num">→</span>Presale allocation at the lowest available price tier</li>
         <li><span class="security-num">→</span>Guaranteed participation before public opening</li>
-        <li><span class="security-num">→</span>Priority PRFI airdrop eligibility</li>
+        <li><span class="security-num">→</span>Priority PWIN airdrop eligibility</li>
         <li><span class="security-num">→</span>Beta feature access during testnet phase</li>
       </div>
 
       <div class="callout">
         <div class="callout-label">How to Join</div>
-        <p>Visit <strong>/whitelist</strong> on the PredictFi platform and submit your wallet address. Presale runs June 1–7, 2026 on moonsale.app.</p>
+        <p>Visit <strong>/whitelist</strong> on the predictwin platform and submit your wallet address. Presale runs June 1–7, 2026 on moonsale.app.</p>
       </div>
     </section>
 
@@ -1148,7 +1148,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
             <div class="phase-item done">Admin portal for market creation and resolution</div>
             <div class="phase-item done">Leaderboard and portfolio tracking</div>
             <div class="phase-item done">Whitelist registration system</div>
-            <div class="phase-item done">PRFI presale launch on moonsale.app (June 1–7, 2026)</div>
+            <div class="phase-item done">PWIN presale launch on moonsale.app (June 1–7, 2026)</div>
           </div>
         </div>
 
@@ -1161,8 +1161,8 @@ winningAmount = sum of all the user's correct positions</code></pre>
           </div>
           <div class="phase-items">
             <div class="phase-item todo">BSC Mainnet smart contract deployment</div>
-            <div class="phase-item todo">PRFI token deployment and PancakeSwap V3 listing</div>
-            <div class="phase-item todo">Staking module (stake PRFI, earn BNB revenue share)</div>
+            <div class="phase-item todo">PWIN token deployment and PancakeSwap V3 listing</div>
+            <div class="phase-item todo">Staking module (stake PWIN, earn BNB revenue share)</div>
             <div class="phase-item todo">Governance module (on-chain proposals and voting)</div>
             <div class="phase-item todo">Mobile-responsive progressive web app</div>
             <div class="phase-item todo">Security audit by a top-tier firm</div>
@@ -1179,7 +1179,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
           <div class="phase-items">
             <div class="phase-item todo">Multi-category markets (sports, crypto, politics, entertainment)</div>
             <div class="phase-item todo">Market creation by whitelisted community members</div>
-            <div class="phase-item todo">PRFI fee discount system</div>
+            <div class="phase-item todo">PWIN fee discount system</div>
             <div class="phase-item todo">Partnership integrations (data oracles, DeFi protocols)</div>
             <div class="phase-item todo">Cross-chain expansion (Ethereum, Arbitrum)</div>
           </div>
@@ -1193,7 +1193,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
             <span class="phase-status">Planned</span>
           </div>
           <div class="phase-items">
-            <div class="phase-item todo">Full governance handover to PRFI holders</div>
+            <div class="phase-item todo">Full governance handover to PWIN holders</div>
             <div class="phase-item todo">Oracle-verified auto-resolution of markets</div>
             <div class="phase-item todo">Layer-2 deployment for lower gas fees</div>
             <div class="phase-item todo">API access for third-party integrations</div>
@@ -1225,7 +1225,7 @@ winningAmount = sum of all the user's correct positions</code></pre>
 
       <div class="callout">
         <div class="callout-label">Responsible Disclosure</div>
-        <p>If you discover a vulnerability, contact <strong>security@predictfi.io</strong> before public disclosure. Responsible disclosures are eligible for PRFI bug bounty rewards.</p>
+        <p>If you discover a vulnerability, contact <strong>security@predictwin.io</strong> before public disclosure. Responsible disclosures are eligible for PWIN bug bounty rewards.</p>
       </div>
     </section>
 
@@ -1237,15 +1237,15 @@ winningAmount = sum of all the user's correct positions</code></pre>
       </div>
 
       <h3>Current Governance</h3>
-      <p>In the current beta phase, the PredictFi team (contract owner wallet) controls market creation and resolution. All admin actions are publicly verifiable on BSCScan.</p>
+      <p>In the current beta phase, the predictwin team (contract owner wallet) controls market creation and resolution. All admin actions are publicly verifiable on BSCScan.</p>
 
       <h3>Transition to Decentralisation</h3>
-      <p>Post-mainnet, governance transitions to PRFI token holders via an on-chain governance module.</p>
+      <p>Post-mainnet, governance transitions to PWIN token holders via an on-chain governance module.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
           <tbody>
-            <tr><td>Minimum Proposal Threshold</td><td>≥ 10,000 PRFI held</td></tr>
+            <tr><td>Minimum Proposal Threshold</td><td>≥ 10,000 PWIN held</td></tr>
             <tr><td>Voting Window</td><td>7 days from proposal submission</td></tr>
             <tr><td>Quorum Requirement</td><td>5% of circulating supply must vote</td></tr>
             <tr><td>Governance Scope</td><td>Fee parameters, market categories, contract upgrades (via proxy), treasury allocations</td></tr>
@@ -1262,15 +1262,15 @@ winningAmount = sum of all the user's correct positions</code></pre>
       </div>
 
       <div class="legal-box">
-        <p>PredictFi is a decentralised protocol. Participation in prediction markets involves financial risk. Predictions can result in the <strong>total loss of staked BNB</strong>. This whitepaper does not constitute financial or investment advice.</p>
+        <p>predictwin is a decentralised protocol. Participation in prediction markets involves financial risk. Predictions can result in the <strong>total loss of staked BNB</strong>. This whitepaper does not constitute financial or investment advice.</p>
       </div>
       <div class="legal-box">
-        <p>PRFI tokens are utility tokens that provide access to protocol features. They are <strong>not securities</strong> and do not represent ownership, equity, or a claim on future profits of any legal entity. Token values are market-determined and may fluctuate significantly.</p>
+        <p>PWIN tokens are utility tokens that provide access to protocol features. They are <strong>not securities</strong> and do not represent ownership, equity, or a claim on future profits of any legal entity. Token values are market-determined and may fluctuate significantly.</p>
       </div>
       <div class="legal-box">
         <p>Users are solely responsible for complying with the laws of their jurisdiction. Participation from jurisdictions where prediction markets or crypto-assets are restricted is at the user's own risk.</p>
       </div>
-      <p style="margin-top:20px;font-size:13px;color:var(--text3)">This document is provided for informational purposes only and is subject to change as the protocol evolves.<br>© 2026 PredictFi. All rights reserved.</p>
+      <p style="margin-top:20px;font-size:13px;color:var(--text3)">This document is provided for informational purposes only and is subject to change as the protocol evolves.<br>© 2026 predictwin. All rights reserved.</p>
     </section>
 
   </main>

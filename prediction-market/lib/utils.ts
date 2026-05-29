@@ -101,7 +101,7 @@ export const parseMarketIdFromDetailSlug = (value: string): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-const CATEGORIES_STORAGE_KEY = 'predictfi_market_categories'
+const CATEGORIES_STORAGE_KEY = 'predictwin_market_categories'
 
 export const getStoredCategories = (): Record<string, string> => {
   if (typeof window === 'undefined') return {}

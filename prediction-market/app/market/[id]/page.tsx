@@ -304,7 +304,7 @@ export default function MarketDetailPage() {
         ? `${window.location.origin}${market ? getMarketDetailPath(market.question, market.id) : window.location.pathname}`
         : ''
       if (navigator.share) {
-        await navigator.share({ title: market?.eventName || market?.question || 'PredictFi Market', url: shareUrl })
+        await navigator.share({ title: market?.eventName || market?.question || 'predictwin Market', url: shareUrl })
         return
       }
       if (navigator.clipboard && shareUrl) {

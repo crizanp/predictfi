@@ -9,13 +9,13 @@ import { CHAIN_ID } from '../lib/contract'
 import styles from './Navbar.module.css'
 
 const SOCIAL_LINKS = [
-  { Icon: RiTwitterXLine,  href: 'https://x.com/predictfi',       label: 'Twitter / X' },
-  { Icon: RiTelegramLine,  href: 'https://t.me/predictfi',         label: 'Telegram' },
-  { Icon: RiDiscordLine,   href: 'https://discord.gg/predictfi',   label: 'Discord' },
+  { Icon: RiTwitterXLine,  href: 'https://x.com/predictwin',       label: 'Twitter / X' },
+  { Icon: RiTelegramLine,  href: 'https://t.me/predictwin',         label: 'Telegram' },
+  { Icon: RiDiscordLine,   href: 'https://discord.gg/predictwin',   label: 'Discord' },
 ]
 
 const HOME_NAV = [
-  { label: 'PRFI Token', href: '#prfi' },
+  { label: 'PWIN Token', href: '#PWIN' },
   { label: 'Whitepaper', href: '/whitepaper' },
   { label: 'Pitchdeck', href: '/pitchdeck' },
   { label: 'Roadmap', href: '/roadmap' },
@@ -85,7 +85,7 @@ export default function Navbar() {
     <header className={`${styles.header} ${hidden ? styles.headerHidden : ''}`}>
       <div className={styles.controlsRow}>
         <div className={styles.pageNavLeft}>
-          <Link href="/" className={styles.backToHome}>← PredictFi</Link>
+          <Link href="/" className={styles.backToHome}>← predictwin</Link>
           <nav className={styles.homeNav}>
             {HOME_NAV.map((item) => {
               const href = item.href.startsWith('#') && !isHome ? `/${item.href}` : item.href
@@ -168,7 +168,7 @@ export default function Navbar() {
                     <button
                       className={styles.userMenuItem}
                       onClick={() => {
-                        const code = authUser?.username || 'predictfi'
+                        const code = authUser?.username || 'predictwin'
                         const url = `${window.location.origin}/?ref=${encodeURIComponent(code)}`
                         void navigator.clipboard.writeText(url)
                         setMenuOpen(false)

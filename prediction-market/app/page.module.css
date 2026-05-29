@@ -398,8 +398,8 @@
   max-width: 300px;
 }
 
-/* ── PRFI Token Section ───────────────────────────────────── */
-.prfiSection {
+/* ── PWIN Token Section ───────────────────────────────────── */
+.PWINSection {
   margin: 0 28px 36px;
   border: 1px solid rgba(192, 208, 241, 0.795);
   border-radius: 20px;
@@ -408,7 +408,7 @@
   box-shadow: 0 14px 34px rgba(15,23,42,0.08);
 }
 
-.prfiHeader {
+.PWINHeader {
   text-align: center;
   padding: 54px 28px 36px;
   border-bottom: 1px solid rgba(17,24,39,0.09);
@@ -416,7 +416,7 @@
   z-index: 1;
 }
 
-.prfiBadge {
+.PWINBadge {
   display: inline-block;
   font-size: 11px;
   font-weight: 900;
@@ -429,7 +429,7 @@
   margin-bottom: 18px;
 }
 
-.prfiTitle {
+.PWINTitle {
   font-size: 44px;
   font-weight: 900;
   color: #111827;
@@ -439,9 +439,9 @@
   font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
 }
 
-.prfiGreen { color: #7c3aed; }
+.PWINGreen { color: #7c3aed; }
 
-.prfiTagline {
+.PWINTagline {
   font-size: 15px;
   color: #475569;
   font-weight: 500;
@@ -449,7 +449,7 @@
   margin: 0 auto;
 }
 
-.prfiTrustRow {
+.PWINTrustRow {
   margin-top: 22px;
   display: flex;
   justify-content: center;
@@ -457,7 +457,7 @@
   gap: 10px;
 }
 
-.prfiTrustItem {
+.PWINTrustItem {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -471,7 +471,7 @@
   letter-spacing: 0.02em;
 }
 
-.prfiTrustItem svg {
+.PWINTrustItem svg {
   font-size: 14px;
   color: #7c3aed;
 }
@@ -557,8 +557,8 @@
   opacity: 0.7;
 }
 /* ── Tokenomics + Presale ─────────────────────────────────── */
-/* ── PRFI Row ── */
-.prfiRow {
+/* ── PWIN Row ── */
+.PWINRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -1282,7 +1282,7 @@
 }
 
 @media (max-width: 1200px) {
-  .prfiRow {
+  .PWINRow {
     grid-template-columns: 1fr;
   }
 
@@ -1315,16 +1315,16 @@
 }
 
 @media (max-width: 680px) {
-  .prfiSection {
+  .PWINSection {
     margin: 0 16px 28px;
     border-radius: 16px;
   }
 
-  .prfiHeader {
+  .PWINHeader {
     padding: 40px 16px 24px;
   }
 
-  .prfiTitle {
+  .PWINTitle {
     font-size: 34px;
   }
 
@@ -1333,7 +1333,7 @@
     padding: 12px;
   }
 
-  .prfiRow {
+  .PWINRow {
     padding: 12px;
     gap: 12px;
   }

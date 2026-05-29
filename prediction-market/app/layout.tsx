@@ -4,10 +4,10 @@ import Providers from '../components/Providers'
 import AppShell from '../components/AppShell'
 import { ToastProvider } from '../context/ToastContext'
 
-const SITE_URL = 'https://predictfi.io'
-const SITE_NAME = 'PredictFi'
+const SITE_URL = 'https://predictwin.io'
+const SITE_NAME = 'predictwin'
 const SITE_DESCRIPTION =
-  'PredictFi is a decentralised prediction market on BNB Smart Chain. Trade YES/NO outcome shares, earn BNB, and stake PRFI for governance and rewards.'
+  'predictwin is a decentralised prediction market on BNB Smart Chain. Trade YES/NO outcome shares, earn BNB, and stake PWIN for governance and rewards.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -21,16 +21,16 @@ export const metadata: Metadata = {
     'decentralised prediction',
     'BNB chain',
     'BSC prediction',
-    'PRFI token',
+    'PWIN token',
     'crypto betting',
     'on-chain forecasting',
     'defi prediction',
     'web3 market',
-    'PredictFi',
+    'predictwin',
   ],
-  authors: [{ name: 'PredictFi Team', url: SITE_URL }],
-  creator: 'PredictFi',
-  publisher: 'PredictFi',
+  authors: [{ name: 'predictwin Team', url: SITE_URL }],
+  creator: 'predictwin',
+  publisher: 'predictwin',
   robots: {
     index: true,
     follow: true,
@@ -48,14 +48,14 @@ export const metadata: Metadata = {
         url: `${SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: 'PredictFi — Decentralised Prediction Market',
+        alt: 'predictwin — Decentralised Prediction Market',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    site: '@predictfi',
-    creator: '@predictfi',
+    site: '@predictwin',
+    creator: '@predictwin',
     title: `${SITE_NAME} — Decentralised Prediction Market on BNB Chain`,
     description: SITE_DESCRIPTION,
     images: [`${SITE_URL}/og-image.png`],

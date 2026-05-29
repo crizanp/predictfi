@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Tokenomics',
-  description: 'PRFI token distribution, vesting schedule, utility, and economic model for PredictFi.',
+  description: 'PWIN token distribution, vesting schedule, utility, and economic model for predictwin.',
 }
 
 export default function TokenomicsPage() {
@@ -11,7 +11,7 @@ export default function TokenomicsPage() {
       src="/tokonomics.html"
       loading="lazy"
       className="docsFrame"
-      title="PredictFi Tokenomics"
+      title="predictwin Tokenomics"
     />
   )
 }

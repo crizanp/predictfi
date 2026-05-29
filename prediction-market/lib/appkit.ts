@@ -23,9 +23,9 @@ export const appKit = createAppKit({
   networks: [bscTestnet],
   projectId,
   metadata: {
-    name: 'PredictFi',
+    name: 'predictwin',
     description: 'Decentralized Prediction Market on BSC',
-    url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://predictfi.app',
+    url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://predictwin.app',
     icons: [],
   },
   features: {

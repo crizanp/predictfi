@@ -26,37 +26,37 @@ const tokenUseCases = [
     Icon: RiPercentLine,
     color: '#ddbbff',
     title: 'Fee Discounts',
-    desc: 'Hold or spend PRFI to reduce your platform fees by up to 50%. The discount scales with your PRFI balance  the more you hold, the less you pay on every winning trade. Keep more of your profits where they belong: in your wallet.',
+    desc: 'Hold or spend PWIN to reduce your platform fees by up to 50%. The discount scales with your PWIN balance  the more you hold, the less you pay on every winning trade. Keep more of your profits where they belong: in your wallet.',
   },
   {
     Icon: RiStackLine,
     color: '#8ddfff',
     title: 'Staking Rewards',
-    desc: 'Lock your PRFI in the staking module to earn a direct share of PredictFi\'s protocol revenue, paid out in BNB. The longer you stake and the more you commit, the higher your yield tier  turning passive holding into a steady income stream.',
+    desc: 'Lock your PWIN in the staking module to earn a direct share of predictwin\'s protocol revenue, paid out in BNB. The longer you stake and the more you commit, the higher your yield tier  turning passive holding into a steady income stream.',
   },
   {
     Icon: RiGovernmentLine,
     color: '#95ffc7',
     title: 'Governance',
-    desc: 'Own your protocol. Any wallet holding ≥ 10,000 PRFI can submit on-chain proposals covering fee parameters, market categories, treasury allocations, and contract upgrades. Proposals are open to a 7-day community vote with a 5% quorum threshold.',
+    desc: 'Own your protocol. Any wallet holding ≥ 10,000 PWIN can submit on-chain proposals covering fee parameters, market categories, treasury allocations, and contract upgrades. Proposals are open to a 7-day community vote with a 5% quorum threshold.',
   },
   {
     Icon: RiVipCrownLine,
     color: '#f59e0b',
     title: 'Priority Access',
-    desc: 'PRFI holders skip the queue. When high-volume markets launch  major sports finals, election nights, crypto milestones  token holders gain entry before the public window opens, securing positions at the most favourable early odds.',
+    desc: 'PWIN holders skip the queue. When high-volume markets launch  major sports finals, election nights, crypto milestones  token holders gain entry before the public window opens, securing positions at the most favourable early odds.',
   },
   {
     Icon: RiGiftLine,
     color: '#ff9e9e',
     title: 'Airdrop Rewards',
-    desc: 'Accuracy pays. PredictFi runs seasonal airdrop campaigns that distribute PRFI to top-ranked predictors based on win rate, total volume, and cumulative BNB earned. Anti-sybil filtering ensures rewards go to genuine, active participants.',
+    desc: 'Accuracy pays. predictwin runs seasonal airdrop campaigns that distribute PWIN to top-ranked predictors based on win rate, total volume, and cumulative BNB earned. Anti-sybil filtering ensures rewards go to genuine, active participants.',
   },
   {
     Icon: RiDiamondLine,
     color: '#f596ff',
     title: 'Premium Markets',
-    desc: 'Unlock exclusive high-stakes market rooms gated behind a PRFI holding threshold. These rooms feature larger pool caps, elevated payout potential, and curated events not available in public markets  reserved for committed protocol participants.',
+    desc: 'Unlock exclusive high-stakes market rooms gated behind a PWIN holding threshold. These rooms feature larger pool caps, elevated payout potential, and curated events not available in public markets  reserved for committed protocol participants.',
   },
 ]
 
@@ -249,14 +249,14 @@ export default function HomePage() {
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560">
   <rect width="760" height="560" fill="#fff4e2" />
-  <text x="24" y="42" fill="#111827" font-size="26" font-family="Arial" font-weight="700">PredictFi Tokenomics</text>
-  <text x="24" y="66" fill="#475569" font-size="13" font-family="Arial">Total Supply: 1,000,000,000 PRFI</text>
+  <text x="24" y="42" fill="#111827" font-size="26" font-family="Arial" font-weight="700">predictwin Tokenomics</text>
+  <text x="24" y="66" fill="#475569" font-size="13" font-family="Arial">Total Supply: 1,000,000,000 PWIN</text>
   <g transform="translate(20,40)">
     <rect x="0" y="0" width="250" height="250" rx="16" fill="#ffffff" stroke="#e2e8f0" />
     <g transform="translate(45,45)">
       ${donutSlices.map((slice) => `<path d="${slice.d}" fill="${slice.color}" stroke="#05060e" stroke-width="1.5" opacity="0.9" />`).join('')}
       <text x="80" y="76" text-anchor="middle" font-size="9" fill="#6b7280" font-family="Arial" font-weight="700">TOTAL</text>
-      <text x="80" y="90" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="Arial" font-weight="600">1B PRFI</text>
+      <text x="80" y="90" text-anchor="middle" font-size="8" fill="#9ca3af" font-family="Arial" font-weight="600">1B PWIN</text>
     </g>
   </g>
   <g>
@@ -275,7 +275,7 @@ export default function HomePage() {
     const svgUrl = URL.createObjectURL(svgBlob)
     const svgLink = document.createElement('a')
     svgLink.href = svgUrl
-    svgLink.download = 'predictfi-tokenomics.svg'
+    svgLink.download = 'predictwin-tokenomics.svg'
     svgLink.click()
     URL.revokeObjectURL(svgUrl)
 
@@ -284,12 +284,12 @@ export default function HomePage() {
       .join('\n\n')
 
     const txtBlob = new Blob([
-      `PredictFi Tokenomics\nTotal Supply: 1,000,000,000 PRFI\n\n${detailsText}`,
+      `predictwin Tokenomics\nTotal Supply: 1,000,000,000 PWIN\n\n${detailsText}`,
     ], { type: 'text/plain;charset=utf-8' })
     const txtUrl = URL.createObjectURL(txtBlob)
     const txtLink = document.createElement('a')
     txtLink.href = txtUrl
-    txtLink.download = 'predictfi-tokenomics-details.txt'
+    txtLink.download = 'predictwin-tokenomics-details.txt'
     txtLink.click()
     URL.revokeObjectURL(txtUrl)
   }
@@ -344,27 +344,27 @@ export default function HomePage() {
         
       </div>
 
-      {/* ── PRFI Token Section ──────────────────────────── */}
-      <div id="prfi" className={styles.prfiSection}>
+      {/* ── PWIN Token Section ──────────────────────────── */}
+      <div id="PWIN" className={styles.PWINSection}>
 
         {/* Header */}
-        <div className={styles.prfiHeader}>
-          <h2 className={styles.prfiTitle}>
-            <span className={styles.prfiGreen}>PRFI</span> Token
+        <div className={styles.PWINHeader}>
+          <h2 className={styles.PWINTitle}>
+            <span className={styles.PWINGreen}>PWIN</span> Token
           </h2>
-          <p className={styles.prfiTagline}>
-            The utility token powering the PredictFi ecosystem
+          <p className={styles.PWINTagline}>
+            The utility token powering the predictwin ecosystem
           </p>
-          {/* <div className={styles.prfiTrustRow}>
-            <div className={styles.prfiTrustItem}>
+          {/* <div className={styles.PWINTrustRow}>
+            <div className={styles.PWINTrustItem}>
               <RiShieldCheckLine />
               <span>Transparent Emissions</span>
             </div>
-            <div className={styles.prfiTrustItem}>
+            <div className={styles.PWINTrustItem}>
               <RiTrophyLine />
               <span>Incentives For Accuracy</span>
             </div>
-            <div className={styles.prfiTrustItem}>
+            <div className={styles.PWINTrustItem}>
               <RiGovernmentLine />
               <span>Community Governance Path</span>
             </div>
@@ -406,7 +406,7 @@ export default function HomePage() {
 </div>
         </div>  
         {/* Tokenomics + Presale row */}
-        <div className={styles.prfiRow}>
+        <div className={styles.PWINRow}>
 
           {/* Tokenomics */}
           <div className={styles.tokenomicsCard}>
@@ -414,7 +414,7 @@ export default function HomePage() {
               Download
             </button>
             <div className={styles.cardLabel}>TOKENOMICS</div>
-            <div className={styles.totalSupply}>1,000,000,000 <span>PRFI</span></div>
+            <div className={styles.totalSupply}>1,000,000,000 <span>PWIN</span></div>
 
             {/* SVG Donut chart */}
             <div className={styles.donutWrap}>
@@ -439,7 +439,7 @@ export default function HomePage() {
                   </g>
                 ))}
                 <text x="80" y="76" textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="700">TOTAL</text>
-                <text x="80" y="90" textAnchor="middle" fontSize="8" fill="#9ca3af" fontWeight="600">1B PRFI</text>
+                <text x="80" y="90" textAnchor="middle" fontSize="8" fill="#9ca3af" fontWeight="600">1B PWIN</text>
               </svg>
             </div>
 
@@ -613,8 +613,8 @@ export default function HomePage() {
       <div id="whitepaper" className={styles.whitepaperSection}>
         <h2 className={styles.whitepaperTitle}>Understand the Protocol</h2>
         <p className={styles.whitepaperDesc}>
-          Dive deep into the PredictFi architecture, automated market makers, oracle integrations,
-          PRFI tokenomics, and governance mechanisms. Everything you need to know about how the
+          Dive deep into the predictwin architecture, automated market makers, oracle integrations,
+          PWIN tokenomics, and governance mechanisms. Everything you need to know about how the
           decentralized prediction market engine works.
         </p>
         <div className={styles.docLinks}>
@@ -638,9 +638,9 @@ export default function HomePage() {
         </div>
         <div className={styles.socialGrid}>
           {[
-            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@PredictFi',     color: '#0f172a', bg: '#111111', href: 'https://x.com/PredictFi' },
-            { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictfi', color: '#229ED9', bg: '#0a1828', href: 'https://t.me/predictfi' },
-            { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/predictfi', color: '#5865F2', bg: '#0a0c1e', href: 'https://discord.gg/predictfi' },
+            { Icon: RiTwitterXLine, label: 'Twitter/X',   handle: '@predictwin',     color: '#0f172a', bg: '#111111', href: 'https://x.com/predictwin' },
+            { Icon: RiTelegramLine, label: 'Telegram',    handle: 't.me/predictwin', color: '#229ED9', bg: '#0a1828', href: 'https://t.me/predictwin' },
+            { Icon: RiDiscordLine,  label: 'Discord',     handle: 'discord.gg/predictwin', color: '#5865F2', bg: '#0a0c1e', href: 'https://discord.gg/predictwin' },
           ].map((s) => (
             <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className={styles.socialCard} style={{ borderColor: `${s.color}18` }}>
               <s.Icon className={styles.socialIcon} style={{ color: s.color }} />

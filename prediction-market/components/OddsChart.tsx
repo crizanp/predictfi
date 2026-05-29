@@ -988,7 +988,7 @@ export default function OddsChart({
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.watermark} aria-hidden>predictfi.fun</div>
+      <div className={styles.watermark} aria-hidden>predictwin.fun</div>
       <div className={styles.header}>
         <h3 className={styles.title}>{isMultiSeries ? 'Events Odds History' : 'Odds History'}</h3>
         <div className={styles.chartControls}>

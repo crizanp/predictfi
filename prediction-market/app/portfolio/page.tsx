@@ -291,7 +291,7 @@ export default function PortfolioPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>My Portfolio</h1>
-          <p className={styles.pageSub}>Your positions and performance on PredictFi</p>
+          <p className={styles.pageSub}>Your positions and performance on predictwin</p>
         </div>
       </div>
 

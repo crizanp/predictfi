@@ -145,7 +145,7 @@ export default function PublicProfilePage() {
             <label className={styles.label}>Bio</label>
             <textarea
               className={styles.textarea}
-              placeholder="What do you contribute to PredictFi?"
+              placeholder="What do you contribute to predictwin?"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               rows={3}

@@ -1,7 +1,7 @@
 {
-  "name": "PredictFi — Decentralised Prediction Market",
-  "short_name": "PredictFi",
-  "description": "Trade YES/NO outcome shares on BNB Chain and earn with PRFI token",
+  "name": "predictwin — Decentralised Prediction Market",
+  "short_name": "predictwin",
+  "description": "Trade YES/NO outcome shares on BNB Chain and earn with PWIN token",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#08070f",

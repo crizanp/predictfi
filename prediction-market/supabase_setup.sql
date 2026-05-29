@@ -1,5 +1,5 @@
 -- ============================================================
--- PredictFi — Supabase Database Setup
+-- predictwin — Supabase Database Setup
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ============================================================
 

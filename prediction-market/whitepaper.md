@@ -1,4 +1,4 @@
-# PredictFi Whitepaper
+# predictwin Whitepaper
 
 **Version 1.0 · May 2026**
 
@@ -8,12 +8,12 @@
 
 1. [Executive Summary](#executive-summary)
 2. [Vision & Mission](#vision--mission)
-3. [How PredictFi Works](#how-predictfi-works)
+3. [How predictwin Works](#how-predictwin-works)
 4. [Market Architecture](#market-architecture)
 5. [Prediction Mechanics](#prediction-mechanics)
 6. [Winner Calculation & Payout Formula](#winner-calculation--payout-formula)
 7. [Smart Contract Deep Dive](#smart-contract-deep-dive)
-8. [PRFI Token](#prfi-token)
+8. [PWIN Token](#PWIN-token)
 9. [Tokenomics](#tokenomics)
 10. [Fee Structure](#fee-structure)
 11. [Leaderboard & Reputation](#leaderboard--reputation)
@@ -27,16 +27,16 @@
 
 ## 1. Executive Summary
 
-PredictFi is a fully on-chain, non-custodial prediction market protocol deployed on BNB Smart Chain (BSC). It enables anyone to trade outcome shares (YES / NO) on real-world events using BNB as collateral, with instant payouts settled directly by the smart contract.
+predictwin is a fully on-chain, non-custodial prediction market protocol deployed on BNB Smart Chain (BSC). It enables anyone to trade outcome shares (YES / NO) on real-world events using BNB as collateral, with instant payouts settled directly by the smart contract.
 
-PredictFi is differentiated from centralised prediction platforms by:
+predictwin is differentiated from centralised prediction platforms by:
 
 - **Trustless settlement** — no human intermediary decides who wins; the contract enforces payouts.
 - **Transparent odds** — all pool sizes are on-chain and visible to every participant.
-- **PRFI incentives** — a utility and governance token that rewards accurate predictors, stakers, and active community members.
+- **PWIN incentives** — a utility and governance token that rewards accurate predictors, stakers, and active community members.
 - **Zero withdrawal delays** — winners claim BNB immediately after market resolution.
 
-Current deployment: BSC Testnet (`0xA789688f1ce8CF64f49c62798aF2259D73B598CC`). Mainnet launch follows the PRFI presale and token distribution.
+Current deployment: BSC Testnet (`0xA789688f1ce8CF64f49c62798aF2259D73B598CC`). Mainnet launch follows the PWIN presale and token distribution.
 
 ---
 
@@ -44,11 +44,11 @@ Current deployment: BSC Testnet (`0xA789688f1ce8CF64f49c62798aF2259D73B598CC`). 
 
 **Vision:** Make prediction markets the standard tool for on-chain information aggregation — where real-world probability is priced transparently, 24/7, by a global crowd.
 
-**Mission:** Build the most accessible, lowest-friction decentralised prediction market on BNB Chain — combining the speed and liquidity of BNB with the incentive power of PRFI.
+**Mission:** Build the most accessible, lowest-friction decentralised prediction market on BNB Chain — combining the speed and liquidity of BNB with the incentive power of PWIN.
 
 ---
 
-## 3. How PredictFi Works
+## 3. How predictwin Works
 
 ### 3.1 High-Level Flow
 
@@ -70,7 +70,7 @@ Current deployment: BSC Testnet (`0xA789688f1ce8CF64f49c62798aF2259D73B598CC`). 
 
 | Role | Description |
 |------|-------------|
-| **Admin (Owner)** | Creates markets, sets event names, resolves outcomes. Currently controlled by the PredictFi team; governance will transition to PRFI holders post-mainnet. |
+| **Admin (Owner)** | Creates markets, sets event names, resolves outcomes. Currently controlled by the predictwin team; governance will transition to PWIN holders post-mainnet. |
 | **Predictors** | Any wallet that sends BNB to place a YES or NO position on a market event before closing time. |
 | **Winners** | Predictors whose chosen outcome matches the resolved result. They receive their stake back plus a proportional share of the losing pool (minus platform fee). |
 | **Losers** | Predictors on the wrong side. Their BNB is distributed to winners minus the platform fee. |
@@ -148,11 +148,11 @@ For markets with multiple events (e.g., a sports tournament bracket), each event
 
 ## 6. Winner Calculation & Payout Formula
 
-This is the core economic engine of PredictFi, implemented transparently in the smart contract.
+This is the core economic engine of predictwin, implemented transparently in the smart contract.
 
 ### 6.1 Core Concept
 
-PredictFi uses a **parimutuel-style** settlement model. There is no house liquidity — the losers' pool is entirely redistributed to winners, minus the platform fee.
+predictwin uses a **parimutuel-style** settlement model. There is no house liquidity — the losers' pool is entirely redistributed to winners, minus the platform fee.
 
 ### 6.2 Step-by-Step Calculation
 
@@ -270,23 +270,23 @@ This means the **total fees collected exactly equal 5% of the losing pool**, reg
 
 ---
 
-## 8. PRFI Token
+## 8. PWIN Token
 
 ### 8.1 Overview
 
-PRFI is the native utility and governance token of PredictFi. It is a BEP-20 token on BNB Smart Chain.
+PWIN is the native utility and governance token of predictwin. It is a BEP-20 token on BNB Smart Chain.
 
-**Total Supply:** 1,000,000,000 PRFI (1 billion, fixed supply)
+**Total Supply:** 1,000,000,000 PWIN (1 billion, fixed supply)
 
 ### 8.2 Utility
 
 | Use Case | Description |
 |----------|-------------|
-| **Fee Discounts** | Pay platform fees in PRFI for up to 50% discount on trading costs |
-| **Staking Rewards** | Stake PRFI to earn a share of protocol revenue |
+| **Fee Discounts** | Pay platform fees in PWIN for up to 50% discount on trading costs |
+| **Staking Rewards** | Stake PWIN to earn a share of protocol revenue |
 | **Governance** | Vote on market listings, fee changes, and protocol upgrades |
-| **Priority Access** | PRFI holders get early entry to high-volume markets |
-| **Airdrop Rewards** | Top predictors receive PRFI airdrops based on activity |
+| **Priority Access** | PWIN holders get early entry to high-volume markets |
+| **Airdrop Rewards** | Top predictors receive PWIN airdrops based on activity |
 | **Premium Markets** | Unlock exclusive high-stakes market rooms |
 
 ### 8.3 Presale Details
@@ -307,12 +307,12 @@ PRFI is the native utility and governance token of PredictFi. It is a BEP-20 tok
 
 | Category | Allocation | Vesting |
 |----------|-----------|---------|
-| Public Sale | 40% (400M PRFI) | Unlocked at TGE |
-| Ecosystem & Rewards | 20% (200M PRFI) | Streamed by season tied to protocol activity |
-| Team | 15% (150M PRFI) | 3-year vesting with 6-month cliff |
-| Reserve | 10% (100M PRFI) | Governance-approved deployment only |
-| Advisors | 10% (100M PRFI) | Milestone-unlocked buckets |
-| Airdrop | 5% (50M PRFI) | Campaign waves with anti-sybil filtering |
+| Public Sale | 40% (400M PWIN) | Unlocked at TGE |
+| Ecosystem & Rewards | 20% (200M PWIN) | Streamed by season tied to protocol activity |
+| Team | 15% (150M PWIN) | 3-year vesting with 6-month cliff |
+| Reserve | 10% (100M PWIN) | Governance-approved deployment only |
+| Advisors | 10% (100M PWIN) | Milestone-unlocked buckets |
+| Airdrop | 5% (50M PWIN) | Campaign waves with anti-sybil filtering |
 
 ### 9.2 Why These Allocations?
 
@@ -344,24 +344,24 @@ The 5% platform fee is mathematically guaranteed to equal exactly 5% of the losi
 
 ## 11. Leaderboard & Reputation
 
-PredictFi maintains an on-chain-derived leaderboard tracking:
+predictwin maintains an on-chain-derived leaderboard tracking:
 
 - **Total winnings (BNB)** — cumulative BNB earned from correct predictions
 - **Win rate (%)** — percentage of resolved predictions that were correct
 - **Total volume** — total BNB staked across all markets
 - **Rank** — global percentile ranking updated after each market resolution
 
-Leaderboard data is indexed off-chain via Supabase from contract event logs and is publicly viewable at `/leaderboard`. Top performers are eligible for PRFI airdrop campaigns.
+Leaderboard data is indexed off-chain via Supabase from contract event logs and is publicly viewable at `/leaderboard`. Top performers are eligible for PWIN airdrop campaigns.
 
 ---
 
 ## 12. Whitelist & Presale
 
-The PredictFi whitelist grants early access to:
+The predictwin whitelist grants early access to:
 
 - Presale allocation at the lowest available price tier
 - Guaranteed participation before public opening
-- Priority PRFI airdrop eligibility
+- Priority PWIN airdrop eligibility
 - Beta feature access during testnet
 
 To join the whitelist, visit `/whitelist` and submit your wallet address. Whitelist snapshot is taken 48 hours before presale opens.
@@ -377,12 +377,12 @@ To join the whitelist, visit `/whitelist` and submit your wallet address. Whitel
 - [x] Admin portal for market creation and resolution
 - [x] Leaderboard and portfolio tracking
 - [x] Whitelist registration system
-- [x] PRFI presale launch on moonsale.app (June 1–7, 2026)
+- [x] PWIN presale launch on moonsale.app (June 1–7, 2026)
 
 ### Phase 2 — Mainnet Launch (Q3 2026)
 - [ ] BSC Mainnet smart contract deployment
-- [ ] PRFI token deployment and PancakeSwap listing
-- [ ] Staking module (stake PRFI, earn BNB revenue share)
+- [ ] PWIN token deployment and PancakeSwap listing
+- [ ] Staking module (stake PWIN, earn BNB revenue share)
 - [ ] Governance module (on-chain proposals and voting)
 - [ ] Mobile-responsive progressive web app
 - [ ] Security audit by a top-tier firm
@@ -390,12 +390,12 @@ To join the whitelist, visit `/whitelist` and submit your wallet address. Whitel
 ### Phase 3 — Ecosystem Growth (Q4 2026)
 - [ ] Multi-category markets (sports, crypto, politics, entertainment)
 - [ ] Market creation by whitelisted community members
-- [ ] PRFI fee discount system
+- [ ] PWIN fee discount system
 - [ ] Partnership integrations (data oracles, DeFi protocols)
 - [ ] Cross-chain expansion (Ethereum, Arbitrum)
 
 ### Phase 4 — Decentralisation (2027)
-- [ ] Full governance handover to PRFI holders
+- [ ] Full governance handover to PWIN holders
 - [ ] Oracle-verified auto-resolution of markets
 - [ ] Layer-2 deployment for lower gas fees
 - [ ] API access for third-party integrations
@@ -405,7 +405,7 @@ To join the whitelist, visit `/whitelist` and submit your wallet address. Whitel
 ## 14. Security & Audits
 
 ### Current Status
-The PredictFi smart contract is currently deployed on BSC Testnet for community testing. A formal security audit is scheduled for Q3 2026 prior to mainnet launch.
+The predictwin smart contract is currently deployed on BSC Testnet for community testing. A formal security audit is scheduled for Q3 2026 prior to mainnet launch.
 
 ### Security Design Principles
 
@@ -416,19 +416,19 @@ The PredictFi smart contract is currently deployed on BSC Testnet for community 
 5. **No flash loan risk** — prediction amounts are locked until market close; pool values cannot be manipulated within a single transaction.
 
 ### Responsible Disclosure
-If you discover a vulnerability in the PredictFi smart contract or frontend, please contact security@predictfi.io before public disclosure. Responsible disclosures may receive PRFI bug bounty rewards.
+If you discover a vulnerability in the predictwin smart contract or frontend, please contact security@predictwin.io before public disclosure. Responsible disclosures may receive PWIN bug bounty rewards.
 
 ---
 
 ## 15. Team & Governance
 
 ### Current Governance
-In the current beta phase, the PredictFi team (contract owner wallet) controls market creation and resolution. All actions are publicly verifiable on BSCScan.
+In the current beta phase, the predictwin team (contract owner wallet) controls market creation and resolution. All actions are publicly verifiable on BSCScan.
 
 ### Transition to Decentralisation
-Post-mainnet, governance will transition to PRFI token holders via an on-chain governance module:
+Post-mainnet, governance will transition to PWIN token holders via an on-chain governance module:
 
-- Any holder of ≥ 10,000 PRFI can submit a proposal.
+- Any holder of ≥ 10,000 PWIN can submit a proposal.
 - Proposals are voted on over a 7-day window.
 - A 5% quorum of circulating supply is required for a proposal to pass.
 
@@ -438,9 +438,9 @@ Governance scope includes: fee parameters, new market categories, contract upgra
 
 ## 16. Legal Disclaimer
 
-PredictFi is a decentralised protocol. Participation in prediction markets involves financial risk. Predictions can result in the total loss of staked BNB. This whitepaper does not constitute financial or investment advice.
+predictwin is a decentralised protocol. Participation in prediction markets involves financial risk. Predictions can result in the total loss of staked BNB. This whitepaper does not constitute financial or investment advice.
 
-PRFI tokens are utility tokens that provide access to protocol features. They are not securities and do not represent ownership, equity, or a claim on future profits of any legal entity. Token values are market-determined and may fluctuate significantly.
+PWIN tokens are utility tokens that provide access to protocol features. They are not securities and do not represent ownership, equity, or a claim on future profits of any legal entity. Token values are market-determined and may fluctuate significantly.
 
 Users are solely responsible for complying with the laws of their jurisdiction. Participation from jurisdictions where prediction markets or crypto-assets are restricted is at the user's own risk.
 
@@ -448,4 +448,4 @@ Users are solely responsible for complying with the laws of their jurisdiction. 
 
 ---
 
-*© 2026 PredictFi. All rights reserved.*
+*© 2026 predictwin. All rights reserved.*

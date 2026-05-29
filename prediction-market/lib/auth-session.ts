@@ -16,7 +16,7 @@ interface TokenPayload {
   exp: number
 }
 
-const SECRET = process.env.AUTH_SESSION_SECRET || process.env.NEXTAUTH_SECRET || 'predictfi-dev-secret-change-me'
+const SECRET = process.env.AUTH_SESSION_SECRET || process.env.NEXTAUTH_SECRET || 'predictwin-dev-secret-change-me'
 
 function toBase64Url(input: Buffer | string): string {
   return Buffer.from(input)
@@ -73,7 +73,7 @@ export function normalizeAddress(value: string): string {
 export function buildAuthMessage(address: string, nonce: string, action: AuthAction, issuedAt: number): string {
   const actionLabel = action === 'signup' ? 'Sign up' : 'Sign in'
   return [
-    `PredictFi ${actionLabel}`,
+    `predictwin ${actionLabel}`,
     '',
     `Address: ${address}`,
     `Nonce: ${nonce}`,

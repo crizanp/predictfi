@@ -144,7 +144,7 @@ export default function ActivityPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Activity</h1>
-          <p className={styles.pageSub}>Live feed of market activity across PredictFi</p>
+          <p className={styles.pageSub}>Live feed of market activity across predictwin</p>
         </div>
         <div className={styles.liveChip}>
           <span className={styles.liveDot} /> LIVE

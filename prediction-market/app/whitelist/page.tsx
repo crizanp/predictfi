@@ -31,7 +31,7 @@ function buildDummyJoiners(total: number): WhitelistApplication[] {
     return {
       wallet_address: `0x${hex}`,
       name: `Investor ${String(rank).padStart(2, '0')}`,
-      email: `investor${rank}@predictfi.demo`,
+      email: `investor${rank}@predictwin.demo`,
       telegram: `@investor${String(rank).padStart(2, '0')}`,
       status,
       created_at: new Date(now - (total - rank) * 60000).toISOString(),
@@ -176,7 +176,7 @@ export default function WhitelistPage() {
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Apply for Early Access</h1>
         <p className={styles.pageSub}>
-          Secure your spot in the PredictFi PRFI token presale on{' '}
+          Secure your spot in the predictwin PWIN token presale on{' '}
           <a href="https://moonsale.app" target="_blank" rel="noopener noreferrer" className={styles.link}>
             moonsale.app
           </a>{' '}
@@ -335,7 +335,7 @@ export default function WhitelistPage() {
         <aside className={styles.rightPanel}>
           <div className={styles.infoCard}>
             <h3 className={styles.infoTitle}>Why Join The Whitelist</h3>
-            <p className={styles.infoText}>Whitelist users get priority consideration for the PRFI presale allocation.</p>
+            <p className={styles.infoText}>Whitelist users get priority consideration for the PWIN presale allocation.</p>
             <div className={styles.infoList}>
               <div className={styles.infoItem}>First come, first serve review order.</div>
               <div className={styles.infoItem}>Minimum eligibility: 0.01 real BNB on BNB Mainnet.</div>

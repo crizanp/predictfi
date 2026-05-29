@@ -223,7 +223,7 @@ export default function AdminPortal() {
             <span className={styles.portalIcon}>⚙</span>
             <div>
               <h1 className={styles.portalTitle}>Admin Portal</h1>
-              <p className={styles.portalSub}>PredictFi Market Management</p>
+              <p className={styles.portalSub}>predictwin Market Management</p>
             </div>
           </div>
           <button className={styles.closeBtn} onClick={() => setShowAdminPortal(false)}>✕ Close</button>

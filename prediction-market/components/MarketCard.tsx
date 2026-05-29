@@ -228,7 +228,7 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
   }, [market.id])
 
   useEffect(() => {
-    const cached = typeof window !== 'undefined' ? window.localStorage.getItem('predictfi_bnb_usd_price') : null
+    const cached = typeof window !== 'undefined' ? window.localStorage.getItem('predictwin_bnb_usd_price') : null
     if (cached) {
       const parsed = Number.parseFloat(cached)
       if (Number.isFinite(parsed) && parsed > 0) {
@@ -247,7 +247,7 @@ export default function MarketCard({ market, nowInSeconds, isTrending: _isTrendi
         if (!alive || !nextPrice || !Number.isFinite(nextPrice) || nextPrice <= 0) return
         setBnbUsdPrice(nextPrice)
         if (typeof window !== 'undefined') {
-          window.localStorage.setItem('predictfi_bnb_usd_price', String(nextPrice))
+          window.localStorage.setItem('predictwin_bnb_usd_price', String(nextPrice))
         }
       })
       .catch(() => {

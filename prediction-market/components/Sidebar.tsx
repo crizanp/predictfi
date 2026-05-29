@@ -18,7 +18,7 @@ const NAV = [
 ]
 
 const MENU_LINKS = [
-  { href: '/#prfi', label: 'PRFI Token', d: 'M12 2l3 3-3 3-3-3 3-3z M12 8v12 M7 15h10' },
+  { href: '/#PWIN', label: 'PWIN Token', d: 'M12 2l3 3-3 3-3-3 3-3z M12 8v12 M7 15h10' },
   { href: '/whitepaper', label: 'Whitepaper', d: 'M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M15 3v4h4' },
   { href: '/pitchdeck', label: 'Pitchdeck', d: 'M4 19h16 M7 14l3-4 3 2 4-6' },
   { href: '/tokonomics', label: 'Tokenomics', d: 'M12 3v18 M5 8h14 M5 16h14' },
@@ -34,9 +34,9 @@ const DOC_MENU_LINKS = [
 ]
 
 const SOCIAL_LINKS = [
-  { Icon: RiTwitterXLine, href: 'https://x.com/predictfi', label: 'Twitter / X' },
-  { Icon: RiTelegramLine, href: 'https://t.me/predictfi', label: 'Telegram' },
-  { Icon: RiDiscordLine, href: 'https://discord.gg/predictfi', label: 'Discord' },
+  { Icon: RiTwitterXLine, href: 'https://x.com/predictwin', label: 'Twitter / X' },
+  { Icon: RiTelegramLine, href: 'https://t.me/predictwin', label: 'Telegram' },
+  { Icon: RiDiscordLine, href: 'https://discord.gg/predictwin', label: 'Discord' },
 ]
 
 export default function Sidebar({ docsOnly = false }: { docsOnly?: boolean }) {

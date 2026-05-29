@@ -1,6 +1,6 @@
-# PredictFi — Differentiation Roadmap
+# predictwin — Differentiation Roadmap
 
-A strategic plan to make PredictFi the most unique and compelling decentralized prediction market.
+A strategic plan to make predictwin the most unique and compelling decentralized prediction market.
 
 ---
 
@@ -63,7 +63,7 @@ A strategic plan to make PredictFi the most unique and compelling decentralized 
 - Animated LIVE ticker with pulsing dot in navbar
 
 ## 12. Launch & Growth
-- Presale: Jun 1–7 on moonsale.app, 150 BNB raise, 0.00015 BNB per PRFI
+- Presale: Jun 1–7 on moonsale.app, 150 BNB raise, 0.00015 BNB per PWIN
 - Vesting: 25% TGE, 3-month linear for remainder
 - Mainnet launch post token claim
 - KOL campaign targeting BSC prediction/DeFi communities

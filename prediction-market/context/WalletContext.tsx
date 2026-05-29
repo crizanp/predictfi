@@ -47,7 +47,7 @@ export const BSC_TESTNET_PARAMS = {
 
 export const READ_ONLY_RPC = BSC_TESTNET_PARAMS.rpcUrls[0]
 const WALLETCONNECT_PROJECT_ID = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || ''
-const EXTRA_ADMINS_STORAGE_KEY = 'predictfi-extra-admin-addresses'
+const EXTRA_ADMINS_STORAGE_KEY = 'predictwin-extra-admin-addresses'
 const ENV_ADMIN_ADDRESSES = (process.env.NEXT_PUBLIC_EXTRA_ADMIN_ADDRESSES || '')
   .split(',')
   .map((entry) => entry.trim().toLowerCase())

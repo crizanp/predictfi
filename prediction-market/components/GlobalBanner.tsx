@@ -86,7 +86,7 @@ export default function GlobalBanner() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/banner-placeholder.png"
-            alt="PredictFi Banner"
+            alt="predictwin Banner"
             className="globalPageBannerImg globalPageBannerImgVisible"
           />
         </div>
